@@ -840,7 +840,7 @@
   <button class="ls-close" onclick="closeLs()">✕</button>
   <button class="ls-nav ls-prev" onclick="lsNav(-1);event.stopPropagation()">‹</button>
   <div style="position:relative;max-width:92vw;max-height:88vh;display:flex;align-items:center;justify-content:center" onclick="event.stopPropagation()">
-    <img id="lsImg" class="ls-img" src="" alt="">
+    <img id="lsImg" class="ls-img" src="" alt="" crossorigin="anonymous">
     <canvas id="lsFcCanvas" class="fc-canvas" style="border-radius:8px"></canvas>
     <button id="lsFcBtn" class="fc-btn" style="top:12px;left:12px" onclick="toggleFalseColor('ls');event.stopPropagation()" title="False Color IRE">
       <span id="lsFcBtnIcon">⬛</span> FALSE COLOR
@@ -866,7 +866,7 @@
   <div class="modal" id="modalContent">
     <div class="modal-header">
       <div class="modal-img-wrap fc-wrap" id="modalImgWrap" onclick="openLs(currentModalId)" style="cursor:zoom-in">
-        <img id="modalImg" class="modal-img" src="" alt="">
+        <img id="modalImg" class="modal-img" src="" alt="" crossorigin="anonymous">
         <canvas id="modalFcCanvas" class="fc-canvas" style="border-radius:16px 16px 0 0"></canvas>
         <button id="modalFcBtn" class="fc-btn" onclick="toggleFalseColor('modal');event.stopPropagation()" title="False Color — IRE luminance map">
           <span id="modalFcBtnIcon">⬛</span> FALSE COLOR
@@ -1820,6 +1820,7 @@ function openModal(id) {
   logActivity('view_scene', { scene_id: id, scene_title: s.title, scene_title_th: s.title_th });
   const img = document.getElementById('modalImg');
   img.style.display = 'none';
+  img.crossOrigin = 'anonymous';  // Required for false color canvas readback
   img.src = '';
   // Resolve image URL (Supabase http URL or relative disk path)
   const tryPaths = [s.filepath, s.thumb].filter(Boolean);
@@ -1962,6 +1963,7 @@ function showLsScene(idx) {
   const s = SCENES[idx];
   const img = document.getElementById('lsImg');
   img.alt = s.title;
+  img.crossOrigin = 'anonymous';  // Required for false color canvas readback
   img.src = '';
   document.getElementById('lsInfo').textContent = `${s.id} · ${s.title}  (${idx+1}/${SCENES.length})`;
   (async () => {
@@ -2025,12 +2027,12 @@ function lbDefault() {
 }
 
 const LB_FIXTURE_META = {
+  key:       { label:'Key Light',            color:'#A855F7', offColor:'#374151', borderColor:'#7C3AED' },
+  fill:      { label:'Fill Light',           color:'#0EA5E9', offColor:'#374151', borderColor:'#0284C7' },
   backlight: { label:'Backlight (Overhead)', color:'#F59E0B', offColor:'#374151', borderColor:'#854D0E' },
   rimL:      { label:'Rim Light Left',       color:'#3B82F6', offColor:'#374151', borderColor:'#1D4ED8' },
   rimR:      { label:'Rim Light Right',      color:'#3B82F6', offColor:'#374151', borderColor:'#1D4ED8' },
   ambient:   { label:'Ambient (SkyPanel)',   color:'#22C55E', offColor:'#374151', borderColor:'#166534' },
-  key:       { label:'Key Light',            color:'#A855F7', offColor:'#374151', borderColor:'#7C3AED' },
-  fill:      { label:'Fill Light',           color:'#0EA5E9', offColor:'#374151', borderColor:'#0284C7' },
 };
 
 const LB_FX_OPTIONS = [
@@ -2059,8 +2061,12 @@ function saveLB(id, data) {
 
 function isAdmin() {
   const role = localStorage.getItem('vp_user_role') || '';
-  const u = localStorage.getItem('vp_user_id') || '';
-  return role === 'admin' || u.toLowerCase().startsWith('admin');
+  return role === 'admin';
+}
+
+function isEditor() {
+  const role = localStorage.getItem('vp_user_role') || '';
+  return role === 'admin' || role === 'editor';
 }
 
 function tempToColor(k) {
@@ -2076,7 +2082,7 @@ function renderLightingBlueprint(sceneId) {
   const lb      = getLB(sceneId);
   const hasData = getAllLB()[sceneId] != null;
   const admin   = isAdmin();
-  const ro      = !admin;
+  const ro      = !isEditor();  // viewer tier = read-only; admin+editor can edit
 
   const fixtureRows = Object.entries(LB_FIXTURE_META).map(([key, m]) => {
     const f = lb.fixtures[key];
@@ -3149,16 +3155,49 @@ const USER_KEY = 'vp_user_id';
 const USER_ROLE_KEY = 'vp_user_role';
 let USERS_DB = null;
 
+// Hardcoded fallback users (always works even without Supabase/network)
+// admin password = "admin1234"  |  viewer password = "viewer123"
+const FALLBACK_USERS_DB = {
+  "admin":  { role:"admin",  hash:"ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name:"Administrator" },
+  "viewer": { role:"viewer", hash:"65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name:"Viewer" }
+};
+
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function loadUsers() {
+  // Priority 1: Supabase users table
   try {
-    const r = await fetch('_database/users.json?v=' + Date.now());
-    if (r.ok) USERS_DB = await r.json();
-  } catch(e) { console.warn('Could not load users.json', e); }
+    if (typeof supabase !== 'undefined') {
+      const _sc = supabase.createClient(
+        'https://pgaqdqbjyewwckpslyvx.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+      );
+      const { data, error } = await _sc.from('users').select('*');
+      if (!error && data && data.length > 0) {
+        USERS_DB = {};
+        data.forEach(u => { USERS_DB[u.username] = { role: u.role||'viewer', hash: u.password_hash||'', name: u.display_name||u.username }; });
+        console.log('[Auth] Loaded', data.length, 'users from Supabase');
+        return;
+      }
+    }
+  } catch(e) { console.warn('[Auth] Supabase users fetch failed:', e.message); }
+
+  // Priority 2: localStorage cache
+  try {
+    const cached = localStorage.getItem('vp_users_cache');
+    if (cached) { USERS_DB = JSON.parse(cached); console.log('[Auth] Using cached users'); return; }
+  } catch(e) {}
+
+  // Priority 3: Fallback hardcoded
+  USERS_DB = JSON.parse(JSON.stringify(FALLBACK_USERS_DB));
+  console.log('[Auth] Using fallback users DB');
+}
+
+function isViewer() {
+  return (localStorage.getItem(USER_ROLE_KEY) || '') === 'viewer';
 }
 
 function initUser() {
@@ -3168,7 +3207,9 @@ function initUser() {
     el.textContent = 'ไม่ได้ login';
     showAuthOverlay();
   } else {
-    el.textContent = isAdmin() ? ('👑 ' + saved) : saved;
+    const role = localStorage.getItem(USER_ROLE_KEY) || '';
+    const icon = role === 'admin' ? '👑 ' : role === 'viewer' ? '👁 ' : '';
+    el.textContent = icon + saved;
   }
 }
 
@@ -3250,6 +3291,14 @@ async function doLogin() {
 
 // Load users DB, then init user session
 loadUsers().then(() => initUser());
+
+// ── Viewer-mode UI restrictions ──
+// Hide edit controls for viewer role (called after login + after renderCards)
+function applyViewerRestrictions() {
+  if (!isViewer()) return;
+  // Hide admin-only buttons
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+}
 
 // ── Activity Logger ──────────────────────────────────────────
 const ACT_KEY = 'vp_activity_log';

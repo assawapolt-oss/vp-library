@@ -440,8 +440,9 @@
       <div class="form-group">
         <label class="form-label">Role</label>
         <select class="form-select" id="umRole">
-          <option value="editor">editor</option>
-          <option value="admin">admin</option>
+          <option value="viewer">viewer — ดูได้อย่างเดียว ห้ามแก้ไข</option>
+          <option value="editor">editor — แก้ฉากได้ แต่ไม่จัดการ user</option>
+          <option value="admin">admin — สิทธิ์เต็ม</option>
         </select>
       </div>
     </div>
@@ -644,16 +645,51 @@ const FALLBACK_ADMIN_DB = {
 ADMIN_USERS_DB = JSON.parse(JSON.stringify(FALLBACK_ADMIN_DB));
 
 async function loadUsersDB(bust) {
+  // Priority 1: Supabase users table
   try {
-    const r = await fetch('_database/users.json' + (bust ? '?v=' + Date.now() : ''));
-    if (r.ok) {
-      const data = await r.json();
-      ADMIN_USERS_DB = data;
-      console.log('✅ users.json loaded:', Object.keys(data));
-      return true;
+    if (typeof supabase !== 'undefined') {
+      const _sc = supabase.createClient(
+        'https://pgaqdqbjyewwckpslyvx.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+      );
+      const { data, error } = await _sc.from('users').select('*');
+      if (!error && data && data.length > 0) {
+        const db = {};
+        data.forEach(u => { db[u.username] = { role: u.role||'viewer', hash: u.password_hash||'', name: u.display_name||u.username, created: u.created_at ? u.created_at.slice(0,10) : '' }; });
+        ADMIN_USERS_DB = db;
+        console.log('✅ Users loaded from Supabase:', Object.keys(db));
+        return true;
+      }
     }
-  } catch(e) { console.warn('users.json fetch failed, using fallback'); }
+  } catch(e) { console.warn('[Admin] Supabase users load failed:', e.message); }
+
+  // Priority 2: fallback hardcoded (already set at startup)
+  console.log('[Admin] Using fallback users DB');
   return false;
+}
+
+// Save single user to Supabase users table
+async function _supaUpsertUser(username, userData) {
+  if (!window._supaClient) return;
+  try {
+    const row = {
+      username: username,
+      password_hash: userData.hash,
+      role: userData.role,
+      display_name: userData.name || username
+    };
+    const { error } = await window._supaClient.from('users').upsert(row, { onConflict: 'username' });
+    if (error) console.warn('[Admin] User upsert error:', error.message);
+    else console.log('✅ User saved to Supabase:', username);
+  } catch(e) { console.warn('[Admin] _supaUpsertUser error:', e.message); }
+}
+
+// Delete user from Supabase
+async function _supaDeleteUser(username) {
+  if (!window._supaClient) return;
+  try {
+    await window._supaClient.from('users').delete().eq('username', username);
+  } catch(e) { console.warn('[Admin] _supaDeleteUser error:', e.message); }
 }
 
 async function doLogin() {
@@ -2401,17 +2437,20 @@ async function handleLogoUpload(input) {
   const destPath = `_graphics/shows/${showId || ('logo_' + Date.now())}.webp`;
 
   const r = await uploadFileToDisk(file, destPath);
-  if (r.ok) {
+  if (r.ok && r.url) {
+    document.getElementById('sm_logo').value = r.url;  // Supabase public URL
+    document.getElementById('sm_logo_filename').textContent = `✅ ${file.name} (Supabase)`;
+  } else if (r.ok && r.path) {
     document.getElementById('sm_logo').value = r.path;
     document.getElementById('sm_logo_filename').textContent = `✅ ${file.name}`;
   } else {
-    // fallback: เก็บ base64 ถ้า server ไม่รัน
+    // fallback: เก็บ dataUrl ถ้า Supabase ไม่ได้
     document.getElementById('sm_logo').value = dataUrl;
-    document.getElementById('sm_logo_filename').textContent = `⚠️ ${file.name} (local — รัน launch.py เพื่อบันทึกลงดิสก์)`;
+    document.getElementById('sm_logo_filename').textContent = `⚠️ ${file.name} (ไม่สามารถ upload ได้: ${r.error||'unknown'})`;
   }
 }
 
-function saveShowModal(id, isNew) {
+async function saveShowModal(id, isNew) {
   const name = document.getElementById('sm_name').value.trim();
   if (!name) { alert('กรุณาใส่ชื่อรายการ'); return; }
   const shows = loadShows();
@@ -2423,15 +2462,33 @@ function saveShowModal(id, isNew) {
     if (idx !== -1) shows[idx] = sh; else shows.push(sh);
   }
   saveShows(shows);
+
+  // Sync to Supabase shows table
+  if (window._supaClient) {
+    try {
+      const row = { id: sh.id, name: sh.name, color: sh.color || '', logo_url: sh.logo_url || '' };
+      const { error } = await window._supaClient.from('shows').upsert(row, { onConflict: 'id' });
+      if (error) showToast(`⚠️ บันทึกใน Supabase ไม่สำเร็จ: ${error.message}`, 'red');
+      else showToast('💾 บันทึกรายการแล้ว (Supabase ✓)', 'green');
+    } catch(e) { showToast(`⚠️ Supabase error: ${e.message}`, 'red'); }
+  } else {
+    showToast('💾 บันทึกรายการแล้ว (localStorage เท่านั้น)', 'green');
+  }
+
   document.getElementById('showModal').remove();
   renderShowsPanel();
-  showToast('💾 บันทึกรายการแล้ว!', 'green');
 }
 
-function deleteShow(id) {
+async function deleteShow(id) {
   if (!confirm('ลบรายการนี้? ฉากที่ tag ไว้จะยังอยู่ แต่จะไม่ถูก filter ด้วยรายการนี้อีก')) return;
   const shows = loadShows().filter(s => s.id !== id);
   saveShows(shows);
+
+  // Sync to Supabase
+  if (window._supaClient) {
+    try { await window._supaClient.from('shows').delete().eq('id', id); } catch(e) {}
+  }
+
   renderShowsPanel();
   showToast('🗑 ลบรายการแล้ว', 'red');
 }
@@ -2586,20 +2643,26 @@ async function saveUser() {
     created: WM_USERS[uname]?.created || new Date().toISOString().slice(0,10)
   };
 
+  // Sync to Supabase
+  await _supaUpsertUser(uname, WM_USERS[uname]);
+  // Also update ADMIN_USERS_DB for current session
+  ADMIN_USERS_DB[uname] = WM_USERS[uname];
+
   btn.disabled = false; btn.textContent = '💾 บันทึก';
   closeUserModal();
   renderUserCards();
-  showToast(isNew ? `✅ เพิ่ม ${uname} แล้ว — ดาวน์โหลด JSON เพื่อบันทึกถาวร` : `✅ อัปเดต ${uname} แล้ว`, 'green');
-  showDownloadUsersBtn();
+  showToast(isNew ? `✅ เพิ่ม ${uname} แล้ว (บันทึกใน Supabase แล้ว)` : `✅ อัปเดต ${uname} แล้ว`, 'green');
 }
 
 async function deleteUser(uname) {
   if (!confirm(`ต้องการลบ user "${uname}" ใช่ไหม?`)) return;
   await ensureUsersLoaded();
   delete WM_USERS[uname];
+  delete ADMIN_USERS_DB[uname];
+  // Sync to Supabase
+  await _supaDeleteUser(uname);
   renderUserCards();
-  showToast(`🗑 ลบ ${uname} แล้ว — ดาวน์โหลด JSON เพื่อบันทึกถาวร`, '');
-  showDownloadUsersBtn();
+  showToast(`🗑 ลบ ${uname} แล้ว`, '');
 }
 
 function showDownloadUsersBtn() {
