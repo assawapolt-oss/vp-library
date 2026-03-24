@@ -1,0 +1,12 @@
+launch.py
+vp-bridge.py
+vp-proxy.py
+vp-ai-tag.py
+generate_embeddings.py
+generate_topic_embeddings.py
+*.py
+_archived/
+.DS_Store
+.env.example
+indoor/.DS_Store
+outdoor/.DS_Store

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Embeddings — VP Admin</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #00ff00; }
+    .topbar-back { display:flex; align-items:center; gap:12px; background:#DC2626; padding:10px 20px; margin:-20px -20px 20px -20px; }
+    .topbar-back a { color:#fff; font-size:12px; font-weight:700; text-decoration:none; opacity:.8; font-family:sans-serif; }
+    .topbar-back a:hover { opacity:1; }
+    .topbar-back .title { color:#fff; font-size:13px; font-weight:700; font-family:sans-serif; opacity:.6; }
+    .log { margin: 10px 0; }
+    button { padding: 10px 20px; margin: 10px 0; background: #00ff00; color: #000; cursor: pointer; border: none; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .progress { width: 100%; height: 20px; background: #333; border: 1px solid #00ff00; margin: 10px 0; }
+    .progress-bar { height: 100%; background: #00ff00; width: 0%; }
+  </style>
+</head>
+<body>
+  <div class="topbar-back">
+    <a href="vp-admin.html">← VP Admin</a>
+    <span class="title">/ 🧠 Generate Topic Embeddings</span>
+  </div>
+  <h2>🔧 Generate Topic Embeddings</h2>
+  <p>ใช้ generate CLIP embeddings สำหรับระบบ AI แนะนำฉาก — รันทุกครั้งที่เพิ่มฉากใหม่เข้าระบบ</p>
+  <p style="color:#ffff00;font-size:12px;">⚠️ ต้องเปิดผ่าน <code>launch.py</code> (localhost) เท่านั้น — ไม่รองรับการเปิดไฟล์ตรงๆ</p>
+
+  <button id="generateBtn" onclick="generateTopicEmbeddings()">🚀 Generate Now</button>
+  <button id="downloadBtn" onclick="downloadJSON()" disabled>📥 Download JSON</button>
+  <button id="copyBtn" onclick="copyToClipboard()" disabled>📋 Copy to Clipboard</button>
+
+  <div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div id="logs"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js"></script>
+
+  <script>
+    let topicEmbeddings = null;
+
+    function log(msg) {
+      const logs = document.getElementById('logs');
+      const div = document.createElement('div');
+      div.className = 'log';
+      div.textContent = msg;
+      logs.appendChild(div);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    const TOPICS = [
+      "robot", "economy", "politics", "technology", "environment",
+      "health", "entertainment", "music", "news", "industry",
+      "education", "war", "lifestyle", "city",
+      "หุ่นยนต์", "เศรษฐกิจ", "การเมือง", "เทคโนโลยี", "สิ่งแวดล้อม",
+      "สุขภาพ", "บันเทิง", "ดนตรี", "ข่าว", "อุตสาหกรรม",
+      "การศึกษา", "ความขัดแย้ง", "ไลฟ์สไตล์", "เมือง",
+    ];
+
+    const TOPIC_DESCRIPTIONS = {
+      "robot": "artificial intelligence, automation, robotic systems, AI technology",
+      "economy": "economic growth, business, finance, markets, investments",
+      "politics": "political news, elections, government, policy, legislation",
+      "technology": "tech innovation, digital transformation, IT systems, cutting edge",
+      "environment": "climate change, ecology, sustainability, green energy",
+      "health": "medicine, healthcare, disease, wellness, medical research",
+      "entertainment": "movies, shows, performance, celebrity, arts",
+      "music": "song, melody, audio, musician, concert, performance, instrument",
+      "news": "current events, breaking news, journalism, reporting",
+      "industry": "manufacturing, production, industrial, factory operations",
+      "education": "learning, school, university, training, academic",
+      "war": "conflict, military, battle, crisis, emergency, disaster",
+      "lifestyle": "living, personal, culture, traditions, daily life",
+      "city": "urban, metropolis, cityscape, downtown, town",
+      "หุ่นยนต์": "หุ่นยนต์, อัตโนมัติ, ระบบหุ่นยนต์, เทคโนโลยี AI",
+      "เศรษฐกิจ": "เศรษฐกิจ, ธุรกิจ, การเงิน, ตลาด, การลงทุน",
+      "การเมือง": "ข่าวการเมือง, การเลือกตั้ง, รัฐบาล, นโยบาย",
+      "เทคโนโลยี": "นวัตกรรมเทคโนโลยี, การแปลงดิจิทัล, ระบบ IT",
+      "สิ่งแวดล้อม": "การเปลี่ยนแปลงสภาพอากาศ, นิเวศวิทยา, ความยั่งยืน",
+      "สุขภาพ": "การแพทย์, สาธารณสุข, โรค, สุขภาพ, งานวิจัยทางการแพทย์",
+      "บันเทิง": "ภาพยนตร์, ละครโทรทัศน์, การแสดง, ศิลปะ",
+      "ดนตรี": "เพลง, โน้ต, ดนตรี, นักดนตรี, คอนเสิร์ต, บทเพลง",
+      "ข่าว": "เหตุการณ์ปัจจุบัน, ข่าวด่วน, สื่อ, การรายงาน",
+      "อุตสาหกรรม": "การผลิต, โรงงาน, ยุคอุตสาหกรรม, การดำเนินการ",
+      "การศึกษา": "การเรียน, โรงเรียน, มหาวิทยาลัย, การฝึกอบรม",
+      "ความขัดแย้ง": "ความขัดแย้ง, ทหาร, สงคราม, วิกฤต, ภัยพิบัติ",
+      "ไลฟ์สไตล์": "การใช้ชีวิต, วัฒนธรรม, ประเพณี, ชีวิตประจำวัน",
+      "เมือง": "เมือง, โครงสร้างเมือง, ตึก, ชนบท",
+    };
+
+    async function generateTopicEmbeddings() {
+      document.getElementById('generateBtn').disabled = true;
+      log('📦 Loading CLIP text encoder (Xenova/clip-vit-base-patch32)...');
+      log('   (First time: ~100MB download, then cached)');
+
+      try {
+        const { CLIPTextModelWithProjection, AutoTokenizer, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js');
+        env.allowLocalModels = false;
+        env.allowRemoteModels = true;
+
+        log('🔄 Loading CLIP text-only model...');
+        const model_name = 'Xenova/clip-vit-base-patch32';
+
+        const tokenizer = await AutoTokenizer.from_pretrained(model_name);
+        const textModel = await CLIPTextModelWithProjection.from_pretrained(model_name, {
+          progress_callback: (p) => {
+            if (p.status === 'downloading') {
+              const pct = Math.round((p.loaded / (p.total || 1)) * 100);
+              setProgress(pct);
+              log(`   Downloading: ${p.file} (${pct}%)`);
+            }
+          }
+        });
+
+        log('✅ CLIP text model ready!\n');
+        log(`🔄 Generating embeddings for ${TOPICS.length} topics...\n`);
+
+        topicEmbeddings = {};
+        const total = TOPICS.length;
+
+        for (let i = 0; i < TOPICS.length; i++) {
+          const topic = TOPICS[i];
+          const text = TOPIC_DESCRIPTIONS[topic] || topic;
+
+          // Tokenize
+          const inputs = tokenizer([text], { padding: true, truncation: true, max_length: 77 });
+
+          // Encode text only (no image needed)
+          const { text_embeds } = await textModel(inputs);
+
+          // L2 normalize
+          const raw = Array.from(text_embeds.data);
+          const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0)) || 1;
+          const vec = raw.map(v => Math.round(v / norm * 1000000) / 1000000);
+
+          topicEmbeddings[topic] = vec;
+
+          const pct = Math.round(((i + 1) / total) * 100);
+          setProgress(pct);
+          log(`  ✅ ${topic.padEnd(20)} (dim=${vec.length}) — ${pct}%`);
+        }
+
+        log('\n' + '─'.repeat(50));
+        log(`✅ Generated ${TOPICS.length} topic embeddings`);
+        log(`   Size: ~${JSON.stringify(topicEmbeddings).length / 1024 | 0} KB`);
+        log('─'.repeat(50));
+        log('\n💾 Now download the JSON file and save to: _database/topic_embeddings.json\n');
+
+        document.getElementById('downloadBtn').disabled = false;
+        document.getElementById('copyBtn').disabled = false;
+
+      } catch (e) {
+        log(`❌ Error: ${e.message}`);
+        document.getElementById('generateBtn').disabled = false;
+      }
+    }
+
+    function downloadJSON() {
+      if (!topicEmbeddings) return;
+      const json = JSON.stringify(topicEmbeddings);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'topic_embeddings.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      log('📥 Downloaded: topic_embeddings.json');
+    }
+
+    function copyToClipboard() {
+      if (!topicEmbeddings) return;
+      const json = JSON.stringify(topicEmbeddings);
+      navigator.clipboard.writeText(json).then(() => {
+        log('📋 Copied to clipboard!');
+      });
+    }
+  </script>
+</body>
+</html>

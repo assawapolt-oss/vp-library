@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VP Scene Recommender — THE STANDARD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+  :root {
+    --red:#CC2229; --dark:#1A1A2E; --bg:#F4F5F7; --card:#fff;
+    --border:#E5E7EB; --muted:#6B7280; --green:#10B981; --yellow:#F59E0B;
+    --radius:14px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; }
+
+  /* ── Top bar ── */
+  .topbar { background:var(--red); color:#fff; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar-brand { font-size:13px; font-weight:700; letter-spacing:.06em; opacity:.85; }
+  .topbar-title { font-size:15px; font-weight:700; }
+  .topbar-sub { font-size:11px; opacity:.65; }
+
+  /* ── Progress ── */
+  .progress-wrap { background:#fff; border-bottom:1px solid var(--border); padding:0 28px; display:flex; align-items:stretch; gap:0; }
+  .step-tab { flex:1; padding:14px 0 12px; text-align:center; font-size:12px; font-weight:600; color:var(--muted); border-bottom:3px solid transparent; cursor:default; transition:all .15s; user-select:none; }
+  .step-tab.active { color:var(--red); border-bottom-color:var(--red); }
+  .step-tab.done { color:var(--green); border-bottom-color:var(--green); }
+  .step-num { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--border); font-size:10px; font-weight:700; margin-right:6px; color:var(--muted); }
+  .step-tab.active .step-num { background:var(--red); color:#fff; }
+  .step-tab.done .step-num { background:var(--green); color:#fff; }
+
+  /* ── Main container ── */
+  .main { max-width:720px; margin:0 auto; padding:32px 24px 80px; }
+
+  /* ── Card ── */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:28px; margin-bottom:16px; }
+  .card-title { font-size:18px; font-weight:700; margin-bottom:6px; }
+  .card-sub { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.6; }
+
+  /* ── Text area ── */
+  .big-textarea { width:100%; min-height:120px; padding:14px 16px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; resize:vertical; outline:none; transition:border .15s; line-height:1.7; }
+  .big-textarea:focus { border-color:var(--red); }
+  .big-textarea::placeholder { color:#B0B8C4; }
+  .char-count { font-size:11px; color:var(--muted); text-align:right; margin-top:4px; }
+
+  /* ── Quick topic pills ── */
+  .section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px; margin-top:20px; }
+  .pill-row { display:flex; flex-wrap:wrap; gap:6px; }
+  .qpill { padding:6px 13px; border-radius:20px; border:1.5px solid var(--border); font-size:12px; font-weight:600; cursor:pointer; transition:all .12s; background:#fff; color:var(--dark); font-family:inherit; }
+  .qpill:hover { border-color:var(--red); color:var(--red); }
+  .qpill.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* ── Mood grid ── */
+  .mood-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:8px; }
+  .mood-btn { padding:12px 14px; border-radius:10px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; transition:all .12s; background:#fff; color:var(--dark); font-family:inherit; text-align:left; display:flex; align-items:center; gap:8px; }
+  .mood-btn:hover { border-color:var(--red); }
+  .mood-btn.active { background:#FFF0F0; border-color:var(--red); color:var(--red); }
+  .mood-icon { font-size:18px; width:24px; text-align:center; }
+
+  /* ── Toggle buttons ── */
+  .toggle-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .tbtn { padding:9px 18px; border-radius:8px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; transition:all .12s; background:#fff; color:var(--dark); font-family:inherit; }
+  .tbtn:hover { border-color:var(--red); }
+  .tbtn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* ── Nav buttons ── */
+  .nav-row { display:flex; justify-content:space-between; align-items:center; margin-top:24px; }
+  .btn-back { padding:11px 22px; border-radius:8px; border:1.5px solid var(--border); font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:var(--muted); font-family:inherit; }
+  .btn-back:hover { border-color:var(--dark); color:var(--dark); }
+  .btn-next { padding:11px 28px; border-radius:8px; border:none; font-size:14px; font-weight:700; cursor:pointer; background:var(--red); color:#fff; font-family:inherit; display:flex; align-items:center; gap:8px; transition:opacity .12s; }
+  .btn-next:hover { opacity:.88; }
+  .btn-next:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* ── Results ── */
+  .results-header { text-align:center; margin-bottom:28px; }
+  .results-header h2 { font-size:22px; font-weight:700; margin-bottom:6px; }
+  .results-header p { font-size:14px; color:var(--muted); }
+
+  .result-card { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px; transition:all .15s; }
+  .result-card:hover { border-color:var(--red); box-shadow:0 4px 20px rgba(204,34,41,.1); }
+
+  .result-rank { font-size:11px; font-weight:700; color:#fff; padding:3px 10px; border-radius:4px; display:inline-block; }
+  .rank-1 { background:var(--red); }
+  .rank-2 { background:#6B7280; }
+  .rank-3 { background:#9CA3AF; }
+
+  .result-top { display:flex; gap:0; }
+  .result-thumb { width:200px; min-width:200px; height:130px; object-fit:cover; background:#E5E7EB; display:block; }
+  .result-thumb-ph { width:200px; min-width:200px; height:130px; background:linear-gradient(135deg,#1A1A2E,#2A2A4E); display:flex; align-items:center; justify-content:center; font-size:28px; }
+  .result-info { flex:1; padding:16px 18px; }
+  .result-meta { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .result-id { font-size:11px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
+  .result-title { font-size:15px; font-weight:700; margin-bottom:3px; }
+  .result-title-th { font-size:12px; color:var(--muted); margin-bottom:10px; }
+
+  /* Score bar */
+  .score-wrap { margin-bottom:10px; }
+  .score-label { font-size:11px; color:var(--muted); margin-bottom:4px; display:flex; justify-content:space-between; }
+  .score-track { height:6px; background:#F3F4F6; border-radius:3px; overflow:hidden; }
+  .score-fill { height:100%; border-radius:3px; transition:width .6s ease; }
+  .score-fill.high { background:var(--green); }
+  .score-fill.mid { background:var(--yellow); }
+  .score-fill.low { background:#D1D5DB; }
+
+  /* Reasons */
+  .reasons { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+  .reason-tag { font-size:11px; padding:3px 9px; border-radius:12px; background:#F0FDF4; color:#059669; font-weight:600; border:1px solid #A7F3D0; }
+  .reason-tag.mood { background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE; }
+  .reason-tag.prod { background:#EFF6FF; color:#1D4ED8; border-color:#BFDBFE; }
+  .reason-tag.warn { background:#FFFBEB; color:#B45309; border-color:#FDE68A; }
+
+  .result-notes { padding:10px 18px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); line-height:1.6; }
+  .result-notes strong { color:var(--dark); }
+
+  /* No result */
+  .no-result { text-align:center; padding:48px 24px; }
+  .no-result-icon { font-size:48px; margin-bottom:12px; }
+  .no-result-text { font-size:16px; font-weight:600; color:var(--muted); }
+
+  /* Reset btn */
+  .btn-reset { display:block; margin:24px auto 0; padding:11px 28px; border-radius:8px; border:1.5px solid var(--border); font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:var(--muted); font-family:inherit; }
+  .btn-reset:hover { border-color:var(--red); color:var(--red); }
+
+  .hidden { display:none !important; }
+
+  /* Input summary pill */
+  .summary-box { background:#F9FAFB; border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:20px; font-size:13px; line-height:1.8; }
+  .summary-box strong { color:var(--dark); }
+  .summary-box span { color:var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div>
+    <div class="topbar-brand">THE STANDARD VP LIBRARY</div>
+    <div class="topbar-title">Scene Recommender</div>
+  </div>
+  <div class="topbar-sub">10 scenes in library</div>
+</div>
+
+<!-- Progress tabs -->
+<div class="progress-wrap" id="progressWrap">
+  <div class="step-tab active" id="tab1"><span class="step-num">1</span>เนื้อหา</div>
+  <div class="step-tab" id="tab2"><span class="step-num">2</span>Mood & Tone</div>
+  <div class="step-tab" id="tab3"><span class="step-num">3</span>Production</div>
+  <div class="step-tab" id="tab4"><span class="step-num">4</span>ผล</div>
+</div>
+
+<div class="main">
+
+  <!-- ─── STEP 1: Content ─── -->
+  <div id="step1">
+    <div class="card">
+      <div class="card-title">บรรยายเนื้อหาของคุณ</div>
+      <div class="card-sub">อธิบาย Key Message หรือเรื่องราวที่จะนำเสนอ ยิ่งละเอียดยิ่งแนะนำได้แม่นขึ้น</div>
+      <textarea class="big-textarea" id="contentInput" maxlength="500"
+        placeholder="เช่น: อีก 10 ปีข้างหน้าจะมีหุ่นยนต์ AI เข้ามาแทนที่แรงงานมนุษย์ในโรงงานอุตสาหกรรมกว่า 40% รายงานนี้พูดถึงผลกระทบต่อเศรษฐกิจและแรงงานไทย"
+        oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span>/500 ตัวอักษร</div>
+
+      <div class="section-label">หรือเลือก Topic หลักที่เกี่ยวข้อง</div>
+      <div class="pill-row" id="topicPills">
+        <button class="qpill" onclick="togglePill(this,'robot')">🤖 หุ่นยนต์ / AI</button>
+        <button class="qpill" onclick="togglePill(this,'economy')">💰 เศรษฐกิจ</button>
+        <button class="qpill" onclick="togglePill(this,'politics')">🗳 การเมือง</button>
+        <button class="qpill" onclick="togglePill(this,'technology')">⚡ เทคโนโลยี</button>
+        <button class="qpill" onclick="togglePill(this,'environment')">🌿 สิ่งแวดล้อม</button>
+        <button class="qpill" onclick="togglePill(this,'health')">🏥 สุขภาพ</button>
+        <button class="qpill" onclick="togglePill(this,'entertainment')">🎬 บันเทิง</button>
+        <button class="qpill" onclick="togglePill(this,'music')">🎵 ดนตรี / วัฒนธรรม</button>
+        <button class="qpill" onclick="togglePill(this,'news')">📰 ข่าว / การรายงาน</button>
+        <button class="qpill" onclick="togglePill(this,'industry')">🏭 อุตสาหกรรม</button>
+        <button class="qpill" onclick="togglePill(this,'education')">📚 การศึกษา / วิจัย</button>
+        <button class="qpill" onclick="togglePill(this,'war')">⚔️ ความขัดแย้ง</button>
+        <button class="qpill" onclick="togglePill(this,'lifestyle')">✨ ไลฟ์สไตล์</button>
+        <button class="qpill" onclick="togglePill(this,'city')">🏙 เมือง / อสังหาฯ</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <div></div>
+      <button class="btn-next" onclick="goStep(2)">ถัดไป: Mood & Tone →</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 2: Mood ─── -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <div class="card-title">Mood & Tone ของเนื้อหา</div>
+      <div class="card-sub">เลือกได้มากกว่า 1 อย่าง — ระบบจะ match กับ atmosphere ของฉาก</div>
+      <div class="mood-grid">
+        <button class="mood-btn" onclick="toggleMood(this,'dramatic')"><span class="mood-icon">🔥</span>ดุเดือด / ตื่นเต้น</button>
+        <button class="mood-btn" onclick="toggleMood(this,'tense')"><span class="mood-icon">😰</span>ตึงเครียด / กดดัน</button>
+        <button class="mood-btn" onclick="toggleMood(this,'mysterious')"><span class="mood-icon">🌑</span>ลึกลับ / น่าค้นหา</button>
+        <button class="mood-btn" onclick="toggleMood(this,'serious')"><span class="mood-icon">🎯</span>จริงจัง / เคร่งขรึม</button>
+        <button class="mood-btn" onclick="toggleMood(this,'futuristic')"><span class="mood-icon">🚀</span>อนาคต / ล้ำยุค</button>
+        <button class="mood-btn" onclick="toggleMood(this,'authoritative')"><span class="mood-icon">💼</span>มีอำนาจ / น่าเชื่อถือ</button>
+        <button class="mood-btn" onclick="toggleMood(this,'documentary')"><span class="mood-icon">📹</span>สารคดี / ข้อเท็จจริง</button>
+        <button class="mood-btn" onclick="toggleMood(this,'authentic')"><span class="mood-icon">🌱</span>จริงแท้ / Natural</button>
+        <button class="mood-btn" onclick="toggleMood(this,'warm')"><span class="mood-icon">☀️</span>อบอุ่น / เป็นกันเอง</button>
+        <button class="mood-btn" onclick="toggleMood(this,'nostalgic')"><span class="mood-icon">🎞</span>คิดถึง / ย้อนยุค</button>
+        <button class="mood-btn" onclick="toggleMood(this,'approachable')"><span class="mood-icon">🙂</span>เข้าถึงได้ / ใกล้ชิด</button>
+        <button class="mood-btn" onclick="toggleMood(this,'neutral')"><span class="mood-icon">⚖️</span>กลางๆ / สมดุล</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(1)">← ย้อนกลับ</button>
+      <button class="btn-next" onclick="goStep(3)">ถัดไป: Production →</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 3: Production ─── -->
+  <div id="step3" class="hidden">
+    <div class="card">
+      <div class="card-title">Production Details</div>
+      <div class="card-sub">ช่วยให้ระบบเลือกฉากที่เหมาะกับ format และการใช้งานจริง</div>
+
+      <div class="section-label">Platform / Format</div>
+      <div class="toggle-row" id="platformRow">
+        <button class="tbtn active" onclick="selectOne(this,'platformRow')" data-val="both">ทั้งสอง (16:9 + 9:16)</button>
+        <button class="tbtn" onclick="selectOne(this,'platformRow')" data-val="16:9">📺 Broadcast / YouTube (16:9)</button>
+        <button class="tbtn" onclick="selectOne(this,'platformRow')" data-val="9:16">📱 Social / Reels (9:16)</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px">รูปแบบ Presenter</div>
+      <div class="toggle-row" id="presenterRow">
+        <button class="tbtn active" onclick="selectOne(this,'presenterRow')" data-val="standup-report">🎙 ยืนรายงาน</button>
+        <button class="tbtn" onclick="selectOne(this,'presenterRow')" data-val="news-anchor">🪑 นั่งอ่านข่าว</button>
+        <button class="tbtn" onclick="selectOne(this,'presenterRow')" data-val="interview-single">🎤 สัมภาษณ์</button>
+        <button class="tbtn" onclick="selectOne(this,'presenterRow')" data-val="documentary">🎥 สารคดี VO</button>
+        <button class="tbtn" onclick="selectOne(this,'presenterRow')" data-val="podcast-video">🎧 Podcast Video</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px">ตำแหน่งในเรื่อง</div>
+      <div class="toggle-row" id="positionRow">
+        <button class="tbtn active" onclick="selectOne(this,'positionRow')" data-val="any">ไม่ระบุ</button>
+        <button class="tbtn" onclick="selectOne(this,'positionRow')" data-val="opening">🎬 Opening / เปิดเรื่อง</button>
+        <button class="tbtn" onclick="selectOne(this,'positionRow')" data-val="middle">📌 กลางเรื่อง</button>
+        <button class="tbtn" onclick="selectOne(this,'positionRow')" data-val="closing">🏁 Closing / จบเรื่อง</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px">สีแสง / Tone ภาพที่ต้องการ</div>
+      <div class="toggle-row" id="colorRow">
+        <button class="tbtn active" onclick="selectOne(this,'colorRow')" data-val="any">ไม่ระบุ</button>
+        <button class="tbtn" onclick="selectOne(this,'colorRow')" data-val="warm">🟡 Warm / อบอุ่น</button>
+        <button class="tbtn" onclick="selectOne(this,'colorRow')" data-val="cool">🔵 Cool / เย็น</button>
+        <button class="tbtn" onclick="selectOne(this,'colorRow')" data-val="neutral">⬜ Neutral</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(2)">← ย้อนกลับ</button>
+      <button class="btn-next" onclick="runRecommender()">🎯 แนะนำฉาก!</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 4: Results ─── -->
+  <div id="step4" class="hidden">
+    <div class="results-header">
+      <h2>ฉากที่แนะนำ</h2>
+      <p id="resultSubtitle">จาก 10 ฉากในคลัง</p>
+    </div>
+    <div id="summaryBox" class="summary-box"></div>
+    <div id="resultsList"></div>
+    <button class="btn-reset" onclick="resetAll()">🔄 เริ่มใหม่</button>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ── Scene Database ──────────────────────────────────────────────
+const SCENES = [
+  {
+    id:"VP-001", title:"Sci-Fi Lab Portal — Robot & Steam", title_th:"ห้องแล็บไซไฟ พอร์ทัลหุ่นยนต์ มีควัน",
+    filepath:"indoor/sci-fi/VP-001-scifi-lab-portal-warm-dramatic-v1.png",
+    thumb:"_thumbnails/VP-001_thumb.png",
+    environment:"indoor", location_type:"sci-fi-lab",
+    mood:["dramatic","mysterious","futuristic"],
+    color_temp:"warm", brightness:"dark",
+    topics:["AI","robot","technology","innovation","sci-fi"],
+    editorial_fit:["Tech","Entertainment","Business"],
+    usage_type:["standup-report","explainer","podcast-video"],
+    platform_fit:["16:9","9:16"],
+    notes:"ลำแสงพอร์ทัลสว่างมาก — ต้องเพิ่ม key light ฝั่งซ้ายของ presenter เพื่อ match กับ background light direction"
+  },
+  {
+    id:"VP-002", title:"Sci-Fi Robot Display Room — Blue Tone", title_th:"ห้องแสดงหุ่นยนต์ไซไฟ โทนสีน้ำเงิน",
+    filepath:"indoor/sci-fi/VP-002-scifi-robot-display-cool-serious-v1.png",
+    thumb:"_thumbnails/VP-002_thumb.png",
+    environment:"indoor", location_type:"sci-fi-lab",
+    mood:["serious","authoritative","futuristic","mysterious"],
+    color_temp:"cool", brightness:"dark",
+    topics:["AI","robot","technology","humanoid","future"],
+    editorial_fit:["Tech","Business","News"],
+    usage_type:["standup-report","news-anchor","interview-single"],
+    platform_fit:["16:9","9:16"],
+    notes:"Background นิ่งมาก เหมาะกับรายการข่าวที่ต้องการ tone จริงจัง ไม่ distract ผู้ชม"
+  },
+  {
+    id:"VP-003", title:"Industrial Robot Arms — Dark Studio", title_th:"แขนกลอุตสาหกรรม สตูดิโอมืด",
+    filepath:"indoor/industrial/VP-003-industrial-robot-arms-dark-tense-v1.png",
+    thumb:"_thumbnails/VP-003_thumb.png",
+    environment:"indoor", location_type:"industrial-factory",
+    mood:["tense","dramatic","mysterious","serious"],
+    color_temp:"cool", brightness:"dark",
+    topics:["automation","manufacturing","technology","industry","robot"],
+    editorial_fit:["Tech","Business","News"],
+    usage_type:["standup-report","explainer"],
+    platform_fit:["16:9","9:16"],
+    notes:"แขนกลทั้งสองข้างสร้าง symmetry ดี — presenter ต้องยืนตรงกลาง ไม่ควรเดินซ้ายขวา"
+  },
+  {
+    id:"VP-004", title:"Warehouse Behind-the-Scenes — Warm", title_th:"คลังสินค้า / สตูดิโอหลังฉาก โทนอบอุ่น",
+    filepath:"indoor/industrial/VP-004-warehouse-bts-warm-neutral-v1.png",
+    thumb:"_thumbnails/VP-004_thumb.png",
+    environment:"indoor", location_type:"warehouse",
+    mood:["warm","neutral","approachable","authentic"],
+    color_temp:"warm", brightness:"medium",
+    topics:["filmmaking","production","behind-the-scenes","creative","studio"],
+    editorial_fit:["Entertainment","Lifestyle","Tech"],
+    usage_type:["standup-report","interview-single","documentary"],
+    platform_fit:["16:9"],
+    notes:"มีหุ่นยนต์นั่งอยู่ทางขวา — presenter ควรยืนซ้ายหรือกลาง ฉากให้ความรู้สึก authentic สูง"
+  },
+  {
+    id:"VP-005", title:"Underground Tunnel — Dark Dramatic", title_th:"อุโมงค์ใต้ดิน บรรยากาศมืด เข้มข้น",
+    filepath:"indoor/tunnel-cave/VP-005-tunnel-underground-dark-dramatic-v1.png",
+    thumb:"_thumbnails/VP-005_thumb.png",
+    environment:"indoor", location_type:"tunnel-cave",
+    mood:["dramatic","tense","serious","mysterious"],
+    color_temp:"neutral", brightness:"dark",
+    topics:["conflict","war","investigation","underground","crisis"],
+    editorial_fit:["News","Politics"],
+    usage_type:["standup-report","documentary"],
+    platform_fit:["16:9","9:16"],
+    notes:"⚠️ ฉากมืดมากที่สุดในคลัง — ต้อง key light presenter แรงกว่าปกติ 2 stop ขึ้นไป และเช็ค skin tone"
+  },
+  {
+    id:"VP-006", title:"Open-Pit Mine / Quarry — Outdoor Day", title_th:"เหมืองเปิด / เหมืองหิน กลางวัน",
+    filepath:"outdoor/nature-mine/VP-006-outdoor-mine-quarry-day-neutral-v1.png",
+    thumb:"_thumbnails/VP-006_thumb.png",
+    environment:"outdoor", location_type:"nature-mine",
+    mood:["serious","documentary","authentic","tense"],
+    color_temp:"neutral", brightness:"medium",
+    topics:["mining","industry","environment","climate","resources","economics"],
+    editorial_fit:["News","Business","Climate"],
+    usage_type:["standup-report","documentary"],
+    platform_fit:["16:9","9:16"],
+    notes:"ฉากกลางวันเดียวใน library — แสง natural hazy ต้องระวัง presenter ถูก overexpose"
+  },
+  {
+    id:"VP-007", title:"Robot Factory Floor — White Arms", title_th:"โรงงานหุ่นยนต์ แขนกลสีขาว อุตสาหกรรม",
+    filepath:"indoor/industrial/VP-007-industrial-robot-factory-cool-authoritative-v1.png",
+    thumb:"_thumbnails/VP-007_thumb.png",
+    environment:"indoor", location_type:"industrial-factory",
+    mood:["authoritative","serious","futuristic","documentary"],
+    color_temp:"cool", brightness:"medium",
+    topics:["manufacturing","automation","robot","industry","technology","economy"],
+    editorial_fit:["Business","Tech","News"],
+    usage_type:["standup-report","news-anchor","documentary"],
+    platform_fit:["16:9","9:16"],
+    notes:"แสงในฉากสม่ำเสมอมาก — เป็นหนึ่งในฉากที่ match lighting presenter ได้ง่ายที่สุด"
+  },
+  {
+    id:"VP-008", title:"Retro Music Studio — Vintage Gear & Greenery", title_th:"สตูดิโอดนตรีวินเทจ เครื่องดนตรีคลาสสิก หน้าต่างมีต้นไม้",
+    filepath:"indoor/studio-retro/VP-008-retro-music-studio-warm-nostalgic-v1.png",
+    thumb:"_thumbnails/VP-008_thumb.png",
+    environment:"indoor", location_type:"studio-retro",
+    mood:["warm","nostalgic","approachable","authentic"],
+    color_temp:"warm", brightness:"medium",
+    topics:["music","culture","entertainment","lifestyle","arts","creativity"],
+    editorial_fit:["Entertainment","Lifestyle","Culture"],
+    usage_type:["standup-report","interview-single","podcast-video"],
+    platform_fit:["16:9","9:16"],
+    notes:"โทนอบอุ่นมาก เหมาะสำหรับเนื้อหา lifestyle/entertainment — ระวัง backlight จาก window"
+  },
+  {
+    id:"VP-009", title:"Library Study Room — Academic & Medical", title_th:"ห้องสมุด/ห้องทำงาน บรรยากาศวิชาการ",
+    filepath:"indoor/library-study/VP-009-library-study-warm-academic-v1.png",
+    thumb:"_thumbnails/VP-009_thumb.png",
+    environment:"indoor", location_type:"library-study",
+    mood:["serious","authoritative","warm","professional"],
+    color_temp:"warm", brightness:"medium",
+    topics:["education","health","analysis","opinion","research","medicine","lifestyle"],
+    editorial_fit:["Lifestyle","News","Business","Health"],
+    usage_type:["standup-report","interview-single","documentary","explainer"],
+    platform_fit:["16:9","9:16"],
+    notes:"โปสเตอร์กายวิภาคบนผนังเหมาะสำหรับเนื้อหาสุขภาพ/การแพทย์ — แสง window ด้านหลังสม่ำเสมอดี"
+  },
+  {
+    id:"VP-010", title:"City Skyline — News Desk Outdoor Day", title_th:"สกายไลน์เมือง กลางวัน ฉากโต๊ะข่าว outdoor",
+    filepath:"outdoor/city-skyline/VP-010-city-skyline-day-neutral-v1.png",
+    thumb:"_thumbnails/VP-010_thumb.png",
+    environment:"outdoor", location_type:"city-skyline",
+    mood:["serious","authoritative","neutral","professional"],
+    color_temp:"cool", brightness:"medium",
+    topics:["news","politics","business","economy","city","development","real-estate"],
+    editorial_fit:["News","Business","Politics"],
+    usage_type:["news-anchor","standup-report","interview-single"],
+    platform_fit:["16:9","9:16"],
+    notes:"ฉากข่าวกลางวัน outdoor สะอาดที่สุดในคลัง — แสง overcast สม่ำเสมอดี เหมาะรายงานเศรษฐกิจ/การเมือง"
+  }
+];
+
+// ── Keyword → Topics mapping ──────────────────────────────────
+const KEYWORD_MAP = {
+  // Thai
+  'หุ่นยนต์':['robot','AI','automation'],'หุ่น':['robot','automation'],
+  'เอไอ':['AI','technology'],'ปัญญาประดิษฐ์':['AI','technology'],
+  'อุตสาหกรรม':['industry','manufacturing'],'โรงงาน':['manufacturing','industry'],
+  'เศรษฐกิจ':['economy','business'],'การเงิน':['economy','business'],
+  'การเมือง':['politics','news'],'เลือกตั้ง':['politics','news'],
+  'สงคราม':['conflict','war'],'ความขัดแย้ง':['conflict','crisis'],
+  'วิกฤต':['crisis','conflict'],'การสืบสวน':['investigation','news'],
+  'สิ่งแวดล้อม':['environment','climate'],'สภาพอากาศ':['climate','environment'],
+  'สุขภาพ':['health','medicine'],'การแพทย์':['medicine','health'],
+  'โรค':['health','medicine'],'โรงพยาบาล':['health','medicine'],
+  'ดนตรี':['music','culture','arts'],'เพลง':['music','arts'],
+  'บันเทิง':['entertainment','lifestyle'],'ภาพยนตร์':['entertainment'],
+  'เหมือง':['mining','resources','industry'],
+  'เมือง':['city','urban'],'อสังหา':['real-estate','city'],
+  'อนาคต':['future','technology','AI'],'เทคโนโลยี':['technology','tech'],
+  'วิทยาศาสตร์':['technology','innovation'],'นวัตกรรม':['innovation','technology'],
+  'การศึกษา':['education','research'],'วิชาการ':['education','research','analysis'],
+  'วิจัย':['research','education'],'ประวัติศาสตร์':['culture','lifestyle'],
+  'วัฒนธรรม':['culture','lifestyle'],'ไลฟ์สไตล์':['lifestyle'],
+  'ข่าว':['news'],'รายงาน':['news','documentary'],'สารคดี':['documentary'],
+  'แรงงาน':['economy','industry','automation'],'คนงาน':['economy','industry'],
+  'ธุรกิจ':['business','economy'],'บริษัท':['business','economy'],
+  'ทรัพยากร':['resources','economics'],'พลังงาน':['resources','environment'],
+  'สร้างสรรค์':['creativity','arts'],'ศิลปะ':['arts','culture'],
+  // English
+  'robot':['robot','AI','automation'],'ai':['AI','technology'],
+  'economy':['economy','business'],'politics':['politics','news'],
+  'war':['conflict','war'],'conflict':['conflict','crisis'],
+  'environment':['environment','climate'],'climate':['climate','environment'],
+  'health':['health','medicine'],'medicine':['medicine','health'],
+  'music':['music','culture'],'technology':['technology','tech'],
+  'future':['future','technology'],'city':['city','urban'],
+  'mining':['mining','resources'],'industry':['industry','manufacturing'],
+  'business':['business','economy'],'news':['news'],'education':['education','research'],
+  'lifestyle':['lifestyle'],'entertainment':['entertainment'],
+  'automation':['automation','manufacturing'],'labor':['economy','industry'],
+};
+
+// ── State ───────────────────────────────────────────────────────
+const state = { selectedTopics: new Set(), selectedMoods: new Set() };
+
+function updateCharCount() {
+  const v = document.getElementById('contentInput').value;
+  document.getElementById('charCount').textContent = v.length;
+}
+
+function togglePill(btn, topic) {
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) state.selectedTopics.add(topic);
+  else state.selectedTopics.delete(topic);
+}
+
+function toggleMood(btn, mood) {
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) state.selectedMoods.add(mood);
+  else state.selectedMoods.delete(mood);
+}
+
+function selectOne(btn, groupId) {
+  document.querySelectorAll('#'+groupId+' .tbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function getSelectedVal(groupId) {
+  const active = document.querySelector('#'+groupId+' .tbtn.active');
+  return active ? active.dataset.val : null;
+}
+
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('hidden', i !== n);
+    const tab = document.getElementById('tab'+i);
+    tab.classList.remove('active','done');
+    if (i < n) tab.classList.add('done');
+    else if (i === n) tab.classList.add('active');
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Text → Topics extraction ─────────────────────────────────
+function extractTopicsFromText(text) {
+  const result = new Set();
+  const lower = text.toLowerCase();
+  Object.entries(KEYWORD_MAP).forEach(([kw, topics]) => {
+    if (lower.includes(kw.toLowerCase())) topics.forEach(t => result.add(t));
+  });
+  return result;
+}
+
+// ── Scoring ───────────────────────────────────────────────────
+function scoreScene(scene, userTopics, userMoods, platform, presenterStyle, position, colorTone) {
+  let score = 0;
+  const matchedTopics = [], matchedMoods = [], matchedProd = [], warnings = [];
+
+  // 1. Topic matching (weight: 3 each)
+  userTopics.forEach(t => {
+    if (scene.topics.includes(t)) { score += 3; matchedTopics.push(t); }
+  });
+
+  // 2. Mood matching (weight: 4 each)
+  userMoods.forEach(m => {
+    if (scene.mood.includes(m)) { score += 4; matchedMoods.push(m); }
+  });
+
+  // 3. Platform (weight: 2 / penalty: -4)
+  if (platform === 'both') {
+    score += 2; matchedProd.push('รองรับทั้ง 16:9 และ 9:16');
+  } else if (scene.platform_fit.includes(platform)) {
+    score += 2; matchedProd.push(`รองรับ ${platform}`);
+  } else {
+    score -= 4; warnings.push(`ไม่รองรับ ${platform}`);
+  }
+
+  // 4. Presenter style (weight: 3)
+  if (presenterStyle && scene.usage_type.includes(presenterStyle)) {
+    score += 3; matchedProd.push(presenterStyleLabel(presenterStyle));
+  }
+
+  // 5. Story position boost
+  if (position === 'opening') {
+    if (scene.mood.some(m => ['dramatic','futuristic','tense'].includes(m))) { score += 2; matchedProd.push('เหมาะ Opening'); }
+  } else if (position === 'closing') {
+    if (scene.mood.some(m => ['warm','approachable','authentic','neutral'].includes(m))) { score += 2; matchedProd.push('เหมาะ Closing'); }
+  }
+
+  // 6. Color tone (weight: 2)
+  if (colorTone !== 'any' && scene.color_temp === colorTone) {
+    score += 2; matchedProd.push(`Color: ${colorTone}`);
+  }
+
+  return { scene, score, matchedTopics, matchedMoods, matchedProd, warnings };
+}
+
+function presenterStyleLabel(v) {
+  const map = { 'standup-report':'ยืนรายงาน','news-anchor':'นั่งอ่านข่าว','interview-single':'สัมภาษณ์','documentary':'สารคดี VO','podcast-video':'Podcast Video' };
+  return map[v] || v;
+}
+
+// ── Run ──────────────────────────────────────────────────────
+function runRecommender() {
+  const text = document.getElementById('contentInput').value;
+  const textTopics = extractTopicsFromText(text);
+  const allTopics = new Set([...textTopics, ...state.selectedTopics]);
+  const platform = getSelectedVal('platformRow') || 'both';
+  const presenterStyle = getSelectedVal('presenterRow') || 'standup-report';
+  const position = getSelectedVal('positionRow') || 'any';
+  const colorTone = getSelectedVal('colorRow') || 'any';
+
+  const scored = SCENES.map(s =>
+    scoreScene(s, allTopics, state.selectedMoods, platform, presenterStyle, position, colorTone)
+  ).filter(r => r.score > 0)
+   .sort((a, b) => b.score - a.score);
+
+  const maxScore = scored.length ? scored[0].score : 1;
+
+  // Build summary box
+  const summaryParts = [];
+  if (text.trim()) summaryParts.push(`<strong>เนื้อหา:</strong> "${text.trim().substring(0,80)}${text.length>80?'…':''}"`);
+  if (allTopics.size) summaryParts.push(`<strong>Topics:</strong> ${[...allTopics].slice(0,6).join(', ')}`);
+  if (state.selectedMoods.size) summaryParts.push(`<strong>Mood:</strong> ${[...state.selectedMoods].join(', ')}`);
+  summaryParts.push(`<strong>Platform:</strong> ${platform} · <strong>Style:</strong> ${presenterStyleLabel(presenterStyle)}`);
+
+  document.getElementById('summaryBox').innerHTML = summaryParts.join('<br>');
+  document.getElementById('resultSubtitle').textContent = `พบ ${scored.length} ฉากที่เข้ากัน จาก ${SCENES.length} ฉากในคลัง`;
+
+  const top = scored.slice(0, 5);
+  const rankLabels = ['🥇 อันดับ 1 — แนะนำสูงสุด','🥈 อันดับ 2','🥉 อันดับ 3','4','5'];
+  const rankClass = ['rank-1','rank-2','rank-3','rank-1','rank-1'];
+
+  if (!top.length) {
+    document.getElementById('resultsList').innerHTML = `
+      <div class="no-result">
+        <div class="no-result-icon">🔍</div>
+        <div class="no-result-text">ไม่พบฉากที่ตรงกับเนื้อหา<br><span style="font-size:13px;font-weight:400">ลองเพิ่ม keyword หรือเปลี่ยน mood</span></div>
+      </div>`;
+  } else {
+    document.getElementById('resultsList').innerHTML = top.map((r, i) => {
+      const pct = Math.round((r.score / maxScore) * 100);
+      const fillClass = pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
+      return `
+      <div class="result-card">
+        <div class="result-top">
+          <img class="result-thumb" src="${r.scene.thumb}" alt="${r.scene.title}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="result-thumb-ph" style="display:none">🎬</div>
+          <div class="result-info">
+            <div class="result-meta">
+              <span class="result-rank ${rankClass[i] || 'rank-3'}">${rankLabels[i] || `อันดับ ${i+1}`}</span>
+              <span class="result-id">${r.scene.id}</span>
+            </div>
+            <div class="result-title">${r.scene.title}</div>
+            <div class="result-title-th">${r.scene.title_th}</div>
+            <div class="score-wrap">
+              <div class="score-label"><span>Match Score</span><span><strong>${pct}%</strong></span></div>
+              <div class="score-track"><div class="score-fill ${fillClass}" style="width:${pct}%"></div></div>
+            </div>
+            <div class="reasons">
+              ${r.matchedTopics.map(t => `<span class="reason-tag">🎯 ${t}</span>`).join('')}
+              ${r.matchedMoods.map(m => `<span class="reason-tag mood">🎭 ${m}</span>`).join('')}
+              ${r.matchedProd.map(p => `<span class="reason-tag prod">✅ ${p}</span>`).join('')}
+              ${r.warnings.map(w => `<span class="reason-tag warn">⚠️ ${w}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${r.scene.notes ? `<div class="result-notes"><strong>📝 Production Note:</strong> ${r.scene.notes}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  goStep(4);
+}
+
+function resetAll() {
+  document.getElementById('contentInput').value = '';
+  document.getElementById('charCount').textContent = '0';
+  state.selectedTopics.clear();
+  state.selectedMoods.clear();
+  document.querySelectorAll('.qpill.active, .mood-btn.active').forEach(b => b.classList.remove('active'));
+  // Reset toggles to defaults
+  selectOne(document.querySelector('#platformRow .tbtn'), 'platformRow');
+  selectOne(document.querySelector('#presenterRow .tbtn'), 'presenterRow');
+  selectOne(document.querySelector('#positionRow .tbtn'), 'positionRow');
+  selectOne(document.querySelector('#colorRow .tbtn'), 'colorRow');
+  goStep(1);
+}
+</script>
+</body>
+</html>

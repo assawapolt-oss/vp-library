@@ -1,0 +1,3811 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VP Admin — THE STANDARD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+  :root {
+    --red:#CC2229; --dark:#1A1A2E; --bg:#F4F5F7; --card:#fff;
+    --border:#E5E7EB; --muted:#6B7280; --green:#10B981; --yellow:#F59E0B;
+    --blue:#1D4ED8; --purple:#6D28D9;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; }
+
+  /* ══ LOGIN SCREEN ══ */
+  .login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--dark); }
+  .login-box { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+  .login-logo { font-size:28px; font-weight:700; color:var(--red); margin-bottom:4px; }
+  .login-sub { font-size:13px; color:var(--muted); margin-bottom:28px; }
+  .login-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; display:block; }
+  .login-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; outline:none; margin-bottom:16px; transition:border .15s; }
+  .login-input:focus { border-color:var(--red); }
+  .login-btn { width:100%; padding:13px; background:var(--red); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+  .login-btn:hover { opacity:.88; }
+  .login-error { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:10px 14px; font-size:13px; color:#B91C1C; margin-top:12px; display:none; }
+  .login-error.show { display:block; }
+
+  /* ══ TOPBAR ══ */
+  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:50; }
+  .topbar-left { display:flex; align-items:center; gap:16px; }
+  .topbar-title { font-size:15px; font-weight:700; }
+  .topbar-badge { font-size:10px; font-weight:700; background:rgba(255,255,255,.2); padding:2px 9px; border-radius:10px; letter-spacing:.04em; }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .topbar-user { font-size:12px; opacity:.8; }
+  .logout-btn { padding:5px 14px; background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .12s; }
+  .logout-btn:hover { background:rgba(255,255,255,.25); }
+
+  /* ══ LAYOUT ══ */
+  .admin-layout { display:flex; height:calc(100vh - 52px); }
+
+  /* ── Sidebar ── */
+  .sidebar { width:280px; min-width:280px; background:#fff; border-right:1px solid var(--border); overflow-y:auto; }
+  .sidebar-header { padding:16px 16px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .sidebar-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .add-scene-btn { padding:5px 12px; background:var(--dark); color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .12s; }
+  .add-scene-btn:hover { background:var(--red); }
+  .sidebar-search { padding:10px 12px; border-bottom:1px solid var(--border); }
+  .sidebar-search input { width:100%; padding:7px 11px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
+  .sidebar-search input:focus { border-color:var(--red); }
+  .scene-list-item { padding:12px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; display:flex; align-items:center; gap:10px; }
+  .scene-list-item:hover { background:#F9FAFB; }
+  .scene-list-item.active { background:#FFF0F0; border-left:3px solid var(--red); padding-left:13px; }
+  .sli-thumb { width:48px; height:30px; object-fit:cover; border-radius:5px; background:#E5E7EB; flex-shrink:0; }
+  .sli-info { flex:1; min-width:0; }
+  .sli-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
+  .sli-title { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  .sli-status { font-size:9px; padding:1px 6px; border-radius:8px; font-weight:700; flex-shrink:0; }
+  .sli-status-active { background:#D1FAE5; color:#065F46; }
+  .sli-status-draft { background:#FEF3C7; color:#92400E; }
+  .sli-status-archived { background:#F3F4F6; color:#6B7280; }
+
+  /* ── Main Editor ── */
+  .editor-area { flex:1; overflow-y:auto; background:var(--bg); }
+  .editor-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); gap:12px; }
+  .editor-empty-icon { font-size:56px; }
+  .editor-empty-text { font-size:16px; font-weight:600; }
+  .editor-empty-sub { font-size:13px; }
+
+  /* editor top bar */
+  .editor-topbar { background:#fff; border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; gap:12px; flex-wrap:wrap; }
+  .editor-scene-id { font-size:14px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
+  .editor-actions { display:flex; gap:8px; }
+  .btn-save { padding:8px 20px; background:var(--green); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+  .btn-save:hover { opacity:.85; }
+  .btn-delete { padding:8px 16px; background:#fff; color:#B91C1C; border:1.5px solid #FECACA; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .12s; }
+  .btn-delete:hover { background:#FEF2F2; border-color:#FCA5A5; }
+  .btn-secondary { padding:8px 16px; background:#fff; color:var(--muted); border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .12s; }
+  .btn-secondary:hover { border-color:var(--dark); color:var(--dark); }
+  .btn-ai-tag { padding:8px 18px; background:linear-gradient(135deg,#6D28D9,#4F46E5); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+  .btn-ai-tag:hover { opacity:.88; }
+  .btn-ai-tag:disabled { opacity:.5; cursor:wait; }
+  .save-indicator { font-size:12px; color:var(--green); font-weight:600; opacity:0; transition:opacity .3s; }
+  .save-indicator.show { opacity:1; }
+
+  /* editor form */
+  .editor-form { padding:24px; max-width:860px; }
+  .editor-section { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px 24px; margin-bottom:16px; }
+  .editor-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .form-row-1 { margin-bottom:14px; }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-size:11px; font-weight:700; color:var(--dark); }
+  .form-label span { font-weight:400; color:var(--muted); font-size:10px; margin-left:4px; }
+  .form-input { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; transition:border .15s; width:100%; }
+  .form-input:focus { border-color:var(--red); }
+  .form-select { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff; width:100%; }
+  .form-select:focus { border-color:var(--red); }
+  .form-textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; resize:vertical; min-height:72px; width:100%; transition:border .15s; }
+  .form-textarea:focus { border-color:var(--red); }
+  .form-hint { font-size:10px; color:var(--muted); margin-top:3px; }
+
+  /* tag editor */
+  .tag-editor { border:1.5px solid var(--border); border-radius:8px; padding:8px 10px; min-height:44px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text; transition:border .15s; background:#fff; }
+  .tag-editor:focus-within { border-color:var(--red); }
+  .tag-chip { display:flex; align-items:center; gap:4px; padding:3px 8px 3px 10px; border-radius:14px; font-size:11px; font-weight:600; }
+  .tag-chip-remove { background:none; border:none; cursor:pointer; font-size:13px; line-height:1; color:inherit; opacity:.6; padding:0; display:flex; align-items:center; }
+  .tag-chip-remove:hover { opacity:1; }
+  .tag-input { border:none; outline:none; font-size:12px; font-family:inherit; min-width:80px; flex:1; background:transparent; }
+  .chip-mood { background:#F5F3FF; color:var(--purple); }
+  .chip-topic { background:#F0FDF4; color:#059669; }
+  .chip-editorial { background:#FFF5F5; color:var(--red); }
+  .chip-usage { background:#FFFBEB; color:#92400E; }
+  .chip-platform { background:#EFF6FF; color:var(--blue); }
+  .chip-sfx { background:#F0FDFA; color:#0F766E; }
+  .chip-particle { background:#FDF4FF; color:#7C3AED; }
+
+  /* image preview */
+  .image-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; position:relative; background:#111; }
+  .image-preview-wrap:hover { border-color:var(--red); }
+  .image-preview { width:100%; aspect-ratio:16/9; object-fit:contain; display:block; background:#111; }
+  .image-preview-overlay { position:absolute; inset:0; background:rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; transition:opacity .18s; gap:8px; cursor:pointer; pointer-events:none; }
+  .image-preview-wrap:hover .image-preview-overlay { opacity:1; }
+  .image-overlay-text { color:#fff; font-size:13px; font-weight:700; }
+  .image-overlay-sub { color:rgba(255,255,255,.7); font-size:11px; }
+
+  /* false color (shared style) */
+  .fc-canvas { position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .2s; }
+  .fc-canvas.active { opacity:1; }
+  .fc-btn {
+    position:absolute; top:10px; left:10px; z-index:10;
+    background:rgba(0,0,0,.7); color:#fff; border:1.5px solid rgba(255,255,255,.25);
+    border-radius:7px; padding:5px 11px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; letter-spacing:.04em;
+    backdrop-filter:blur(4px); transition:background .15s,border-color .15s;
+    display:flex; align-items:center; gap:6px; pointer-events:all;
+  }
+  .fc-btn:hover { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.5); }
+  .fc-btn.active { background:rgba(30,180,80,.85); border-color:#10B981; color:#fff; }
+  .fc-legend {
+    position:absolute; bottom:10px; left:10px; z-index:10;
+    display:none; flex-direction:column; gap:3px;
+    background:rgba(0,0,0,.75); border-radius:8px; padding:8px 10px;
+    backdrop-filter:blur(4px); font-size:10px; font-weight:700;
+    font-family:'IBM Plex Sans',monospace; letter-spacing:.04em; pointer-events:none;
+  }
+  .fc-legend.show { display:flex; }
+  .fc-legend-row { display:flex; align-items:center; gap:7px; color:#fff; }
+  .fc-legend-swatch { width:16px; height:10px; border-radius:2px; flex-shrink:0; }
+  .fc-spin { animation:fc-rotate .8s linear infinite; display:inline-block; }
+  @keyframes fc-rotate { to { transform:rotate(360deg); } }
+  .path-input-wrap { display:flex; gap:8px; margin-top:10px; }
+  .path-input-wrap .form-input { flex:1; font-family:'IBM Plex Sans',monospace; font-size:12px; }
+
+  /* upload zone */
+  .upload-zone { border:2px dashed var(--border); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; position:relative; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color:var(--red); background:#FEF2F2; }
+  .upload-zone.has-file { border-color:var(--green); background:#F0FDF4; border-style:solid; }
+  .upload-zone.has-file:hover { border-color:#059669; background:#DCFCE7; }
+  .upload-zone-icon { font-size:22px; margin-bottom:4px; }
+  .upload-zone-label { font-size:12px; font-weight:700; color:var(--dark); }
+  .upload-zone-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+  .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .upload-file-info { display:flex; align-items:center; gap:8px; margin-top:8px; background:#fff; border-radius:7px; padding:6px 10px; text-align:left; }
+  .upload-file-info img { width:48px; height:27px; object-fit:cover; border-radius:4px; flex-shrink:0; background:#e5e7eb; }
+  .upload-file-info-text { flex:1; min-width:0; }
+  .upload-file-name { font-size:11px; font-weight:700; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .upload-file-size { font-size:10px; color:var(--muted); }
+  .upload-file-clear { background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted); padding:0 2px; flex-shrink:0; }
+  .upload-file-clear:hover { color:#B91C1C; }
+
+  /* file manager */
+  .file-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+  .file-card { background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .file-card-thumb { width:100%; aspect-ratio:16/9; object-fit:cover; background:#111; display:block; }
+  .file-card-body { padding:8px 10px; }
+  .file-card-name { font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-card-path { font-size:9px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; font-family:monospace; }
+  .file-card-size { font-size:9px; color:var(--green); font-weight:700; margin-top:3px; }
+  .file-card-actions { display:flex; gap:5px; margin-top:6px; }
+  .file-card-btn { flex:1; padding:4px 6px; font-size:10px; font-weight:700; border:1px solid var(--border); border-radius:5px; background:#fff; cursor:pointer; font-family:inherit; }
+  .file-card-btn:hover { background:#F9FAFB; }
+  .file-card-btn.del { border-color:#FECACA; color:#B91C1C; }
+  .file-card-btn.del:hover { background:#FEF2F2; }
+  .file-storage-bar { background:#F3F4F6; border-radius:8px; height:6px; margin:8px 0 4px; overflow:hidden; }
+  .file-storage-fill { height:100%; background:var(--green); border-radius:8px; transition:width .4s; }
+
+  /* video preview */
+  .video-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; background:#000; aspect-ratio:16/9; position:relative; }
+  .video-preview-wrap iframe { width:100%; height:100%; border:none; display:block; }
+  .video-preview-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:120px; color:var(--muted); gap:6px; font-size:13px; }
+  .video-preview-empty .icon { font-size:32px; }
+  .video-yt-hint { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.5; }
+  .video-yt-hint code { background:#F3F4F6; padding:2px 6px; border-radius:4px; font-size:10px; }
+
+  /* toggle switch */
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #F9FAFB; }
+  .toggle-row:last-child { border-bottom:none; }
+  .toggle-label { font-size:13px; font-weight:500; }
+  .toggle-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+  .toggle-switch { position:relative; width:38px; height:22px; flex-shrink:0; }
+  .toggle-switch input { opacity:0; width:0; height:0; }
+  .toggle-slider { position:absolute; inset:0; background:#D1D5DB; border-radius:22px; cursor:pointer; transition:.2s; }
+  .toggle-slider::before { content:''; position:absolute; width:16px; height:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+  .toggle-switch input:checked + .toggle-slider { background:var(--green); }
+  .toggle-switch input:checked + .toggle-slider::before { transform:translateX(16px); }
+
+  /* status badge */
+  .status-select-wrap { display:flex; gap:8px; }
+  .sbtn { padding:7px 14px; border-radius:8px; border:1.5px solid var(--border); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .12s; }
+  .sbtn:hover { border-color:var(--dark); }
+  .sbtn.active-status-active { background:#D1FAE5; border-color:#6EE7B7; color:#065F46; }
+  .sbtn.active-status-draft { background:#FEF3C7; border-color:#FDE68A; color:#92400E; }
+  .sbtn.active-status-archived { background:#F3F4F6; border-color:#D1D5DB; color:#4B5563; }
+
+  /* export panel */
+  .export-bar { background:#fff; border-top:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .export-bar-title { font-size:12px; font-weight:700; color:var(--muted); margin-right:4px; }
+
+  /* toast */
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--dark); color:#fff; padding:12px 20px; border-radius:10px; font-size:13px; font-weight:600; z-index:999; transform:translateY(20px); opacity:0; transition:all .3s; pointer-events:none; }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.green { background:var(--green); }
+  .toast.red { background:#DC2626; }
+
+  /* delete confirm modal */
+  .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
+  .confirm-overlay.open { display:flex; }
+  .confirm-box { background:#fff; border-radius:16px; padding:28px; max-width:380px; width:90%; }
+  .confirm-title { font-size:17px; font-weight:700; margin-bottom:8px; }
+  .confirm-sub { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.6; }
+  .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
+
+  /* new scene modal */
+  .new-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
+  .new-modal-overlay.open { display:flex; }
+  .new-modal { background:#fff; border-radius:16px; padding:28px; max-width:500px; width:90%; }
+  .new-modal-title { font-size:17px; font-weight:700; margin-bottom:16px; }
+
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo" style="font-size:22px;font-weight:900;letter-spacing:.08em;line-height:1.1;margin-bottom:2px;">THE<br>STANDARD</div>
+    <div class="login-sub">VP Admin — Virtual Production Library</div>
+    <label class="login-label">Username</label>
+    <input class="login-input" id="loginUser" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    <label class="login-label">Password</label>
+    <input class="login-input" id="loginPass" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-error" id="loginError">Username หรือ Password ไม่ถูกต้อง</div>
+  </div>
+</div>
+
+<!-- ══════════ ADMIN UI ══════════ -->
+<div id="adminUI" class="hidden">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="tsd_logo.webp" alt="THE STANDARD" style="height:28px;width:auto;filter:brightness(0) invert(1);display:block;">
+      <div class="topbar-badge" style="font-size:10px;font-weight:700;background:rgba(255,255,255,.2);padding:2px 9px;border-radius:10px;letter-spacing:.04em;">VP Admin</div>
+    </div>
+    <div class="topbar-right">
+      <a href="vp-search.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">🔍 ค้นหาฉาก ↗</a>
+<a href="generate_topic_embeddings.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">🧠 Generate Embeddings ↗</a>
+      <a href="VP-Library-System-Guide.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">📖 คู่มือ ↗</a>
+      <span class="topbar-user" id="topbarUser"></span>
+      <button class="logout-btn" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="admin-layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar mode tabs -->
+      <div style="display:flex;border-bottom:2px solid var(--border);">
+        <button id="tabScenes" onclick="switchAdminTab('scenes')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--red);border-bottom:2px solid var(--red);margin-bottom:-2px;font-family:inherit;">🎬 ฉาก</button>
+        <button id="tabShows" onclick="switchAdminTab('shows')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📺 รายการ</button>
+        <button id="tabUsers" onclick="switchAdminTab('users')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">👥 ผู้ใช้</button>
+        <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📊 Log</button>
+      </div>
+
+      <!-- Scenes panel -->
+      <div id="sidebarScenes">
+        <div class="sidebar-header">
+          <div class="sidebar-title">ฉากทั้งหมด (<span id="sidebarCount">0</span>)</div>
+          <button class="add-scene-btn" onclick="openNewSceneModal()">＋ เพิ่มฉาก</button>
+        </div>
+        <div class="sidebar-search">
+          <input id="sidebarSearch" placeholder="🔍 ค้นหา ID หรือชื่อ..." oninput="renderSidebar()">
+        </div>
+        <div id="sceneList"></div>
+      </div>
+
+      <!-- Shows panel (sidebar) -->
+      <div id="sidebarShows" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">รายการ (<span id="showCount">0</span>)</div>
+          <button class="add-scene-btn" onclick="openNewShowModal()">＋ เพิ่ม</button>
+        </div>
+        <div id="showList" style="padding:8px 0;"></div>
+      </div>
+
+      <!-- Users panel (sidebar) -->
+      <div id="sidebarUsers" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">ผู้ใช้ทั้งหมด (<span id="userCount">0</span>)</div>
+          <button class="add-scene-btn" onclick="openAddUserModal()">＋ เพิ่ม</button>
+        </div>
+        <div id="userList" style="padding:8px 0;"></div>
+      </div>
+
+      <!-- Activity panel (sidebar) -->
+      <div id="sidebarActivity" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">ภาพรวม</div>
+          <button class="add-scene-btn" onclick="clearActivityLog()" style="background:#B91C1C;">🗑 ล้าง</button>
+        </div>
+        <div id="activitySummary" style="padding:12px 14px;"></div>
+      </div>
+    </div>
+
+    <!-- Editor area (scenes) -->
+    <div class="editor-area" id="editorArea">
+      <div class="editor-empty" id="editorEmpty">
+        <div class="editor-empty-icon">🎬</div>
+        <div class="editor-empty-text">เลือกฉากจากรายการทางซ้าย</div>
+        <div class="editor-empty-sub">หรือกด "+ เพิ่มฉาก" เพื่อสร้างฉากใหม่</div>
+      </div>
+    </div>
+
+    <!-- Shows management panel -->
+    <div id="showsPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:900px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📺 จัดการรายการ</div>
+            <div style="font-size:13px;color:var(--muted);">เพิ่ม / แก้ไข ชื่อรายการ โลโก้ และสีประจำรายการ</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="btn-secondary" onclick="exportShows()" style="font-size:12px;" title="Export รายการทั้งหมดเป็น JSON เพื่อ deploy">📤 Export Shows</button>
+            <label class="btn-secondary" style="font-size:12px;cursor:pointer;margin:0;" title="Import รายการจากไฟล์ JSON">📥 Import Shows<input type="file" accept=".json" style="display:none" onchange="importShows(this)"></label>
+            <button class="btn-save" onclick="openNewShowModal()">＋ เพิ่มรายการ</button>
+          </div>
+        </div>
+        <div id="showsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+      </div>
+    </div>
+
+    <!-- Activity Log panel (sibling to editorArea) -->
+    <div id="activityPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:900px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📊 Activity Log</div>
+            <div style="font-size:13px;color:var(--muted);">ประวัติการใช้งาน VP Library ของทีม</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="actFilterUser" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
+              <option value="all">👥 ทุก User</option>
+            </select>
+            <select id="actFilterType" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
+              <option value="all">📋 ทุก Event</option>
+              <option value="view_scene">👁 ดูฉาก</option>
+              <option value="search">🔍 ค้นหา</option>
+              <option value="recommend">🎯 แนะนำ</option>
+              <option value="login">🔑 Login</option>
+              <option value="logout">🚪 Logout</option>
+            </select>
+            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="exportActivityCSV()">↗ Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div id="actStatsRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
+
+        <!-- Top Scenes heatmap -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">🔥 ฉากที่ถูกเปิดบ่อยสุด</div>
+          <div id="actTopScenes"></div>
+        </div>
+
+        <!-- Per-user stats -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">👤 สถิติรายคน</div>
+          <div id="actPerUser"></div>
+        </div>
+
+        <!-- Recent events table -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">⏱ เหตุการณ์ล่าสุด</div>
+          <div id="actRecentEvents" style="font-size:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users management panel (sibling to editorArea) -->
+    <div id="usersPanel" class="editor-area hidden" style="background:var(--bg);">
+      <div style="padding:28px;max-width:700px;">
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px;">👥 จัดการผู้ใช้งาน</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">เพิ่ม แก้ไข หรือลบผู้ใช้ระบบ VP Library</div>
+        <div id="userCards" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <div style="margin-top:20px;padding:14px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;font-size:12px;color:#92400E;line-height:1.6;">
+          ⚠️ <strong>หมายเหตุ:</strong> ระบบนี้ใช้ SHA-256 hash เก็บใน <code>_database/users.json</code><br>
+          เมื่อแก้ไข คุณต้องดาวน์โหลด JSON ใหม่แล้วนำไปแทนที่ไฟล์เดิมบน server (GitHub / host)<br>
+          ระบบ static site ไม่สามารถบันทึกไฟล์โดยตรงได้
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="new-modal-overlay" id="userModalOverlay" onclick="if(event.target===this)closeUserModal()">
+  <div class="new-modal" style="max-width:420px;">
+    <div class="new-modal-title" id="userModalTitle">➕ เพิ่มผู้ใช้ใหม่</div>
+    <input type="hidden" id="editingUsername">
+    <div class="form-row-1" style="margin-bottom:14px;">
+      <div class="form-group">
+        <label class="form-label">Username <span>(ตัวพิมพ์เล็ก ไม่มีช่องว่าง)</span></label>
+        <input class="form-input" id="umUsername" placeholder="เช่น editor2" style="font-family:'IBM Plex Sans',monospace;">
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:14px;">
+      <div class="form-group">
+        <label class="form-label">ชื่อแสดงผล</label>
+        <input class="form-input" id="umName" placeholder="เช่น สมชาย ใจดี">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" id="umRole">
+          <option value="editor">editor</option>
+          <option value="admin">admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-1" style="margin-bottom:6px;">
+      <div class="form-group">
+        <label class="form-label">Password <span id="umPassHint">(บังคับใส่)</span></label>
+        <input class="form-input" id="umPassword" type="password" placeholder="กรอก password">
+      </div>
+    </div>
+    <div class="form-row-1" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label class="form-label">ยืนยัน Password</label>
+        <input class="form-input" id="umPasswordConfirm" type="password" placeholder="กรอกซ้ำ">
+      </div>
+    </div>
+    <div id="umError" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:9px 12px;font-size:12px;color:#B91C1C;margin-bottom:12px;"></div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeUserModal()">ยกเลิก</button>
+      <button class="btn-save" id="umSaveBtn" onclick="saveUser()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status bar (Supabase sync status) -->
+<div id="exportBar" class="export-bar hidden" style="position:fixed;bottom:0;left:280px;right:0;z-index:20;">
+  <span id="dbSyncStatus" style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px">
+    <span id="dbSyncDot" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0"></span>
+    <span id="dbSyncText">☁️ Supabase — บันทึกอัตโนมัติ ทุก deploy ใช้งานได้</span>
+  </span>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Tag Guide Modal -->
+<div class="new-modal-overlay" id="tagGuideOverlay" onclick="if(event.target===this)closeTagGuideModal()" style="display:none">
+  <div class="new-modal" style="max-width:560px;max-height:80vh;overflow-y:auto;">
+    <div class="new-modal-title">✨ Tag / Edit VP Scene กับ Claude</div>
+    <p style="font-size:12px;color:#6B7280;margin-bottom:4px;">Copy prompt → วางใน Cowork chat → ส่งได้เลย <b>ไม่ต้องแนบภาพ</b></p>
+    <p style="font-size:11px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;border-radius:6px;padding:7px 10px;margin-bottom:14px;">💡 Claude จะดึงภาพจาก browser โดยอัตโนมัติ — แค่ระบุ ID ฉากที่ต้องการ</p>
+
+    <!-- Tag ฉากใหม่ -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:6px;">🎬 Tag ฉากใหม่</div>
+      <div style="position:relative;">
+        <textarea id="tg_tag" readonly rows="2" onclick="this.select()" style="width:100%;padding:10px 50px 10px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:monospace;resize:none;background:#F9FAFB;cursor:pointer;">tag VP-0XX แล้ว apply เข้า VP Library ให้เลย</textarea>
+        <button onclick="copyText('tg_tag',this)" style="position:absolute;top:6px;right:6px;padding:3px 8px;font-size:10px;background:#6366F1;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">copy</button>
+      </div>
+    </div>
+
+    <!-- Tag หลายฉาก -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:6px;">🎬🎬 Tag หลายฉากพร้อมกัน</div>
+      <div style="position:relative;">
+        <textarea id="tg_multi" readonly rows="2" onclick="this.select()" style="width:100%;padding:10px 50px 10px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:monospace;resize:none;background:#F9FAFB;cursor:pointer;">tag VP-0XX, VP-0XX, VP-0XX แล้ว apply เข้า VP Library ให้เลย</textarea>
+        <button onclick="copyText('tg_multi',this)" style="position:absolute;top:6px;right:6px;padding:3px 8px;font-size:10px;background:#6366F1;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">copy</button>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;text-align:right;">
+      <button class="btn-secondary" onclick="closeTagGuideModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ollama Local AI Modal -->
+<div class="new-modal-overlay" id="ollamaOverlay" onclick="if(event.target===this)closeOllamaModal()">
+  <div class="new-modal" style="max-width:500px;">
+    <div class="new-modal-title">🤖 Local AI Tag (Ollama)</div>
+    <p style="font-size:13px;color:#6B7280;margin-bottom:14px;line-height:1.6">ใช้ Ollama รัน vision model บนเครื่องของคุณเอง — ไม่ต้องใช้ API Key และข้อมูลไม่ออกอินเทอร์เน็ต</p>
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Ollama Host</label>
+      <input type="text" id="ollamaHostInput" class="form-input" placeholder="http://localhost:11434" value="http://localhost:11434" style="font-family:monospace;font-size:13px;" autocomplete="off">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Model</span>
+        <button class="btn-secondary" onclick="ollamaFetchModels()" id="ollamaFetchBtn" style="font-size:11px;padding:3px 10px;height:auto">🔄 ดึงรายการ</button>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="ollamaModelSelect" class="form-input" style="font-family:monospace;font-size:13px;flex:1;display:none"></select>
+        <input type="text" id="ollamaModelInput" class="form-input" placeholder="moondream" value="moondream" style="font-family:monospace;font-size:13px;flex:1" autocomplete="off">
+        <button class="btn-secondary" onclick="ollamaCheckConnection()" style="white-space:nowrap;flex-shrink:0">🔌 ทดสอบ</button>
+      </div>
+      <div id="ollamaModelHint" style="font-size:11px;color:#9CA3AF;margin-top:5px">กด <strong>ดึงรายการ</strong> เพื่อโหลด model ที่ติดตั้งแล้ว หรือพิมพ์ชื่อเองได้เลย</div>
+    </div>
+    <div id="ollamaStatus" style="font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px;display:none"></div>
+
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.8;color:#4B5563">
+      <div style="font-weight:700;margin-bottom:6px;color:#1E293B">📋 วิธีติดตั้ง Ollama</div>
+      <div>1. ดาวน์โหลดจาก <strong>ollama.com</strong></div>
+      <div>2. เปิด Terminal แล้วรัน: <code style="background:#E2E8F0;padding:1px 5px;border-radius:3px">ollama pull moondream</code></div>
+      <div>3. รัน: <code style="background:#E2E8F0;padding:1px 5px;border-radius:3px">ollama serve</code> (ถ้ายังไม่ได้เปิด)</div>
+      <div style="margin-top:6px;color:#6B7280">หรือใช้ Python script สำหรับ batch tag ทุก scene พร้อมกัน:<br>
+        <code style="background:#E2E8F0;padding:2px 6px;border-radius:3px;font-size:11px">cd VP_Library &amp;&amp; python3 vp-ai-tag.py</code>
+      </div>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeOllamaModal()">ปิด</button>
+      <button class="btn-save" onclick="saveOllamaSettings()" style="background:#10B981">💾 บันทึกการตั้งค่า</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title">⚠️ ยืนยันการลบ</div>
+    <div class="confirm-sub" id="confirmMsg">ต้องการลบฉากนี้ใช่ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้</div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-delete" id="confirmOkBtn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Scene Modal -->
+<div class="new-modal-overlay" id="newSceneOverlay" onclick="if(event.target===this)closeNewModal()">
+  <div class="new-modal" style="max-width:540px">
+    <div class="new-modal-title">➕ เพิ่มฉากใหม่</div>
+
+    <!-- Upload drop zone -->
+    <div id="importDropZone"
+      style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:16px;transition:border-color .15s,background .15s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--red)';this.style.background='#FEF2F2'"
+      ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+      ondrop="handleImportDrop(event)"
+      onclick="document.getElementById('importFileInput').click()">
+      <div id="importDropContent">
+        <div style="font-size:24px;margin-bottom:6px">🖼</div>
+        <div style="font-size:13px;font-weight:600;color:var(--dark)">ลาก-วางไฟล์ภาพ หรือคลิกเพื่อเลือก</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">.webp · .avif · .png · .jpg — ระบบจะอ่านชื่อไฟล์แล้วกรอกข้อมูลให้อัตโนมัติ</div>
+      </div>
+      <input type="file" id="importFileInput" accept=".webp,.avif,.png,.jpg,.jpeg" style="display:none" onchange="handleImportFile(this.files)">
+    </div>
+
+    <!-- Preview of imported file -->
+    <div id="importPreviewRow" style="display:none;margin-bottom:14px;background:#f8f9fa;border-radius:10px;padding:10px;gap:10px;align-items:center">
+      <div style="display:flex;gap:10px;align-items:center">
+        <img id="importPreviewImg" style="width:80px;height:45px;object-fit:cover;border-radius:6px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div id="importPreviewName" style="font-size:12px;font-weight:600;color:var(--dark)"></div>
+          <div id="importPreviewPath" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <button id="importDownloadBtn" onclick="downloadConvertedFile()" style="display:none;padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">⬇️ Save WebP</button>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:0 -24px 14px;padding-top:14px;padding-left:24px;padding-right:24px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">ข้อมูลพื้นฐาน</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Scene ID <span>เช่น VP-011</span></label>
+        <input class="form-input" id="newId" placeholder="VP-011" style="font-family:'IBM Plex Sans',monospace;font-weight:700;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ชื่อฉาก (EN)</label>
+        <input class="form-input" id="newTitle" placeholder="Scene Title">
+      </div>
+    </div>
+    <div class="form-row-1">
+      <div class="form-group">
+        <label class="form-label">ชื่อฉาก (TH)</label>
+        <input class="form-input" id="newTitleTh" placeholder="ชื่อภาษาไทย">
+      </div>
+    </div>
+    <div id="newSceneFilepathRow" style="display:none" class="form-row-1">
+      <div class="form-group">
+        <label class="form-label">Filepath (จากชื่อไฟล์ที่ upload)</label>
+        <input class="form-input" id="newFilepath" readonly style="font-family:monospace;font-size:12px;background:#f3f4f6">
+      </div>
+    </div>
+    <div class="confirm-actions" style="margin-top:8px">
+      <button class="btn-secondary" onclick="closeNewModal()">ยกเลิก</button>
+      <button class="btn-save" onclick="createNewScene()">สร้างฉาก →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// AUTH — SHA-256 + users.json
+// ══════════════════════════════════════════════
+const SESSION_KEY = 'vp_admin_session';
+let ADMIN_USERS_DB = null;
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Built-in fallback — ใช้เสมอถ้า fetch users.json ไม่ได้
+// admin password = "admin1234"
+const FALLBACK_ADMIN_DB = {
+  "admin":   { "role":"admin",  "hash":"ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", "name":"Administrator", "created":"2026-03-20" },
+  "editor1": { "role":"editor", "hash":"c78c114cf642049c3be20a3d99bd1e13806a8c93543b8680eb6b7b03dd3790b0", "name":"Editor 1",       "created":"2026-03-20" }
+};
+
+// Set fallback immediately so login always works even before fetch completes
+ADMIN_USERS_DB = JSON.parse(JSON.stringify(FALLBACK_ADMIN_DB));
+
+async function loadUsersDB(bust) {
+  try {
+    const r = await fetch('_database/users.json' + (bust ? '?v=' + Date.now() : ''));
+    if (r.ok) {
+      const data = await r.json();
+      ADMIN_USERS_DB = data;
+      console.log('✅ users.json loaded:', Object.keys(data));
+      return true;
+    }
+  } catch(e) { console.warn('users.json fetch failed, using fallback'); }
+  return false;
+}
+
+async function doLogin() {
+  const u   = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p   = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  const btn = document.querySelector('.login-btn');
+
+  if (!u || !p) { err.textContent = 'กรุณากรอก Username และ Password'; err.classList.add('show'); return; }
+
+  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
+  err.classList.remove('show');
+
+  // Always have DB (fallback set at startup), but try fresh fetch once more
+  if (!ADMIN_USERS_DB || Object.keys(ADMIN_USERS_DB).length === 0) {
+    await loadUsersDB(false);
+  }
+
+  let ok = false;
+  const stored = ADMIN_USERS_DB[u];
+  if (stored && stored.role === 'admin') {
+    const hashed = await sha256(p);
+    console.log('login attempt:', u, 'hash:', hashed, 'expected:', stored.hash);
+    ok = (hashed === stored.hash);
+  }
+
+  btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+
+  if (ok) {
+    sessionStorage.setItem(SESSION_KEY, u);
+    err.classList.remove('show');
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('adminUI').classList.remove('hidden');
+    document.getElementById('exportBar').classList.remove('hidden');
+    document.getElementById('topbarUser').textContent = '👑 ' + u;
+    document.getElementById('loginPass').value = '';
+    initAdmin();
+  } else {
+    err.textContent = 'Username หรือ Password ไม่ถูกต้อง';
+    err.classList.add('show');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('adminUI').classList.add('hidden');
+  document.getElementById('exportBar').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ══════════════════════════════════════════════
+// SCENE DATA (source of truth — matches vp-search.html)
+// ══════════════════════════════════════════════
+const DEFAULT_SCENES = [
+  {
+    id:"VP-001", title:"Sci-Fi Lab Portal — Robot & Steam", title_th:"ห้องแล็บไซไฟ พอร์ทัลหุ่นยนต์ มีควัน",
+    filepath:"indoor/sci-fi/VP-001-scifi-lab-portal-warm-dramatic-v1.webp", thumb:"_thumbnails/VP-001_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"sci-fi-lab", location_country:"fictional",
+    mood:["dramatic","mysterious","futuristic"], color_temp:"warm", brightness:"dark",
+    topics:["AI","robot","technology","innovation","sci-fi"], editorial_fit:["Tech","Entertainment","Business"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:true, sfx_light_types:["portal-glow","light-rays","volumetric"],
+    motion_type:"subtle-ambient", style:"cinematic",
+    has_particles:true, particle_types:["smoke","steam"],
+    usage_type:["standup-report","explainer","podcast-video"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"scifi-future", energy:"intense", context_tags:["opener-drama","social-short"], show_ids:[], video_url:'',
+    notes:"ลำแสงพอร์ทัลสว่างมาก — ต้องเพิ่ม key light ฝั่งซ้ายของ presenter เพื่อ match กับ background light direction"
+  },
+  {
+    id:"VP-002", title:"Sci-Fi Robot Display Room — Blue Tone", title_th:"ห้องแสดงหุ่นยนต์ไซไฟ โทนสีน้ำเงิน",
+    filepath:"indoor/sci-fi/VP-002-scifi-robot-display-cool-serious-v1.webp", thumb:"_thumbnails/VP-002_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"sci-fi-lab", location_country:"fictional",
+    mood:["serious","authoritative","futuristic","mysterious"], color_temp:"cool", brightness:"dark",
+    topics:["AI","robot","technology","humanoid","future"], editorial_fit:["Tech","Business","News"],
+    time_of_day:"timeless", lighting_style:"studio-flat",
+    has_sfx_light:true, sfx_light_types:["neon-glow","display-screens"],
+    motion_type:"static", style:"cinematic", has_particles:false, particle_types:[],
+    usage_type:["standup-report","news-anchor","interview-single"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"scifi-future", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview"], show_ids:[], video_url:'',
+    notes:"Background นิ่งมาก เหมาะกับรายการข่าวที่ต้องการ tone จริงจัง ไม่ distract ผู้ชม"
+  },
+  {
+    id:"VP-003", title:"Industrial Robot Arms — Dark Studio", title_th:"แขนกลอุตสาหกรรม สตูดิโอมืด",
+    filepath:"indoor/industrial/VP-003-industrial-robot-arms-dark-tense-v1.webp", thumb:"_thumbnails/VP-003_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"industrial-factory", location_country:"fictional",
+    mood:["tense","dramatic","mysterious","serious"], color_temp:"cool", brightness:"dark",
+    topics:["automation","manufacturing","technology","industry","robot"], editorial_fit:["Tech","Business","News"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"cinematic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","explainer"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"intense", context_tags:["news-report","analysis-data","opener-drama"], show_ids:[], video_url:'',
+    notes:"แขนกลทั้งสองข้างสร้าง symmetry ดี — presenter ต้องยืนตรงกลาง ไม่ควรเดินซ้ายขวา"
+  },
+  {
+    id:"VP-004", title:"Warehouse Behind-the-Scenes — Warm", title_th:"คลังสินค้า / สตูดิโอหลังฉาก โทนอบอุ่น",
+    filepath:"indoor/industrial/VP-004-warehouse-bts-warm-neutral-v1.webp", thumb:"_thumbnails/VP-004_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"warehouse", location_country:"fictional",
+    mood:["warm","neutral","approachable","authentic"], color_temp:"warm", brightness:"medium",
+    topics:["filmmaking","production","behind-the-scenes","creative","studio"], editorial_fit:["Entertainment","Lifestyle","Tech"],
+    time_of_day:"interior-lit", lighting_style:"practicals-only",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","documentary"],
+    subject_placement:"left", background_complexity:"complex-detailed",
+    platform_fit:["16:9"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"open", context_tags:["talk-interview","social-short","event-special"], show_ids:[], video_url:'',
+    notes:"มีหุ่นยนต์นั่งอยู่ทางขวา — presenter ควรยืนซ้ายหรือกลาง ฉากให้ความรู้สึก authentic สูง"
+  },
+  {
+    id:"VP-005", title:"Underground Tunnel — Dark Dramatic", title_th:"อุโมงค์ใต้ดิน บรรยากาศมืด เข้มข้น",
+    filepath:"indoor/tunnel-cave/VP-005-tunnel-underground-dark-dramatic-v1.webp", thumb:"_thumbnails/VP-005_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"tunnel-cave", location_country:"generic",
+    mood:["dramatic","tense","serious","mysterious"], color_temp:"neutral", brightness:"dark",
+    topics:["conflict","war","investigation","underground","crisis"], editorial_fit:["News","Politics"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"documentary",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","documentary"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"intense", context_tags:["news-report","field-onsite","opener-drama"], show_ids:[], video_url:'',
+    notes:"⚠️ ฉากมืดมากที่สุดในคลัง — ต้อง key light presenter แรงกว่าปกติ 2 stop ขึ้นไป และเช็ค skin tone"
+  },
+  {
+    id:"VP-006", title:"Open-Pit Mine / Quarry — Outdoor Day", title_th:"เหมืองเปิด / เหมืองหิน กลางวัน",
+    filepath:"outdoor/nature-mine/VP-006-outdoor-mine-quarry-day-neutral-v1.webp", thumb:"_thumbnails/VP-006_thumb.avif",
+    added_date:"2026-03-17", environment:"outdoor", location_type:"nature-mine", location_country:"generic",
+    mood:["serious","documentary","authentic","tense"], color_temp:"neutral", brightness:"medium",
+    topics:["mining","industry","environment","climate","resources","economics"], editorial_fit:["News","Business","Climate"],
+    time_of_day:"day", lighting_style:"natural-soft",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"documentary",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","documentary"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"nature-outdoor", energy:"balanced", context_tags:["news-report","field-onsite","analysis-data"], show_ids:[], video_url:'',
+    notes:"ฉากกลางวันเดียวใน library — แสง natural hazy ต้องระวัง presenter ถูก overexpose"
+  },
+  {
+    id:"VP-007", title:"Robot Factory Floor — White Arms", title_th:"โรงงานหุ่นยนต์ แขนกลสีขาว อุตสาหกรรม",
+    filepath:"indoor/industrial/VP-007-industrial-robot-factory-cool-authoritative-v1.webp", thumb:"_thumbnails/VP-007_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"industrial-factory", location_country:"generic",
+    mood:["authoritative","serious","futuristic","documentary"], color_temp:"cool", brightness:"medium",
+    topics:["manufacturing","automation","robot","industry","technology","economy"], editorial_fit:["Business","Tech","News"],
+    time_of_day:"interior-lit", lighting_style:"studio-flat",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","news-anchor","documentary"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview"], show_ids:[], video_url:'',
+    notes:"แสงในฉากสม่ำเสมอมาก — เป็นหนึ่งในฉากที่ match lighting presenter ได้ง่ายที่สุด เหมาะรายงานเศรษฐกิจ/อุตสาหกรรม"
+  },
+  {
+    id:"VP-008", title:"Retro Music Studio — Vintage Gear & Greenery", title_th:"สตูดิโอดนตรีวินเทจ เครื่องดนตรีคลาสสิก หน้าต่างมีต้นไม้",
+    filepath:"indoor/studio-retro/VP-008-retro-music-studio-warm-nostalgic-v1.webp", thumb:"_thumbnails/VP-008_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"studio-retro", location_country:"generic",
+    mood:["warm","nostalgic","approachable","authentic"], color_temp:"warm", brightness:"medium",
+    topics:["music","culture","entertainment","lifestyle","arts","creativity"], editorial_fit:["Entertainment","Lifestyle","Culture"],
+    time_of_day:"interior-lit", lighting_style:"practicals-only",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","podcast-video"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"heritage-culture", energy:"open", context_tags:["talk-interview","social-short","event-special"], show_ids:[], video_url:'',
+    notes:"โทนอบอุ่นมาก เหมาะสำหรับเนื้อหา lifestyle/entertainment — window ด้านหลังให้ความรู้สึก natural แต่ต้องระวัง backlight ทำให้ presenter ถูก silhouette"
+  },
+  {
+    id:"VP-009", title:"Library Study Room — Academic & Medical", title_th:"ห้องสมุด/ห้องทำงาน บรรยากาศวิชาการ",
+    filepath:"indoor/library-study/VP-009-library-study-warm-academic-v1.webp", thumb:"_thumbnails/VP-009_thumb.avif",
+    added_date:"2026-03-17", environment:"indoor", location_type:"library-study", location_country:"generic",
+    mood:["serious","authoritative","warm","professional"], color_temp:"warm", brightness:"medium",
+    topics:["education","health","analysis","opinion","research","medicine","lifestyle"], editorial_fit:["Lifestyle","News","Business","Health"],
+    time_of_day:"interior-lit", lighting_style:"natural-window",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","documentary","explainer"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"balanced", context_tags:["talk-interview","analysis-data","news-report"], show_ids:[], video_url:'',
+    notes:"โปสเตอร์กายวิภาคบนผนังเหมาะสำหรับเนื้อหาสุขภาพ/การแพทย์ — แสง window ด้านหลังสม่ำเสมอดี เหมาะกับ interview หรือ explainer"
+  },
+  {
+    id:"VP-010", title:"City Skyline — News Desk Outdoor Day", title_th:"สกายไลน์เมือง กลางวัน ฉากโต๊ะข่าว outdoor",
+    filepath:"outdoor/city-skyline/VP-010-city-skyline-day-neutral-v1.webp", thumb:"_thumbnails/VP-010_thumb.avif",
+    added_date:"2026-03-17", environment:"outdoor", location_type:"city-skyline", location_country:"generic",
+    mood:["serious","authoritative","neutral","professional"], color_temp:"cool", brightness:"medium",
+    topics:["news","politics","business","economy","city","development","real-estate"], editorial_fit:["News","Business","Politics"],
+    time_of_day:"day", lighting_style:"natural-overcast",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["news-anchor","standup-report","interview-single"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"], resolution:"HD", file_format:"png",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"urban-city", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview","event-special"], show_ids:[], video_url:'',
+    notes:"ฉากข่าวกลางวัน outdoor ที่สะอาดที่สุดในคลัง — แสง overcast สม่ำเสมอดี presenter นั่งที่โต๊ะ เหมาะกับรายงานเศรษฐกิจ/การเมือง"
+  },
+  {
+    id:"VP-011", title:"Luxury Marble Gold Wall", title_th:"ผนังหินอ่อนทองหรูหรา",
+    filepath:"indoor/misc/INT_WALL_LUX-MINIMAL_MARBLE-GOLD_01.webp", thumb:"_thumbnails/VP-011_thumb.webp",
+    added_date:"2026-03-22", environment:"indoor", location_type:"", location_country:"",
+    mood:[], topics:[], editorial_fit:[],
+    time_of_day:"timeless", lighting_style:"", has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic", has_particles:false, particle_types:[],
+    usage_type:[], subject_placement:"center", background_complexity:"moderate",
+    platform_fit:["16:9"], resolution:"HD", file_format:"webp",
+    color_temp:"warm", brightness:"low",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"intense", context_tags:["talk-interview","opener-drama"], show_ids:[], video_url:'',
+    notes:"ฉากในร่ม — ผนังหินอ่อนสีครีม/ทอง ตัดด้วยแผงไม้สีดำแนวตั้ง โคมไฟ wall sconce ให้แสงอุ่น Luxury Minimal สไตล์ high-end hotel. เหมาะสำหรับ talk-interview รายการพรีเมียม หรือ opener-drama ที่ต้องการความสง่างาม"
+  },
+  {
+    id:"VP-012", title:"Modern Loft Lobby Interior", title_th:"ล็อบบี้ล็อฟท์สมัยใหม่",
+    filepath:"indoor/misc/INT_NDUSTRIAL_LOFT_WOOD.webp", thumb:"_thumbnails/VP-012_thumb.webp",
+    added_date:"2026-03-22", environment:"indoor", location_type:"", location_country:"",
+    mood:[], topics:[], editorial_fit:[],
+    time_of_day:"timeless", lighting_style:"", has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic", has_particles:false, particle_types:[],
+    usage_type:[], subject_placement:"center", background_complexity:"moderate",
+    platform_fit:["16:9"], resolution:"HD", file_format:"webp",
+    color_temp:"cool", brightness:"medium",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"balanced", context_tags:["talk-interview","news-report","social-short"], show_ids:[], video_url:'',
+    notes:"ฉากในร่ม — โถงล็อบบี้ทรงสูง มีบันได ต้นไม้ขนาดใหญ่ และโต๊ะเก้าอี้ แสงธรรมชาติจากกระจกบานใหญ่ โทนเขียว-เทา cool neutral บรรยากาศโล่งสบาย เหมาะสำหรับ talk-interview, รายงานข่าว หรือ social-short"
+  },
+  {
+    id:"VP-013", title:"Classic Wood Library", title_th:"ห้องสมุดไม้คลาสสิก",
+    filepath:"indoor/misc/INT_LIBRARY_CLASSIC_WOOD_BOOKS.webp", thumb:"_thumbnails/VP-013_thumb.webp",
+    added_date:"2026-03-22", environment:"indoor", location_type:"", location_country:"",
+    mood:[], topics:[], editorial_fit:[],
+    time_of_day:"timeless", lighting_style:"", has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic", has_particles:false, particle_types:[],
+    usage_type:[], subject_placement:"center", background_complexity:"moderate",
+    platform_fit:["16:9"], resolution:"HD", file_format:"webp",
+    color_temp:"warm", brightness:"medium",
+    is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"heritage-culture", energy:"open", context_tags:["talk-interview","analysis-data","news-report"], show_ids:[], video_url:'',
+    notes:"ฉากในร่ม — ห้องสมุดคลาสสิก ชั้นหนังสือไม้เข้ม โต๊ะหนัง เก้าอี้สง่างาม บรรยากาศ academic/heritage สูง เหมาะสำหรับ analysis-data, talk-interview, หรือรายการ heritage"
+  }
+];
+
+const DATA_KEY = 'vp_admin_scenes_v1';
+let scenes = [];
+let currentId = null;
+
+// ══════════════════════════════════════════════
+// IMAGE RESOLVER — Supabase / http URLs
+// ══════════════════════════════════════════════
+
+/**
+ * resolveImg(path) — resolves image URL
+ * http/https → return directly
+ * blob:/data: → return directly
+ * relative path → test if loadable, return path or ''
+ */
+async function resolveImg(path) {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+  // Test relative path
+  return new Promise(resolve => {
+    const test = new Image();
+    test.onload  = () => resolve(path);
+    test.onerror = () => resolve('');
+    test.src = path + (path.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  });
+}
+
+// Apply resolved src to an <img> element (shows img only when url found)
+async function setImgSrc(el, path) {
+  if (!el) return;
+  const url = await resolveImg(path);
+  if (url) { el.src = url; el.style.display = ''; }
+  else { el.src = ''; el.style.display = 'none'; }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+// ── Schema migration: fill missing fields from DEFAULT_SCENES ──
+// Called every time we load stored scenes, to ensure new fields (world, energy,
+// context_tags, show_ids, video_url, etc.) are backfilled from DEFAULT_SCENES.
+function migrateScenes(loadedScenes) {
+  const NEW_FIELDS = ['world','energy','context_tags','show_ids','video_url',
+    // canvas & lighting fields (v2.1)
+    'key_light_dir','key_light_type','fill_light','back_light','lighting_ratio',
+    'presenter_zone','camera_setup','canvas_notes'
+  ];
+  return loadedScenes.map(s => {
+    const def = DEFAULT_SCENES.find(d => d.id === s.id);
+    const patched = Object.assign({}, s);
+    NEW_FIELDS.forEach(field => {
+      if (patched[field] === undefined || patched[field] === null) {
+        patched[field] = def ? (def[field] ?? '') : (Array.isArray((DEFAULT_SCENES[0]||{})[field]) ? [] : '');
+      }
+    });
+    return patched;
+  });
+}
+
+async function initAdmin() {
+  // ── Priority 1: Supabase (source of truth — ทำงานได้ทุก deploy) ─────────
+  try {
+    const _supaClient = (typeof supabase !== 'undefined')
+      ? supabase.createClient(
+          'https://pgaqdqbjyewwckpslyvx.supabase.co',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+        )
+      : null;
+    if (_supaClient) {
+      window._supaClient = _supaClient; // store globally
+      const { data: sceneRows, error: sceneErr } = await _supaClient
+        .from('scenes').select('*').order('sort_order', { ascending: true });
+      const { data: showRows }  = await _supaClient.from('shows').select('*');
+
+      if (!sceneErr && sceneRows && sceneRows.length > 0) {
+        scenes = migrateScenes(sceneRows.map(r => _supaRowToScene(r)));
+        if (showRows && showRows.length > 0) {
+          const sf = showRows.map(r => ({ id:r.id, name:r.name, color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'' }));
+          localStorage.setItem('vp_shows_v1', JSON.stringify(sf));
+        }
+        localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
+        renderSidebar();
+        _finishInitAdmin();
+        _setSupaStatus(true);
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('[initAdmin] Supabase failed:', e.message);
+  }
+  _setSupaStatus(false);
+
+  // ── Fallback: DEFAULT_SCENES (Supabase unavailable) ───────────────────────
+  scenes = JSON.parse(JSON.stringify(DEFAULT_SCENES));
+  renderSidebar();
+  _finishInitAdmin();
+  // Retry push to Supabase in background
+  if (window._supaClient) _supaUpsertAll().catch(()=>{});
+}
+
+/** แปลง Supabase DB row → scene object */
+function _supaRowToScene(r) {
+  const def = DEFAULT_SCENES.find(d => d.id === r.id) || {};
+  return {
+    id: r.id, title: r.title||def.title||'', title_th: def.title_th||'',
+    filepath: r.image_url||def.filepath||'', thumb: r.thumb_url||def.thumb||'',
+    added_date: r.created_at ? r.created_at.slice(0,10) : (def.added_date||''),
+    environment: def.environment||'', location_type: r.category||def.location_type||'',
+    location_country: def.location_country||'', mood: def.mood||[],
+    color_temp: def.color_temp||'neutral', brightness: def.brightness||'medium',
+    topics: def.topics||[], editorial_fit: def.editorial_fit||[],
+    time_of_day: def.time_of_day||'timeless', lighting_style: def.lighting_style||'',
+    has_sfx_light: def.has_sfx_light||false, sfx_light_types: def.sfx_light_types||[],
+    motion_type: def.motion_type||'static', style: def.style||'realistic',
+    has_particles: def.has_particles||false, particle_types: def.particle_types||[],
+    usage_type: def.usage_type||[], subject_placement: def.subject_placement||'center',
+    background_complexity: def.background_complexity||'medium',
+    platform_fit: def.platform_fit||['16:9'], resolution: def.resolution||'HD',
+    file_format: def.file_format||'webp', is_loopable: def.is_loopable||false,
+    engine: def.engine||'AI-Generated', status: 'active',
+    world: def.world||'', energy: def.energy||'',
+    context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
+    show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
+    video_url: def.video_url||'', notes: r.description||def.notes||'',
+  };
+}
+
+/** Upsert scenes + shows ทั้งหมดขึ้น Supabase */
+async function _supaUpsertAll() {
+  if (!window._supaClient) return;
+  const rows = scenes.map(s => ({
+    id: s.id,
+    show_id: (Array.isArray(s.show_ids)&&s.show_ids.length>0) ? s.show_ids[0] : null,
+    title: s.title||'', category: s.location_type||'',
+    tags: [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
+    image_url: s.filepath||'', thumb_url: s.thumb||'',
+    description: s.notes||'', sort_order: 0,
+  }));
+  await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
+
+  let shows = [];
+  try { shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e) {}
+  if (shows.length > 0) {
+    const sr = shows.map(sh => ({ id:sh.id, name:sh.name||'', color:sh.color||'', logo_url:sh.logo_url||sh.logoUrl||'' }));
+    await window._supaClient.from('shows').upsert(sr, { onConflict:'id' });
+  }
+}
+
+/** แสดงสถานะ Supabase connection */
+function _setSupaStatus(ok) {
+  const dot  = document.getElementById('dbSyncDot');
+  const text = document.getElementById('dbSyncText');
+  if (!dot||!text) return;
+  if (ok) {
+    dot.style.background = '#10B981';
+    text.textContent = '☁️ Supabase — บันทึกอัตโนมัติ ทุก deploy ใช้งานได้';
+    text.style.color = '#10B981';
+  } else {
+    dot.style.background = '#F59E0B';
+    text.textContent = '⚠️ Supabase offline — บันทึกใน browser + disk เท่านั้น';
+    text.style.color = '#F59E0B';
+  }
+}
+
+function _finishInitAdmin() {
+  // Pre-load users
+  if (ADMIN_USERS_DB && !WM_USERS) {
+    WM_USERS = JSON.parse(JSON.stringify(ADMIN_USERS_DB));
+    document.getElementById('userCount').textContent = Object.keys(WM_USERS).length;
+  }
+  // Init shows
+  initShows();
+}
+
+function saveScenes() {
+  localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
+  // Sync ขึ้น Supabase (background)
+  if (window._supaClient) _supaUpsertAll().catch(()=>{});
+}
+
+
+// ══════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════
+async function renderSidebar() {
+  const q = document.getElementById('sidebarSearch').value.toLowerCase();
+  const filtered = scenes.filter(s =>
+    s.id.toLowerCase().includes(q) ||
+    s.title.toLowerCase().includes(q) ||
+    s.title_th.includes(q)
+  );
+  document.getElementById('sidebarCount').textContent = scenes.length;
+
+  // Build HTML — img hidden by default, resolveThumb() fills in async
+  document.getElementById('sceneList').innerHTML = filtered.map(s => `
+    <div class="scene-list-item ${s.id === currentId ? 'active' : ''}" onclick="openEditor('${s.id}')">
+      <img class="sli-thumb" id="sli-thumb-${s.id}" src="" style="display:none">
+      <div class="sli-thumb-ph" id="sli-ph-${s.id}" style="width:48px;height:30px;border-radius:5px;background:#E5E7EB;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">🎬</div>
+      <div class="sli-info">
+        <div class="sli-id">${s.id}</div>
+        <div class="sli-title">${s.title}</div>
+      </div>
+      <span class="sli-status sli-status-${s.status}">${s.status}</span>
+    </div>
+  `).join('');
+
+  // Async: resolve images (Supabase http URLs or relative disk paths)
+  for (const s of filtered) {
+    const path = s.thumb || s.filepath;
+    if (!path) continue;
+    const url = await _resolveSidebarThumb(path);
+    if (!url) continue;
+    const el = document.getElementById(`sli-thumb-${s.id}`);
+    const ph = document.getElementById(`sli-ph-${s.id}`);
+    if (el) { el.src = url; el.style.display = ''; }
+    if (ph) ph.style.display = 'none';
+  }
+}
+
+/**
+ * _resolveSidebarThumb(path)
+ * 1. http/blob/data URL — return directly
+ * 2. Test relative disk path with Image() load
+ * Returns URL string / null
+ */
+async function _resolveSidebarThumb(path) {
+  if (!path) return null;
+  // Supabase / http / blob / data URLs — use directly
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+  // Test relative disk path
+  return new Promise(resolve => {
+    const test = new Image();
+    test.onload  = () => resolve(path);
+    test.onerror = () => resolve(null);
+    test.src = path;
+  });
+}
+
+// ══════════════════════════════════════════════
+// EDITOR
+// ══════════════════════════════════════════════
+async function openEditor(id) {
+  currentId = id;
+  const s = scenes.find(x => x.id === id);
+  if (!s) return;
+  renderSidebar();
+
+  const ea = document.getElementById('editorArea');
+  ea.innerHTML = buildEditorHTML(s);
+  initTagEditors(s);
+  updateAdminVideo();
+  renderShowTagChecks(s);
+
+  // Show preview image
+  const preview = document.getElementById('previewImg');
+  if (preview) {
+    const bestUrl = s.filepath || s.thumb || '';
+    if (bestUrl) { preview.src = bestUrl; preview.style.display = ''; }
+    else { preview.src = ''; preview.style.display = 'none'; }
+  }
+
+  // Restore upload zone state
+  await restoreUploadZones(s);
+
+  window.scrollTo(0, 0);
+}
+
+function buildEditorHTML(s) {
+  return `
+    <div class="editor-topbar">
+      <div>
+        <div class="editor-scene-id">${s.id}</div>
+        <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
+      </div>
+      <div class="editor-actions">
+        <span class="save-indicator" id="saveIndicator">✓ บันทึกแล้ว</span>
+        <button class="btn-secondary" onclick="openTagGuideModal('${s.id}')" title="Prompt สำหรับ tag ฉากนี้กับ Claude" style="background:#EEF2FF;border-color:#C7D2FE;color:#4F46E5;">✨ Tag by AI</button>
+        <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
+        <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
+        <button class="btn-save" onclick="saveScene('${s.id}')">💾 บันทึก</button>
+      </div>
+    </div>
+
+    <div class="editor-form">
+
+      <!-- Image -->
+      <div class="editor-section">
+        <div class="editor-section-title">🖼 รูปภาพ</div>
+
+        <!-- Current preview -->
+        <div class="image-preview-wrap" id="editorImgWrap" style="cursor:pointer">
+          <img id="previewImg" class="image-preview" src="" alt="${s.title}" onclick="document.getElementById('uploadFull_${s.id}').click()">
+          <canvas id="editorFcCanvas" class="fc-canvas"></canvas>
+          <button id="editorFcBtn" class="fc-btn" onclick="toggleAdminFalseColor('${s.id}')" title="False Color — IRE luminance map">
+            <span id="editorFcBtnIcon">⬛</span> FALSE COLOR
+          </button>
+          <div class="fc-legend" id="editorFcLegend">
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FFFFFF;border:1px solid #555"></div>98–100 IRE · Clipped White</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF2800"></div>87–98 IRE · Hot / Over</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF8C00"></div>70–87 IRE · Near clip</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#C8C800"></div>56–70 IRE · Upper mid</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00C800"></div>42–56 IRE · Correct exposure</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00B4B4"></div>30–42 IRE · Shadow mid</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#0070FF"></div>15–30 IRE · Low mid</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#1A1AFF"></div>2–15 IRE · Underexposed</div>
+            <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF00FF"></div>0–2 IRE · Clipped Black</div>
+          </div>
+          <div class="image-preview-overlay" onclick="document.getElementById('uploadFull_${s.id}').click()">
+            <div class="image-overlay-text">📤 คลิกเพื่อเปลี่ยนรูป Full</div>
+            <div class="image-overlay-sub">PNG / JPG → auto convert WebP</div>
+          </div>
+        </div>
+
+        <!-- Upload row: Full + Thumb -->
+        <div class="form-row" style="margin-top:12px;">
+          <!-- Full image upload -->
+          <div>
+            <div class="form-label" style="margin-bottom:6px">📷 Full Image (WebP)</div>
+            <div class="upload-zone" id="uploadZoneFull_${s.id}"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="handleEditorFileDrop(event,'full','${s.id}')">
+              <input type="file" id="uploadFull_${s.id}" accept="image/*" onchange="handleEditorFileSelect(this.files,'full','${s.id}')">
+              <div id="uploadFullContent_${s.id}">
+                <div class="upload-zone-icon">🖼</div>
+                <div class="upload-zone-label">ลากวางหรือคลิก</div>
+                <div class="upload-zone-sub">PNG/JPG → WebP q82 · WebP/AVIF ใช้ต้นฉบับ</div>
+              </div>
+            </div>
+          </div>
+          <!-- Thumbnail upload -->
+          <div>
+            <div class="form-label" style="margin-bottom:6px">🔳 Thumbnail (WebP)</div>
+            <div class="upload-zone" id="uploadZoneThumb_${s.id}"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="handleEditorFileDrop(event,'thumb','${s.id}')">
+              <input type="file" id="uploadThumb_${s.id}" accept="image/*" onchange="handleEditorFileSelect(this.files,'thumb','${s.id}')">
+              <div id="uploadThumbContent_${s.id}">
+                <div class="upload-zone-icon">🔳</div>
+                <div class="upload-zone-label">ลากวางหรือคลิก</div>
+                <div class="upload-zone-sub">PNG/JPG → WebP q55 · รองรับ AVIF ด้วย</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Path fields (read-only display + manual override) -->
+        <div class="form-row" style="margin-top:10px">
+          <div class="form-group">
+            <label class="form-label">Full path <span>แก้ manual ได้</span></label>
+            <input class="form-input" id="f_filepath" value="${s.filepath}" placeholder="indoor/sci-fi/VP-011.webp" oninput="updatePreview()" style="font-family:monospace;font-size:12px">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Thumb path <span>แก้ manual ได้</span></label>
+            <input class="form-input" id="f_thumb" value="${s.thumb}" placeholder="_thumbnails/VP-011_thumb.webp" style="font-family:monospace;font-size:12px" oninput="refreshThumbPreview('${s.id}')">
+          </div>
+        </div>
+        <div class="form-row-1" style="margin-top:0">
+          <div class="form-group">
+            <label class="form-label">วันที่เพิ่ม</label>
+            <input class="form-input" id="f_added_date" type="date" value="${s.added_date||''}" style="max-width:180px">
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Preview -->
+      <div class="editor-section">
+        <div class="editor-section-title">▶️ Video Preview <span style="font-weight:400;font-size:10px;color:var(--muted);margin-left:4px">(YouTube / Vimeo link)</span></div>
+        <div class="video-preview-wrap" id="adminVideoWrap">
+          <div class="video-preview-empty"><div class="icon">🎬</div><div>ยังไม่มี video link</div></div>
+        </div>
+        <div class="path-input-wrap" style="margin-top:10px">
+          <input class="form-input" id="f_video_url" value="${escHtml(s.video_url||'')}"
+            placeholder="https://youtube.com/watch?v=... หรือ https://youtu.be/..."
+            oninput="updateAdminVideo()">
+          <button class="btn-secondary" onclick="document.getElementById('f_video_url').focus()">✏️ แก้ link</button>
+        </div>
+        <div class="video-yt-hint">
+          💡 แนะนำ: Upload ขึ้น YouTube (unlisted) แล้วแปะ link — ระบบจะแปลงเป็น embed อัตโนมัติ<br>
+          รองรับ: <code>youtube.com/watch?v=ID</code> · <code>youtu.be/ID</code> · <code>vimeo.com/ID</code>
+        </div>
+      </div>
+
+      <!-- Basic Info -->
+      <div class="editor-section">
+        <div class="editor-section-title">📋 ข้อมูลพื้นฐาน</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Scene ID</label>
+            <input class="form-input" id="f_id" value="${s.id}" style="font-family:monospace;font-weight:700;color:var(--red)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <div class="status-select-wrap">
+              <button class="sbtn ${s.status==='active'?'active-status-active':''}" onclick="setStatus('active',this)">✅ Active</button>
+              <button class="sbtn ${s.status==='draft'?'active-status-draft':''}" onclick="setStatus('draft',this)">📝 Draft</button>
+              <button class="sbtn ${s.status==='archived'?'active-status-archived':''}" onclick="setStatus('archived',this)">📦 Archived</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row-1 form-group">
+          <label class="form-label">ชื่อฉาก (EN)</label>
+          <input class="form-input" id="f_title" value="${escHtml(s.title)}">
+        </div>
+        <div class="form-row-1 form-group">
+          <label class="form-label">ชื่อฉาก (TH)</label>
+          <input class="form-input" id="f_title_th" value="${escHtml(s.title_th)}">
+        </div>
+      </div>
+
+
+      <!-- 3-Layer Taxonomy + Show tagging -->
+      <div class="editor-section">
+        <div class="editor-section-title">🗂 Taxonomy (3 Layers) & รายการ</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">L1 · WORLD — ฉากอยู่ที่ไหน</label>
+            <select class="form-select" id="f_world">
+              ${opt(['','urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'], s.world||'')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">L2 · ENERGY — พลังงานของฉาก</label>
+            <select class="form-select" id="f_energy">
+              ${opt(['','intense','balanced','open'], s.energy||'')}
+            </select>
+          </div>
+        </div>
+        <div class="form-row-1 form-group" style="margin-top:10px">
+          <label class="form-label">L3 · CONTEXT — ใช้กับอะไร <span>กด Enter หรือ , เพื่อเพิ่ม</span></label>
+          <div class="tag-editor" id="te_context_tags" onclick="focusTagInput('te_context_tags')"></div>
+          <div class="form-hint" style="margin-top:4px">ค่าที่รองรับ: news-report · talk-interview · analysis-data · field-onsite · opener-drama · social-short · event-special</div>
+        </div>
+        <div class="form-row-1 form-group" style="margin-top:10px">
+          <label class="form-label">📺 รายการที่ฉากนี้ใช้ <span style="font-weight:400">(เลือกได้หลายรายการ)</span></label>
+          <div id="showTagChecks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+          <div class="form-hint" style="margin-top:4px">ถ้ายังไม่มีรายการ → ไปที่แท็บ 📺 รายการ เพื่อสร้างก่อน</div>
+        </div>
+      </div>
+
+
+      <!-- Notes -->
+      <div class="editor-section">
+        <div class="editor-section-title">📝 Production Notes</div>
+        <textarea class="form-textarea" id="f_notes" rows="4">${escHtml(s.notes||'')}</textarea>
+        <div class="form-hint">เพิ่ม note สำคัญเกี่ยวกับการ match แสง ตำแหน่ง presenter หรือข้อควรระวัง</div>
+      </div>
+
+      <div style="height:80px"></div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// TAG EDITORS
+// ══════════════════════════════════════════════
+const tagDefs = {
+  te_context_tags: { field:'context_tags', cls:'chip-editorial' },
+};
+
+let tagState = {}; // teId -> string[]
+
+function initTagEditors(s) {
+  Object.entries(tagDefs).forEach(([teId, def]) => {
+    tagState[teId] = [...(s[def.field] || [])];
+    renderTagEditor(teId);
+  });
+}
+
+function renderTagEditor(teId) {
+  const def = tagDefs[teId];
+  const el = document.getElementById(teId);
+  if (!el) return;
+  const tags = tagState[teId] || [];
+  el.innerHTML = tags.map((t,i) => `
+    <span class="tag-chip ${def.cls}">
+      ${escHtml(t)}
+      <button class="tag-chip-remove" onclick="removeTag('${teId}',${i});event.stopPropagation()">×</button>
+    </span>
+  `).join('') + `<input class="tag-input" data-te="${teId}" placeholder="พิมพ์แล้วกด Enter">`;
+
+  const inp = el.querySelector('.tag-input');
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = inp.value.trim().replace(/,$/, '').trim();
+      if (val && !tagState[teId].includes(val)) {
+        tagState[teId].push(val);
+        renderTagEditor(teId);
+        focusTagInput(teId);
+      } else { inp.value = ''; }
+    } else if (e.key === 'Backspace' && inp.value === '' && tagState[teId].length) {
+      tagState[teId].pop();
+      renderTagEditor(teId);
+      focusTagInput(teId);
+    }
+  });
+}
+
+function removeTag(teId, idx) {
+  tagState[teId].splice(idx, 1);
+  renderTagEditor(teId);
+}
+
+function focusTagInput(teId) {
+  const el = document.getElementById(teId);
+  if (!el) return;
+  const inp = el.querySelector('.tag-input');
+  if (inp) { inp.focus(); }
+}
+
+// ══════════════════════════════════════════════
+// SAVE / RESET / DELETE
+// ══════════════════════════════════════════════
+let statusVal = null;
+
+function setStatus(val, btn) {
+  statusVal = val;
+  document.querySelectorAll('.status-select-wrap .sbtn').forEach(b => {
+    b.className = 'sbtn';
+  });
+  btn.className = `sbtn active-status-${val}`;
+}
+
+/** Return all scene fields that no longer have UI inputs (removed sections),
+ *  so saving the editor doesn't wipe existing data. */
+function _preserveSceneFields(origId) {
+  const s = scenes.find(x => x.id === origId) || {};
+  return {
+    environment:      s.environment      || '',
+    location_type:    s.location_type    || '',
+    location_country: s.location_country || '',
+    time_of_day:      s.time_of_day      || '',
+    key_light_dir:    s.key_light_dir    || '',
+    key_light_type:   s.key_light_type   || '',
+    fill_light:       s.fill_light       || '',
+    back_light:       s.back_light       || '',
+    lighting_ratio:   s.lighting_ratio   || '',
+    presenter_zone:   s.presenter_zone   || '',
+    camera_setup:     s.camera_setup     || '',
+    // canvas_notes: prefer pending value from last AI tag, else keep existing
+    canvas_notes:     window._pendingCanvasNotes != null
+                        ? window._pendingCanvasNotes
+                        : (s.canvas_notes || ''),
+    lighting_style:   s.lighting_style   || '',
+    motion_type:      s.motion_type      || '',
+    color_temp:       s.color_temp       || '',
+    brightness:       s.brightness       || '',
+    depth_of_field:   s.depth_of_field   || '',
+    has_sfx_light:    s.has_sfx_light    ?? false,
+    has_particles:    s.has_particles    ?? false,
+    mood:             Array.isArray(s.mood)   ? [...s.mood]   : [],
+    topics:           Array.isArray(s.topics) ? [...s.topics] : [],
+  };
+}
+
+function collectFormData(origId) {
+  // Clear pending canvas notes after consuming
+  window._pendingCanvasNotes = null;
+  const s = scenes.find(x => x.id === origId);
+  const newStatus = statusVal || s.status;
+  return {
+    id:           document.getElementById('f_id').value.trim(),
+    title:        document.getElementById('f_title').value.trim(),
+    title_th:     document.getElementById('f_title_th').value.trim(),
+    filepath:     document.getElementById('f_filepath').value.trim(),
+    thumb:        document.getElementById('f_thumb').value.trim(),
+    added_date:   document.getElementById('f_added_date').value,
+    video_url:    document.getElementById('f_video_url')?.value.trim() || '',
+    notes:        document.getElementById('f_notes').value.trim(),
+    status:       newStatus,
+    world:        document.getElementById('f_world')?.value || '',
+    energy:       document.getElementById('f_energy')?.value || '',
+    show_ids:     getCheckedShowIds(),
+    context_tags: [...(tagState['te_context_tags']||[])],
+    // preserve existing lighting/location data that's no longer editable in UI
+    ..._preserveSceneFields(origId),
+  };
+}
+
+function saveScene(origId) {
+  const data = collectFormData(origId);
+  const idx = scenes.findIndex(x => x.id === origId);
+  if (idx === -1) return;
+  scenes[idx] = data;
+  currentId = data.id;
+  saveScenes();
+  statusVal = null;
+  renderSidebar();
+  showToast('💾 บันทึกแล้ว!', 'green');
+  const ind = document.getElementById('saveIndicator');
+  if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 2000); }
+}
+
+function resetScene(id) {
+  const orig = DEFAULT_SCENES.find(x => x.id === id);
+  if (!orig) { showToast('ไม่พบ default data', 'red'); return; }
+  const idx = scenes.findIndex(x => x.id === id);
+  scenes[idx] = JSON.parse(JSON.stringify(orig));
+  saveScenes();
+  openEditor(id);
+  showToast('↺ รีเซ็ตเป็นค่าเดิมแล้ว');
+}
+
+function confirmDelete(id) {
+  const s = scenes.find(x => x.id === id);
+  document.getElementById('confirmMsg').textContent = `ต้องการลบ "${s.title}" (${id}) ใช่ไหม? ไม่สามารถยกเลิกได้`;
+  document.getElementById('confirmOkBtn').onclick = () => { doDelete(id); closeConfirm(); };
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+
+function doDelete(id) {
+  scenes = scenes.filter(x => x.id !== id);
+  saveScenes();
+  currentId = null;
+  renderSidebar();
+  document.getElementById('editorArea').innerHTML = `
+    <div class="editor-empty">
+      <div class="editor-empty-icon">🗑</div>
+      <div class="editor-empty-text">ลบฉากแล้ว</div>
+      <div class="editor-empty-sub">เลือกฉากอื่นหรือเพิ่มฉากใหม่</div>
+    </div>`;
+  showToast('🗑 ลบฉากแล้ว', 'red');
+}
+
+// ══════════════════════════════════════════════
+// NEW SCENE
+// ══════════════════════════════════════════════
+function openNewSceneModal() {
+  document.getElementById('newSceneOverlay').classList.add('open');
+  document.getElementById('importPreviewRow').style.display = 'none';
+  document.getElementById('newSceneFilepathRow').style.display = 'none';
+  document.getElementById('newFilepath').value = '';
+  document.getElementById('importFileInput').value = '';
+  setTimeout(() => document.getElementById('newId').focus(), 100);
+}
+function closeNewModal() {
+  document.getElementById('newSceneOverlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+// IMAGE CONVERT — PNG/JPG → WebP (browser-side)
+// mirrors logic from vp-image-convert.py
+// ══════════════════════════════════════════════
+/**
+ * convertImageToWebP(file, options)
+ * Converts any PNG / JPG / JPEG File object to a WebP Blob using Canvas API.
+ * Returns: { blob, filename, originalSize, convertedSize, savedPct, wasConverted }
+ *
+ * Quality tiers (mirror vp-image-convert.py):
+ *   thumb  (*_thumb* in name)  → WebP q 55   (smallest, every card)
+ *   jpg    (.jpg / .jpeg)       → WebP q 85
+ *   png full                    → WebP q 82
+ * Files already WebP/AVIF are returned as-is (wasConverted = false).
+ */
+async function convertImageToWebP(file, opts = {}) {
+  const name  = file.name;
+  const ext   = name.split('.').pop().toLowerCase();
+  const isAlreadyOptimised = ['webp','avif'].includes(ext);
+
+  // Return early — already optimal format
+  if (isAlreadyOptimised) {
+    return {
+      blob: file,
+      filename: name,
+      originalSize: file.size,
+      convertedSize: file.size,
+      savedPct: 0,
+      wasConverted: false,
+    };
+  }
+
+  // Determine quality by file type / name
+  const isThumb = name.toLowerCase().includes('_thumb');
+  const isJpg   = ['jpg','jpeg'].includes(ext);
+  const quality = opts.quality ?? (isThumb ? 0.55 : isJpg ? 0.85 : 0.82);
+
+  // Load image onto canvas
+  const dataUrl = await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload  = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+
+  const blob = await new Promise(res =>
+    canvas.toBlob(res, 'image/webp', quality)
+  );
+
+  // Build new filename: swap extension to .webp
+  const newName = name.replace(/\.(png|jpg|jpeg)$/i, '.webp');
+
+  const savedPct = file.size > 0
+    ? Math.round(100 * (file.size - blob.size) / file.size)
+    : 0;
+
+  return {
+    blob,
+    filename: newName,
+    originalSize: file.size,
+    convertedSize: blob.size,
+    savedPct,
+    wasConverted: true,
+  };
+}
+
+/** Wrap a Blob as a File object (needed for consistent .name access) */
+function blobToFile(blob, filename) {
+  return new File([blob], filename, { type: blob.type, lastModified: Date.now() });
+}
+
+/**
+ * uploadFileToDisk(file, destPath)
+ * Upload to Supabase Storage — permanent, works on every deploy.
+ * Returns { ok, url } on success, { ok: false, error } on failure.
+ */
+async function uploadFileToDisk(file, destPath) {
+  if (window._supaClient) {
+    try {
+      const blob = file instanceof Blob ? file : new Blob([file]);
+      const cleanPath = destPath.replace(/^\//, '');
+      const { error } = await window._supaClient.storage
+        .from('vp-images')
+        .upload(cleanPath, blob, { upsert: true, contentType: file.type || 'image/webp' });
+      if (!error) {
+        const { data: urlData } = window._supaClient.storage.from('vp-images').getPublicUrl(cleanPath);
+        return { ok: true, url: urlData?.publicUrl || '' };
+      }
+    } catch(e) {
+      console.warn('[supa storage] upload error:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+  return { ok: false, error: 'Supabase not initialized' };
+}
+
+// ── Import via file upload ──
+function handleImportDrop(e) {
+  e.preventDefault();
+  const dz = document.getElementById('importDropZone');
+  dz.style.borderColor = 'var(--border)';
+  dz.style.background = '';
+  handleImportFile(e.dataTransfer.files);
+}
+
+async function handleImportFile(files) {
+  if (!files || !files.length) return;
+  let file = files[0];
+  if (!file.type.startsWith('image/') && !file.name.match(/\.(webp|avif|png|jpg|jpeg)$/i)) {
+    showToast('รองรับเฉพาะไฟล์ภาพ', 'red'); return;
+  }
+
+  // ── Auto-convert PNG/JPG → WebP ──────────────────────────────────────────
+  const needsConvert = file.name.match(/\.(png|jpg|jpeg)$/i);
+  if (needsConvert) {
+    showToast('⏳ กำลัง convert เป็น WebP…');
+    try {
+      const result = await convertImageToWebP(file);
+      if (result.wasConverted) {
+        file = blobToFile(result.blob, result.filename);
+        const saved = result.savedPct > 0 ? ` ลดขนาด ${result.savedPct}%` : '';
+        showToast(`✅ Convert เป็น WebP แล้ว${saved} — ${result.filename}`);
+        // Update the drop zone label to show converted filename
+        const dzContent = document.getElementById('importDropContent');
+        if (dzContent) {
+          dzContent.innerHTML = `
+            <div style="font-size:20px;margin-bottom:4px">✅</div>
+            <div style="font-size:13px;font-weight:700;color:var(--green)">${result.filename}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">
+              ${humanFileSize(result.originalSize)} → ${humanFileSize(result.convertedSize)}
+              ${result.savedPct > 0 ? `<span style="color:var(--green);font-weight:700"> −${result.savedPct}%</span>` : ''}
+            </div>`;
+        }
+      }
+    } catch(err) {
+      console.warn('[convertImageToWebP]', err);
+      showToast('⚠️ Convert ไม่สำเร็จ ใช้ไฟล์ต้นฉบับแทน');
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Auto-parse filename to suggest Scene ID and title
+  const basename = file.name.replace(/\.[^.]+$/, ''); // remove extension
+  // Pattern: VP-011-some-description-v1  OR  VP-011_some_description
+  const idMatch = basename.match(/^(VP-\d+)/i);
+  const suggestedId = idMatch ? idMatch[1].toUpperCase() : '';
+  // Build human title from filename: replace hyphens/underscores with spaces, remove VP-NNN prefix and version suffix
+  const humanTitle = basename
+    .replace(/^VP-\d+-?/i, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s*v\d+\s*$/i, '')
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+  // Try to guess filepath subfolder from filename keywords
+  const lower = basename.toLowerCase();
+  let suggestedFolder = 'indoor/misc';
+  if (lower.includes('outdoor') || lower.includes('city') || lower.includes('mine') || lower.includes('quarry') || lower.includes('nature')) suggestedFolder = 'outdoor/misc';
+  if (lower.includes('scifi') || lower.includes('sci-fi') || lower.includes('portal') || lower.includes('robot-display')) suggestedFolder = 'indoor/sci-fi';
+  if (lower.includes('industri') || lower.includes('factory') || lower.includes('warehouse') || lower.includes('robot-arm')) suggestedFolder = 'indoor/industrial';
+  if (lower.includes('tunnel') || lower.includes('cave') || lower.includes('underground')) suggestedFolder = 'indoor/tunnel-cave';
+  if (lower.includes('studio') || lower.includes('retro') || lower.includes('music')) suggestedFolder = 'indoor/studio-retro';
+  if (lower.includes('library') || lower.includes('office') || lower.includes('study')) suggestedFolder = 'indoor/library-study';
+  if (lower.includes('city') || lower.includes('skyline') || lower.includes('urban')) suggestedFolder = 'outdoor/city-skyline';
+
+  const suggestedPath = suggestedFolder + '/' + file.name;
+
+  // Fill form fields
+  if (suggestedId) document.getElementById('newId').value = suggestedId;
+  if (humanTitle) document.getElementById('newTitle').value = humanTitle;
+  document.getElementById('newFilepath').value = suggestedPath;
+  document.getElementById('newSceneFilepathRow').style.display = '';
+
+  // Preview — read the (possibly converted) file
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const pr = document.getElementById('importPreviewRow');
+    document.getElementById('importPreviewImg').src = ev.target.result;
+    document.getElementById('importPreviewName').textContent = file.name;
+    document.getElementById('importPreviewPath').textContent = `แนะนำ path: ${suggestedPath}`;
+    pr.style.display = 'flex';
+    // store data URL for AI Tag or other uses
+    document.getElementById('importFileInput').dataset.previewUrl = ev.target.result;
+    // store the converted File object for download
+    document.getElementById('importFileInput')._convertedFile = file;
+    // show download button only if file was converted
+    const dlBtn = document.getElementById('importDownloadBtn');
+    if (dlBtn) dlBtn.style.display = needsConvert ? 'inline-block' : 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+/** Helper: human-readable file size (mirrors vp-image-convert.py human()) */
+function humanFileSize(bytes) {
+  const units = ['B','KB','MB','GB'];
+  let n = bytes;
+  for (const u of units) {
+    if (Math.abs(n) < 1024) return `${n.toFixed(1)} ${u}`;
+    n /= 1024;
+  }
+  return `${n.toFixed(1)} TB`;
+}
+
+/** Download the converted WebP file so admin can save it to the correct folder */
+function downloadConvertedFile() {
+  const input = document.getElementById('importFileInput');
+  const file  = input?._convertedFile;
+  if (!file) { showToast('ไม่พบไฟล์ที่ convert แล้ว'); return; }
+  const url = URL.createObjectURL(file);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function createNewScene() {
+  const id       = document.getElementById('newId').value.trim().toUpperCase();
+  const title    = document.getElementById('newTitle').value.trim();
+  const title_th = document.getElementById('newTitleTh').value.trim();
+  if (!id) { showToast('กรุณากรอก Scene ID', 'red'); return; }
+  if (scenes.find(x => x.id === id)) { showToast('ID นี้มีอยู่แล้ว', 'red'); return; }
+
+  // Get the converted file from the drop zone (if any)
+  const convertedFile = document.getElementById('importFileInput')?._convertedFile;
+  let filepath = document.getElementById('newFilepath').value.trim();
+  let thumbPath = '';
+
+  // If a file was uploaded in the modal, upload to Supabase Storage
+  if (convertedFile) {
+    const vPath = buildVirtualPath(id, convertedFile.name, 'full', null);
+
+    // Upload to Supabase Storage
+    const uploadResult = await uploadFileToDisk(convertedFile, vPath);
+    if (uploadResult.ok) {
+      filepath = uploadResult.url || vPath;
+      showToast('✅ ภาพขึ้น Supabase Storage แล้ว — พร้อม deploy ทุกที่', 'green');
+    } else {
+      filepath = vPath;
+      console.warn(`[upload] Supabase unavailable (${uploadResult.error})`);
+      showToast('⚠️ Supabase offline — ภาพจะแสดงเฉพาะเครื่องนี้', 'red', 6000);
+    }
+
+    // Auto-generate thumbnail (resize to 320×180)
+    try {
+      const thumbBlob = await generateThumb(convertedFile, 320, 180);
+      const thumbFile = blobToFile(thumbBlob, `${id}_thumb.webp`);
+      const tPath = `_thumbnails/${id}_thumb.webp`;
+      const thumbResult = await uploadFileToDisk(thumbFile, tPath);
+      thumbPath = (thumbResult.ok && thumbResult.url) ? thumbResult.url : tPath;
+    } catch(e) { console.warn('[thumb gen]', e); }
+  }
+
+  // Auto-guess taxonomy from filename + title
+  const lower = (filepath + ' ' + title).toLowerCase();
+  let world = '';
+  if (lower.match(/scifi|sci.fi|portal|robot.display|future|cyber/)) world = 'scifi-future';
+  else if (lower.match(/industr|factory|warehouse|robot.arm/)) world = 'industrial';
+  else if (lower.match(/tunnel|cave|underground/)) world = 'industrial';
+  else if (lower.match(/city|skyline|urban|street/)) world = 'urban-city';
+  else if (lower.match(/nature|outdoor|mine|quarry|forest|mountain/)) world = 'nature-outdoor';
+  else if (lower.match(/studio|office|library|study|indoor/)) world = 'interior-office';
+  else if (lower.match(/retro|vintage|heritage|culture|museum/)) world = 'heritage-culture';
+
+  let energy = '';
+  if (lower.match(/dramatic|dark|tense|intense|hard/)) energy = 'intense';
+  else if (lower.match(/neutral|medium|balanced|flat|soft/)) energy = 'balanced';
+  else if (lower.match(/warm|open|approachable|bright|natural/)) energy = 'open';
+
+  const newScene = {
+    id, title: title||'New Scene', title_th: title_th||'',
+    filepath, thumb: thumbPath,
+    added_date: new Date().toISOString().slice(0,10),
+    environment: lower.match(/outdoor|city|nature|mine|quarry/) ? 'outdoor' : 'indoor',
+    location_type:'', location_country:'',
+    mood:[], color_temp:'neutral', brightness:'medium',
+    topics:[], editorial_fit:[], time_of_day:'timeless',
+    lighting_style:'', has_sfx_light:false, sfx_light_types:[],
+    motion_type:'static', style:'realistic', has_particles:false, particle_types:[],
+    usage_type:[], subject_placement:'center', background_complexity:'medium',
+    platform_fit:['16:9'], resolution:'HD',
+    file_format: filepath.endsWith('.webp') ? 'webp' : filepath.endsWith('.avif') ? 'avif' : 'png',
+    is_loopable:false, engine:'AI-Generated', status:'draft', notes:'',
+    world, energy, context_tags:[], show_ids:[], video_url:''
+  };
+
+  scenes.push(newScene);
+  saveScenes();
+  closeNewModal();
+  // Reset modal state
+  document.getElementById('newId').value='';
+  document.getElementById('newTitle').value='';
+  document.getElementById('newTitleTh').value='';
+  if (document.getElementById('importFileInput')) {
+    document.getElementById('importFileInput')._convertedFile = null;
+    document.getElementById('importFileInput').dataset.previewUrl = '';
+  }
+  const pr = document.getElementById('importPreviewRow');
+  if (pr) pr.style.display = 'none';
+  // Reset drop zone label
+  const dzContent = document.getElementById('importDropContent');
+  if (dzContent) dzContent.innerHTML = `<div style="font-size:24px;margin-bottom:6px">🖼</div><div style="font-size:13px;font-weight:600;color:var(--dark)">ลาก-วางไฟล์ภาพ หรือคลิกเพื่อเลือก</div><div style="font-size:11px;color:var(--muted);margin-top:3px">.webp · .avif · .png · .jpg — ระบบจะอ่านชื่อไฟล์แล้วกรอกข้อมูลให้อัตโนมัติ</div>`;
+
+  renderSidebar();
+  openEditor(id);
+  showToast('➕ สร้างฉากใหม่แล้ว' + (filepath ? ' + บันทึกไฟล์แล้ว' : ''), 'green');
+}
+
+/** Generate a thumbnail Blob at targetW × targetH using Canvas */
+async function generateThumb(file, targetW, targetH) {
+  const dataUrl = await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  // Crop to fill target ratio
+  const srcRatio = img.naturalWidth / img.naturalHeight;
+  const dstRatio = targetW / targetH;
+  let sx, sy, sw, sh;
+  if (srcRatio > dstRatio) {
+    sh = img.naturalHeight; sw = sh * dstRatio;
+    sx = (img.naturalWidth - sw) / 2; sy = 0;
+  } else {
+    sw = img.naturalWidth; sh = sw / dstRatio;
+    sx = 0; sy = (img.naturalHeight - sh) / 2;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW; canvas.height = targetH;
+  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+  return new Promise(res => canvas.toBlob(res, 'image/webp', 0.55));
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function updatePreview() {
+  const v   = document.getElementById('f_filepath').value;
+  const img = document.getElementById('previewImg');
+  if (!img) return;
+  if (v) { img.src = v; img.style.display = ''; }
+  else   { img.src = ''; img.style.display = 'none'; }
+}
+
+// ── Video URL → embed URL helper ──
+function videoEmbedUrl(url) {
+  if (!url) return null;
+  url = url.trim();
+  // YouTube: watch?v=ID or youtu.be/ID or youtube.com/shorts/ID
+  let m = url.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
+  // Vimeo: vimeo.com/ID
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?dnt=1`;
+  return null;
+}
+
+function updateAdminVideo() {
+  const url = document.getElementById('f_video_url')?.value || '';
+  const wrap = document.getElementById('adminVideoWrap');
+  if (!wrap) return;
+  const embed = videoEmbedUrl(url);
+  if (embed) {
+    wrap.innerHTML = `<iframe src="${embed}" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+  } else if (url) {
+    wrap.innerHTML = `<div class="video-preview-empty"><div class="icon">⚠️</div><div>URL ไม่รองรับ — ใช้ YouTube หรือ Vimeo</div></div>`;
+  } else {
+    wrap.innerHTML = `<div class="video-preview-empty"><div class="icon">🎬</div><div>ยังไม่มี video link</div></div>`;
+  }
+}
+
+const OPT_LABELS = {
+  '': '— ยังไม่ได้เลือก —',
+  'urban-city':'🌆 Urban & City', 'interior-office':'🏢 Interior & Office',
+  'nature-outdoor':'🌿 Nature & Outdoor', 'industrial':'🏭 Industrial',
+  'scifi-future':'🚀 Sci-Fi & Future', 'stylized-abstract':'🎭 Stylized & Abstract',
+  'heritage-culture':'🏛 Heritage & Culture',
+  'intense':'⚡ Intense', 'balanced':'🌤 Balanced', 'open':'✨ Open',
+};
+function opt(vals, current) {
+  return vals.map(v => `<option value="${v}" ${v===current?'selected':''}>${OPT_LABELS[v]||v}</option>`).join('');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════
+
+
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+// ══════════════════════════════════════════════
+// (recompute removed — use generate_embeddings.py)
+
+function __placeholder__() {
+  document.getElementById('recomputeOverlay').style.display = 'flex';
+  document.getElementById('rcProgress').style.display = 'none';
+  document.getElementById('rcProgressBar').style.width = '0%';
+  document.getElementById('rcLog').innerHTML = '';
+  document.getElementById('rcStartBtn').disabled = false;
+  document.getElementById('rcStartBtn').textContent = '▶ เริ่มคำนวณ';
+  document.getElementById('rcCancelBtn').textContent = 'ยกเลิก';
+}
+
+function closeRecompute() {
+  document.getElementById('recomputeOverlay').style.display = 'none';
+}
+
+async function startRecompute() {
+  const startBtn = document.getElementById('rcStartBtn');
+  startBtn.disabled = true;
+  startBtn.textContent = '⏳ กำลังคำนวณ...';
+  document.getElementById('rcProgress').style.display = 'block';
+  document.getElementById('rcCancelBtn').disabled = true;
+
+  const log = document.getElementById('rcLog');
+  const bar = document.getElementById('rcProgressBar');
+  const progressText = document.getElementById('rcProgressText');
+
+  function addLog(msg) {
+    log.innerHTML += msg + '<br>';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // Extract visual features from an image using Canvas API
+  function extractFeatures(imgEl) {
+    const SIZE = 224;
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE; canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, SIZE, SIZE);
+    const data = ctx.getImageData(0, 0, SIZE, SIZE).data; // RGBA
+
+    const total = SIZE * SIZE;
+    let rSum=0, gSum=0, bSum=0, brightSum=0, satSum=0, edgeSum=0;
+    const rHist = new Array(8).fill(0);
+    const gHist = new Array(8).fill(0);
+    const bHist = new Array(8).fill(0);
+    const zones = new Array(9).fill(0);
+    const zoneCounts = new Array(9).fill(0);
+    const gray = new Float32Array(total);
+
+    for (let i = 0; i < total; i++) {
+      const r = data[i*4]   / 255;
+      const g = data[i*4+1] / 255;
+      const b = data[i*4+2] / 255;
+      rSum += r; gSum += g; bSum += b;
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      gray[i] = lum;
+      brightSum += lum;
+      const cmax = Math.max(r,g,b), cmin = Math.min(r,g,b);
+      satSum += (cmax - cmin);
+      // histograms
+      rHist[Math.min(7, Math.floor(r*8))]++;
+      gHist[Math.min(7, Math.floor(g*8))]++;
+      bHist[Math.min(7, Math.floor(b*8))]++;
+      // zones 3x3
+      const px = i % SIZE, py = Math.floor(i / SIZE);
+      const zx = Math.min(2, Math.floor(px / 75));
+      const zy = Math.min(2, Math.floor(py / 75));
+      const zi = zy*3 + zx;
+      zones[zi] += lum; zoneCounts[zi]++;
+    }
+
+    // edge density (simple gradient)
+    let gradSum = 0;
+    for (let i = 0; i < SIZE-1; i++) {
+      for (let j = 0; j < SIZE-1; j++) {
+        const idx = i*SIZE+j;
+        gradSum += Math.abs(gray[idx+1]-gray[idx]) + Math.abs(gray[idx+SIZE]-gray[idx]);
+      }
+    }
+    const edgeDensity = gradSum / (2 * (SIZE-1) * (SIZE-1));
+
+    // contrast (std dev)
+    const brightMean = brightSum / total;
+    let varSum = 0;
+    for (let i = 0; i < total; i++) varSum += (gray[i]-brightMean)**2;
+    const contrast = Math.sqrt(varSum / total);
+
+    const r_mean = rSum/total, g_mean = gSum/total, b_mean = bSum/total;
+    const brightness = brightMean;
+    const color_temp = r_mean - b_mean;
+    const saturation = satSum/total;
+
+    // normalize histograms
+    const nrh = rHist.map(v=>+(v/total).toFixed(6));
+    const ngh = gHist.map(v=>+(v/total).toFixed(6));
+    const nbh = bHist.map(v=>+(v/total).toFixed(6));
+    const zoneNorm = zones.map((z,i)=>+(z/(zoneCounts[i]||1)).toFixed(4));
+
+    // hue bucket (rough, from RGB)
+    let hueBucket = 7; // neutral
+    const maxC = Math.max(r_mean,g_mean,b_mean);
+    if (saturation > 0.08) {
+      if (maxC === r_mean && g_mean >= b_mean) hueBucket = 1; // orange/red-yellow
+      else if (maxC === r_mean) hueBucket = 0; // red
+      else if (maxC === g_mean && b_mean <= r_mean) hueBucket = 2; // yellow-green
+      else if (maxC === g_mean) hueBucket = 3; // green
+      else if (b_mean > r_mean && b_mean > g_mean) {
+        hueBucket = b_mean-g_mean > 0.05 ? 5 : 4; // blue vs cyan
+      }
+    }
+
+    // Build feature vector
+    const raw = [
+      r_mean, g_mean, b_mean,
+      brightness, color_temp, saturation,
+      edgeDensity, contrast,
+      hueBucket / 7,
+      ...zoneNorm, ...nrh, ...ngh, ...nbh
+    ];
+    // L2 normalize
+    const norm = Math.sqrt(raw.reduce((s,v)=>s+v*v,0)) || 1;
+    const fv = raw.map(v=>+(v/norm).toFixed(6));
+
+    return {
+      r_mean: +r_mean.toFixed(4), g_mean: +g_mean.toFixed(4), b_mean: +b_mean.toFixed(4),
+      brightness: +brightness.toFixed(4),
+      color_temp: +color_temp.toFixed(4),
+      saturation: +saturation.toFixed(4),
+      edge_density: +edgeDensity.toFixed(4),
+      contrast: +contrast.toFixed(4),
+      hue_bucket: hueBucket,
+      brightness_zones: zoneNorm,
+      hist_r: nrh, hist_g: ngh, hist_b: nbh,
+      feature_vector: fv,
+    };
+  }
+
+  const results = {};
+  const total = scenes.length;
+
+  for (let i = 0; i < total; i++) {
+    const s = scenes[i];
+    progressText.textContent = `กำลังประมวลผล ${i+1}/${total}: ${s.id}`;
+    bar.style.width = Math.round((i/total)*90) + '%';
+
+    try {
+      const feats = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { try { resolve(extractFeatures(img)); } catch(e) { reject(e); } };
+        img.onerror = () => reject(new Error('โหลดรูปไม่ได้'));
+        // Try thumbnail first (smaller, faster), fallback to full
+        img.src = s.thumb || s.filepath;
+      });
+      results[s.id] = feats;
+      addLog(`✅ ${s.id} — brightness=${feats.brightness.toFixed(3)} color_temp=${feats.color_temp >= 0 ? '+' : ''}${feats.color_temp.toFixed(3)}`);
+    } catch(e) {
+      addLog(`⚠️ ${s.id} — ${e.message} (ข้ามไป)`);
+    }
+    // Yield to UI
+    await new Promise(r => setTimeout(r, 30));
+  }
+
+  bar.style.width = '100%';
+  progressText.textContent = `✅ เสร็จแล้ว! ${Object.keys(results).length}/${total} ฉาก — กำลัง download...`;
+
+  const json = JSON.stringify(results, null, 2);
+  downloadFile('visual_features.json', json, 'application/json');
+
+  addLog('');
+  addLog(`📥 Download visual_features.json แล้ว — นำไปแทนที่ไฟล์ใน _database/ เพื่อให้ AI ใช้ข้อมูลใหม่`);
+
+  startBtn.textContent = '✅ เสร็จแล้ว';
+  document.getElementById('rcCancelBtn').disabled = false;
+  document.getElementById('rcCancelBtn').textContent = 'ปิด';
+}
+
+// ══════════════════════════════════════════════
+// ADMIN SIDEBAR TAB SWITCH
+// ══════════════════════════════════════════════
+let adminTab = 'scenes';
+function switchAdminTab(tab) {
+  adminTab = tab;
+  // sidebar panels
+  document.getElementById('sidebarScenes').classList.toggle('hidden', tab !== 'scenes');
+  document.getElementById('sidebarShows').classList.toggle('hidden', tab !== 'shows');
+  document.getElementById('sidebarUsers').classList.toggle('hidden', tab !== 'users');
+  document.getElementById('sidebarActivity').classList.toggle('hidden', tab !== 'activity');
+  // main panels
+  document.getElementById('editorArea').classList.toggle('hidden', tab !== 'scenes');
+  document.getElementById('showsPanel').classList.toggle('hidden', tab !== 'shows');
+  document.getElementById('usersPanel').classList.toggle('hidden', tab !== 'users');
+  document.getElementById('activityPanel').classList.toggle('hidden', tab !== 'activity');
+
+  // Tab button styles
+  ['scenes','shows','users','activity'].forEach(t => {
+    const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (!el) return;
+    const active = t === tab;
+    el.style.color = active ? 'var(--red)' : 'var(--muted)';
+    el.style.borderBottomColor = active ? 'var(--red)' : 'transparent';
+  });
+
+  if (tab === 'users')    renderUserCards();
+  if (tab === 'activity') renderActivityPanel();
+  if (tab === 'shows')    renderShowsPanel();
+}
+
+// ══════════════════════════════════════════════
+// SHOW PROFILE MANAGEMENT
+// ══════════════════════════════════════════════
+const SHOWS_KEY = 'vp_shows_v1';
+
+// DEFAULT_SHOWS — seed data, ใช้เมื่อ localStorage ว่างและไม่มี shows.json
+const DEFAULT_SHOWS = [
+  { id: 'SH-MN0OWNG3', name: 'Key Messages',    color: '#DC2626', logo_url: '' },
+  { id: 'SH-MN1XLN7A', name: 'THE SECRET SAUCE', color: '#FDC029', logo_url: '' },
+];
+
+function loadShows() {
+  try {
+    const raw = localStorage.getItem(SHOWS_KEY);
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; }
+  } catch(e) {}
+  return [];
+}
+function saveShows(shows) {
+  localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+}
+
+async function initShows() {
+  // Priority 1: localStorage
+  const stored = loadShows();
+  if (stored.length > 0) return;
+
+  // Priority 2: _database/scenes.json (Export DB ฝัง shows ไว้ใน field "shows")
+  try {
+    const res = await fetch('_database/scenes.json?v=' + Date.now());
+    if (res.ok) {
+      const data = await res.json();
+      const arr = Array.isArray(data.shows) ? data.shows : [];
+      if (arr.length > 0) { saveShows(arr); renderShowsPanel(); showToast('📺 โหลดรายการจาก scenes.json สำเร็จ'); return; }
+    }
+  } catch(e) {}
+
+  // Priority 3: _database/shows.json (standalone export)
+  try {
+    const res = await fetch('_database/shows.json?v=' + Date.now());
+    if (res.ok) {
+      const data = await res.json();
+      const arr = Array.isArray(data.shows) ? data.shows : (Array.isArray(data) ? data : []);
+      if (arr.length > 0) { saveShows(arr); renderShowsPanel(); return; }
+    }
+  } catch(e) {}
+
+  // Priority 4: DEFAULT_SHOWS
+  saveShows(DEFAULT_SHOWS);
+  renderShowsPanel();
+}
+
+function exportShows() {
+  const shows = loadShows();
+  const blob = new Blob([JSON.stringify({ shows }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shows.json';
+  a.click();
+  showToast('📤 Export shows.json แล้ว — นำไปวางใน _database/ เพื่อ deploy', 'green');
+}
+
+function importShows(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const arr = Array.isArray(data.shows) ? data.shows : (Array.isArray(data) ? data : []);
+      if (!arr.length) { showToast('❌ ไม่พบข้อมูล shows ในไฟล์', 'red'); return; }
+      saveShows(arr);
+      renderShowsPanel();
+      showToast(`✅ Import ${arr.length} รายการสำเร็จ`, 'green');
+    } catch(err) {
+      showToast('❌ ไฟล์ JSON ไม่ถูกต้อง: ' + err.message, 'red');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function renderShowsPanel() {
+  const shows = loadShows();
+  document.getElementById('showCount').textContent = shows.length;
+  document.getElementById('showList').innerHTML = shows.map(sh => `
+    <div class="scene-list-item" onclick="editShow('${sh.id}')">
+      ${sh.logo_url ? `<img class="sli-thumb" src="${escHtml(sh.logo_url)}" onerror="this.style.display='none'" style="border-radius:4px;background:#f3f4f6;">` : `<div class="sli-thumb" style="background:${sh.color||'#e5e7eb'};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px">📺</div>`}
+      <div class="sli-info">
+        <div class="sli-id" style="color:${sh.color||'var(--muted)'}">${escHtml(sh.name)}</div>
+        <div class="sli-title" style="font-size:11px">${countScenesInShow(sh.id)} ฉาก</div>
+      </div>
+    </div>
+  `).join('') || '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:13px">ยังไม่มีรายการ<br>กด + เพิ่ม เพื่อสร้าง</div>';
+
+  document.getElementById('showsGrid').innerHTML = shows.map(sh => `
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${sh.logo_url
+          ? `<img src="${escHtml(sh.logo_url)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:#f3f4f6;" onerror="this.style.display='none'">`
+          : `<div style="width:40px;height:40px;border-radius:6px;background:${sh.color||'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:20px">📺</div>`}
+        <div>
+          <div style="font-weight:700;font-size:14px">${escHtml(sh.name)}</div>
+          <div style="font-size:12px;color:var(--muted)">${countScenesInShow(sh.id)} ฉาก · ID: ${sh.id}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button class="btn-secondary" style="font-size:11px;padding:4px 10px" onclick="editShow('${sh.id}')">✏️ แก้ไข</button>
+          <button class="btn-delete" style="font-size:11px;padding:4px 10px" onclick="deleteShow('${sh.id}')">🗑</button>
+        </div>
+      </div>
+      ${sh.color ? `<div style="height:4px;border-radius:2px;background:${sh.color}"></div>` : ''}
+    </div>
+  `).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">ยังไม่มีรายการ — กด "+ เพิ่มรายการ" ด้านบน</div>';
+}
+
+function countScenesInShow(showId) {
+  return scenes.filter(s => (s.show_ids||[]).includes(showId)).length;
+}
+
+function openNewShowModal() {
+  openShowModal(null);
+}
+
+function editShow(id) {
+  const shows = loadShows();
+  const sh = shows.find(s => s.id === id);
+  if (sh) openShowModal(sh);
+}
+
+function openShowModal(sh) {
+  const isNew = !sh;
+  const id    = sh?.id || ('SH-' + Date.now().toString(36).toUpperCase());
+  const name  = sh?.name || '';
+  const logo  = sh?.logo_url || '';
+  const color = sh?.color || '#DC2626';
+
+  // build modal
+  const modal = document.createElement('div');
+  modal.id = 'showModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:17px;font-weight:700;margin-bottom:20px">${isNew ? '＋ เพิ่มรายการใหม่' : '✏️ แก้ไขรายการ'}</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px">ชื่อรายการ *</label>
+          <input id="sm_name" class="form-input" value="${escHtml(name)}" placeholder="เช่น THE STANDARD Morning Brief">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px">โลโก้รายการ (ไม่บังคับ)</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div id="sm_logo_wrap" style="width:72px;height:48px;border:1.5px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#F9FAFB;cursor:pointer;flex-shrink:0" onclick="document.getElementById('sm_logo_file').click()" title="คลิกเพื่อเลือกภาพ">
+              ${logo ? `<img id="sm_logo_preview" src="${escHtml(logo)}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.innerHTML='<span style=font-size:20px>🖼</span>'">` : `<span id="sm_logo_preview" style="font-size:20px">🖼</span>`}
+            </div>
+            <div style="flex:1">
+              <button type="button" onclick="document.getElementById('sm_logo_file').click()" style="font-size:12px;padding:6px 14px;background:#F3F4F6;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;color:#374151;">📁 เลือกภาพ</button>
+              <input type="file" id="sm_logo_file" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+              <div id="sm_logo_filename" style="font-size:11px;color:var(--muted);margin-top:4px">${logo ? 'มีโลโก้อยู่แล้ว' : 'ยังไม่มีภาพ'}</div>
+            </div>
+          </div>
+          <input type="hidden" id="sm_logo" value="${escHtml(logo)}">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px">สีประจำรายการ</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="color" id="sm_color" value="${color}" style="width:44px;height:36px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px">
+            <span id="sm_color_label" style="font-size:13px;font-family:monospace">${color}</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px">
+        <button class="btn-secondary" onclick="document.getElementById('showModal').remove()">ยกเลิก</button>
+        <button class="btn-save" onclick="saveShowModal('${id}', ${isNew})">💾 บันทึก</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  document.getElementById('sm_color').addEventListener('input', e => {
+    document.getElementById('sm_color_label').textContent = e.target.value;
+  });
+}
+
+function updateLogoPreview() {
+  // legacy — no-op, now handled by handleLogoUpload
+}
+
+async function handleLogoUpload(input) {
+  let file = input.files[0];
+  if (!file) return;
+
+  document.getElementById('sm_logo_filename').textContent = '⏳ กำลัง convert...';
+
+  // Convert to WebP (quality 0.85) เหมือน scene images
+  try {
+    const result = await convertImageToWebP(file, { quality: 0.85 });
+    if (result.wasConverted) file = blobToFile(result.blob, result.filename);
+  } catch(e) { console.warn('[logo webp]', e); }
+
+  // Preview ทันที
+  const dataUrl = await new Promise(res => {
+    const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
+  });
+  const wrap = document.getElementById('sm_logo_wrap');
+  wrap.innerHTML = `<img id="sm_logo_preview" src="${dataUrl}" style="width:100%;height:100%;object-fit:contain">`;
+  document.getElementById('sm_logo_filename').textContent = '⏳ กำลัง upload...';
+
+  // หา show_id จาก modal context
+  const saveBtn = document.querySelector('#showModal .btn-save');
+  const showId = saveBtn ? saveBtn.getAttribute('onclick').match(/'([^']+)'/)?.[1] || '' : '';
+  const destPath = `_graphics/shows/${showId || ('logo_' + Date.now())}.webp`;
+
+  const r = await uploadFileToDisk(file, destPath);
+  if (r.ok) {
+    document.getElementById('sm_logo').value = r.path;
+    document.getElementById('sm_logo_filename').textContent = `✅ ${file.name}`;
+  } else {
+    // fallback: เก็บ base64 ถ้า server ไม่รัน
+    document.getElementById('sm_logo').value = dataUrl;
+    document.getElementById('sm_logo_filename').textContent = `⚠️ ${file.name} (local — รัน launch.py เพื่อบันทึกลงดิสก์)`;
+  }
+}
+
+function saveShowModal(id, isNew) {
+  const name = document.getElementById('sm_name').value.trim();
+  if (!name) { alert('กรุณาใส่ชื่อรายการ'); return; }
+  const shows = loadShows();
+  const sh = { id, name, logo_url: document.getElementById('sm_logo').value.trim(), color: document.getElementById('sm_color').value };
+  if (isNew) {
+    shows.push(sh);
+  } else {
+    const idx = shows.findIndex(s => s.id === id);
+    if (idx !== -1) shows[idx] = sh; else shows.push(sh);
+  }
+  saveShows(shows);
+  document.getElementById('showModal').remove();
+  renderShowsPanel();
+  showToast('💾 บันทึกรายการแล้ว!', 'green');
+}
+
+function deleteShow(id) {
+  if (!confirm('ลบรายการนี้? ฉากที่ tag ไว้จะยังอยู่ แต่จะไม่ถูก filter ด้วยรายการนี้อีก')) return;
+  const shows = loadShows().filter(s => s.id !== id);
+  saveShows(shows);
+  renderShowsPanel();
+  showToast('🗑 ลบรายการแล้ว', 'red');
+}
+
+function renderShowTagChecks(s) {
+  const wrap = document.getElementById('showTagChecks');
+  if (!wrap) return;
+  const shows = loadShows();
+  if (!shows.length) { wrap.innerHTML = '<span style="font-size:12px;color:var(--muted)">ยังไม่มีรายการ</span>'; return; }
+  const cur = s.show_ids || [];
+  wrap.innerHTML = shows.map(sh => {
+    const checked = cur.includes(sh.id);
+    const dot = sh.color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color};margin-right:5px"></span>` : '';
+    return `<label style="display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid ${checked?sh.color||'var(--red)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:${checked?'#FEF2F2':'#fff'};transition:all .12s">
+      <input type="checkbox" data-show-id="${sh.id}" ${checked?'checked':''} style="display:none" onchange="this.closest('label').style.borderColor=this.checked?'${sh.color||'var(--red)'}':'var(--border)';this.closest('label').style.background=this.checked?'#FEF2F2':'#fff'">
+      ${dot}${escHtml(sh.name)}
+    </label>`;
+  }).join('');
+}
+
+function getCheckedShowIds() {
+  return [...document.querySelectorAll('#showTagChecks input[type=checkbox]:checked')].map(el => el.dataset.showId);
+}
+
+// ══════════════════════════════════════════════
+// USER MANAGEMENT
+// ══════════════════════════════════════════════
+// Working copy of users (in-memory until exported)
+let WM_USERS = null;  // { username: {role, hash, name, created} }
+
+async function ensureUsersLoaded() {
+  if (!WM_USERS) {
+    if (ADMIN_USERS_DB) {
+      WM_USERS = JSON.parse(JSON.stringify(ADMIN_USERS_DB));
+    } else {
+      const ok = await loadUsersDB(true);
+      WM_USERS = ok ? JSON.parse(JSON.stringify(ADMIN_USERS_DB)) : {};
+    }
+  }
+}
+
+function renderUserList() {
+  if (!WM_USERS) return;
+  const container = document.getElementById('userList');
+  const entries = Object.entries(WM_USERS);
+  document.getElementById('userCount').textContent = entries.length;
+  container.innerHTML = entries.map(([uname, info]) => `
+    <div onclick="selectUserCard('${uname}')" style="padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='#fff'">
+      <div style="font-size:12px;font-weight:700;font-family:'IBM Plex Sans',monospace;">${uname}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:1px;">${info.name || ''} · <span style="color:${info.role==='admin'?'var(--red)':'var(--muted)'}">${info.role}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderUserCards() {
+  ensureUsersLoaded().then(() => {
+    renderUserList();
+    if (!WM_USERS) return;
+    const container = document.getElementById('userCards');
+    const entries = Object.entries(WM_USERS);
+    container.innerHTML = entries.map(([uname, info]) => `
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:${info.role==='admin'?'var(--red)':'#E5E7EB'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+          ${info.role === 'admin' ? '👑' : '👤'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;font-family:'IBM Plex Sans',monospace;">${uname}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${info.name || '(ไม่มีชื่อ)'} · Role: <strong style="color:${info.role==='admin'?'var(--red)':'var(--dark)'}">${info.role}</strong></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px;">สร้างเมื่อ: ${info.created || 'ไม่ระบุ'}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="openEditUserModal('${uname}')">✏️ แก้ไข</button>
+          ${uname !== sessionStorage.getItem(SESSION_KEY) ? `<button class="btn-delete" style="padding:6px 12px;font-size:12px;" onclick="deleteUser('${uname}')">🗑</button>` : '<span style="font-size:11px;color:var(--muted);padding:6px 8px;">(ตัวเอง)</span>'}
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function selectUserCard(uname) {
+  // Just highlight - clicking edit handles editing
+}
+
+function openAddUserModal() {
+  document.getElementById('userModalTitle').textContent = '➕ เพิ่มผู้ใช้ใหม่';
+  document.getElementById('editingUsername').value = '';
+  document.getElementById('umUsername').value = '';
+  document.getElementById('umUsername').disabled = false;
+  document.getElementById('umName').value = '';
+  document.getElementById('umRole').value = 'editor';
+  document.getElementById('umPassword').value = '';
+  document.getElementById('umPasswordConfirm').value = '';
+  document.getElementById('umPassHint').textContent = '(บังคับใส่)';
+  document.getElementById('umError').style.display = 'none';
+  document.getElementById('userModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('umUsername').focus(), 80);
+}
+
+function openEditUserModal(uname) {
+  if (!WM_USERS || !WM_USERS[uname]) return;
+  const info = WM_USERS[uname];
+  document.getElementById('userModalTitle').textContent = `✏️ แก้ไข: ${uname}`;
+  document.getElementById('editingUsername').value = uname;
+  document.getElementById('umUsername').value = uname;
+  document.getElementById('umUsername').disabled = true;
+  document.getElementById('umName').value = info.name || '';
+  document.getElementById('umRole').value = info.role || 'editor';
+  document.getElementById('umPassword').value = '';
+  document.getElementById('umPasswordConfirm').value = '';
+  document.getElementById('umPassHint').textContent = '(เว้นว่างถ้าไม่ต้องการเปลี่ยน)';
+  document.getElementById('umError').style.display = 'none';
+  document.getElementById('userModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('umName').focus(), 80);
+}
+
+function closeUserModal() {
+  document.getElementById('userModalOverlay').classList.remove('open');
+}
+
+async function saveUser() {
+  const editingUname = document.getElementById('editingUsername').value;
+  const isNew = !editingUname;
+
+  const uname    = (isNew ? document.getElementById('umUsername').value.trim().toLowerCase() : editingUname);
+  const name     = document.getElementById('umName').value.trim();
+  const role     = document.getElementById('umRole').value;
+  const pass     = document.getElementById('umPassword').value;
+  const passConf = document.getElementById('umPasswordConfirm').value;
+  const errEl    = document.getElementById('umError');
+
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+
+  if (isNew && !uname) { showErr('กรุณากรอก Username'); return; }
+  if (isNew && !/^[a-z0-9_-]+$/.test(uname)) { showErr('Username ใช้ได้เฉพาะ a-z, 0-9, _ หรือ -'); return; }
+  if (isNew && WM_USERS[uname]) { showErr('Username นี้มีอยู่แล้ว'); return; }
+  if (isNew && !pass) { showErr('กรุณากรอก Password สำหรับ user ใหม่'); return; }
+  if (pass && pass !== passConf) { showErr('Password ไม่ตรงกัน'); return; }
+  if (pass && pass.length < 6) { showErr('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
+
+  const btn = document.getElementById('umSaveBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  await ensureUsersLoaded();
+
+  let hash = WM_USERS[uname]?.hash || '';
+  if (pass) hash = await sha256(pass);
+
+  WM_USERS[uname] = {
+    role,
+    hash,
+    name: name || uname,
+    created: WM_USERS[uname]?.created || new Date().toISOString().slice(0,10)
+  };
+
+  btn.disabled = false; btn.textContent = '💾 บันทึก';
+  closeUserModal();
+  renderUserCards();
+  showToast(isNew ? `✅ เพิ่ม ${uname} แล้ว — ดาวน์โหลด JSON เพื่อบันทึกถาวร` : `✅ อัปเดต ${uname} แล้ว`, 'green');
+  showDownloadUsersBtn();
+}
+
+async function deleteUser(uname) {
+  if (!confirm(`ต้องการลบ user "${uname}" ใช่ไหม?`)) return;
+  await ensureUsersLoaded();
+  delete WM_USERS[uname];
+  renderUserCards();
+  showToast(`🗑 ลบ ${uname} แล้ว — ดาวน์โหลด JSON เพื่อบันทึกถาวร`, '');
+  showDownloadUsersBtn();
+}
+
+function showDownloadUsersBtn() {
+  // Show download button if not already shown
+  let btn = document.getElementById('dlUsersBtn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'dlUsersBtn';
+    btn.className = 'btn-save';
+    btn.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:100;padding:10px 18px;font-size:13px;';
+    btn.textContent = '📥 ดาวน์โหลด users.json';
+    btn.onclick = downloadUsersJSON;
+    document.body.appendChild(btn);
+  }
+  btn.style.display = 'block';
+}
+
+function downloadUsersJSON() {
+  const json = JSON.stringify(WM_USERS, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = 'users.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 ดาวน์โหลด users.json แล้ว — นำไปแทนที่ใน _database/', 'green');
+}
+
+// ══════════════════════════════════════════════
+// ACTIVITY LOG PANEL
+// ══════════════════════════════════════════════
+const ACT_KEY = 'vp_activity_log';
+
+function getActivityLog() {
+  try { return JSON.parse(localStorage.getItem(ACT_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function renderActivityPanel() {
+  const log = getActivityLog();
+  const filterUser = document.getElementById('actFilterUser')?.value || 'all';
+  const filterType = document.getElementById('actFilterType')?.value || 'all';
+
+  // populate user filter dropdown
+  const users = [...new Set(log.map(e => e.user))].filter(Boolean).sort();
+  const sel = document.getElementById('actFilterUser');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="all">👥 ทุก User</option>' +
+      users.map(u => `<option value="${u}" ${u===cur?'selected':''}>${u}</option>`).join('');
+  }
+
+  const filtered = log.filter(e =>
+    (filterUser === 'all' || e.user === filterUser) &&
+    (filterType === 'all' || e.type === filterType)
+  );
+
+  // ── Stats row ──
+  const totalEvents = filtered.length;
+  const totalViews  = filtered.filter(e=>e.type==='view_scene').length;
+  const totalSearch = filtered.filter(e=>e.type==='search').length;
+  const totalRec    = filtered.filter(e=>e.type==='recommend').length;
+  const uniqueUsers = new Set(filtered.map(e=>e.user)).size;
+  const uniqueScenes= new Set(filtered.filter(e=>e.scene_id).map(e=>e.scene_id)).size;
+
+  const statCard = (icon, label, val, color='var(--dark)') =>
+    `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+      <div style="font-size:22px;font-weight:800;color:${color}">${val}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:3px;">${icon} ${label}</div>
+    </div>`;
+
+  document.getElementById('actStatsRow').innerHTML =
+    statCard('📋','Events ทั้งหมด', totalEvents) +
+    statCard('👥','Users', uniqueUsers, 'var(--blue)') +
+    statCard('👁','ดูฉาก', totalViews, 'var(--green)') +
+    statCard('🔍','ค้นหา', totalSearch, 'var(--yellow)') +
+    statCard('🎯','แนะนำ', totalRec, 'var(--purple)') +
+    statCard('🎬','ฉากที่ถูกดู', uniqueScenes, 'var(--red)');
+
+  // ── Top Scenes heatmap ──
+  const sceneViews = {};
+  filtered.filter(e=>e.type==='view_scene' && e.scene_id).forEach(e => {
+    sceneViews[e.scene_id] = (sceneViews[e.scene_id]||0) + 1;
+  });
+  const sorted = Object.entries(sceneViews).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxV = sorted[0]?.[1] || 1;
+
+  if (!sorted.length) {
+    document.getElementById('actTopScenes').innerHTML = '<div style="color:var(--muted);font-size:13px;">ยังไม่มีข้อมูล</div>';
+  } else {
+    document.getElementById('actTopScenes').innerHTML = sorted.map(([sid, cnt]) => {
+      const pct = Math.round(cnt/maxV*100);
+      const s = scenes.find(x=>x.id===sid);
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:70px;font-size:11px;font-weight:700;color:var(--red);font-family:'IBM Plex Sans',monospace;flex-shrink:0;">${sid}</div>
+        <div style="flex:1;background:#F3F4F6;border-radius:4px;height:18px;position:relative;overflow:hidden;">
+          <div style="width:${pct}%;background:linear-gradient(90deg,var(--red),#FF6B6B);height:100%;border-radius:4px;transition:width .3s;"></div>
+        </div>
+        <div style="width:28px;text-align:right;font-size:12px;font-weight:700;">${cnt}</div>
+        <div style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${s?.title_th||s?.title||''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Per-user stats ──
+  const userStats = {};
+  filtered.forEach(e => {
+    if (!e.user) return;
+    if (!userStats[e.user]) userStats[e.user] = { views:0, searches:0, recs:0, lastSeen:'' };
+    if (e.type==='view_scene') userStats[e.user].views++;
+    if (e.type==='search') userStats[e.user].searches++;
+    if (e.type==='recommend') userStats[e.user].recs++;
+    if (!userStats[e.user].lastSeen || e.ts > userStats[e.user].lastSeen) userStats[e.user].lastSeen = e.ts;
+  });
+
+  const sortedUsers = Object.entries(userStats).sort((a,b)=>(b[1].views+b[1].searches)-(a[1].views+a[1].searches));
+  if (!sortedUsers.length) {
+    document.getElementById('actPerUser').innerHTML = '<div style="color:var(--muted);font-size:13px;">ยังไม่มีข้อมูล</div>';
+  } else {
+    document.getElementById('actPerUser').innerHTML =
+      `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:7px 8px;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">User</th>
+          <th style="text-align:center;padding:7px 8px;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">👁 ดูฉาก</th>
+          <th style="text-align:center;padding:7px 8px;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">🔍 ค้นหา</th>
+          <th style="text-align:center;padding:7px 8px;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">🎯 แนะนำ</th>
+          <th style="text-align:right;padding:7px 8px;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">ใช้ล่าสุด</th>
+        </tr></thead>
+        <tbody>
+        ${sortedUsers.map(([u, st]) => {
+          const info = WM_USERS?.[u];
+          const role = info?.role || '';
+          const ts = st.lastSeen ? new Date(st.lastSeen).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}) : '-';
+          return `<tr style="border-bottom:1px solid #F9FAFB;">
+            <td style="padding:9px 8px;font-weight:700;font-family:'IBM Plex Sans',monospace;">${role==='admin'?'👑 ':role?'👤 ':''}${u}</td>
+            <td style="text-align:center;padding:9px 8px;color:var(--green);font-weight:700;">${st.views}</td>
+            <td style="text-align:center;padding:9px 8px;color:var(--yellow);font-weight:700;">${st.searches}</td>
+            <td style="text-align:center;padding:9px 8px;color:var(--purple);font-weight:700;">${st.recs}</td>
+            <td style="text-align:right;padding:9px 8px;color:var(--muted);">${ts}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── Recent events ──
+  const recent = [...filtered].reverse().slice(0, 50);
+  if (!recent.length) {
+    document.getElementById('actRecentEvents').innerHTML = '<div style="color:var(--muted);">ยังไม่มีข้อมูล</div>';
+  } else {
+    const typeIcon = { view_scene:'👁', search:'🔍', recommend:'🎯', login:'🔑', logout:'🚪' };
+    const typeLabel = { view_scene:'ดูฉาก', search:'ค้นหา', recommend:'แนะนำ', login:'Login', logout:'Logout' };
+    document.getElementById('actRecentEvents').innerHTML =
+      `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">เวลา</th>
+          <th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">User</th>
+          <th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Event</th>
+          <th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">รายละเอียด</th>
+        </tr></thead>
+        <tbody>
+        ${recent.map(e => {
+          const ts = new Date(e.ts).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+          let detail = '';
+          if (e.type==='view_scene') detail = `<span style="color:var(--red);font-weight:700;">${e.scene_id}</span> ${e.scene_title_th||e.scene_title||''}`;
+          else if (e.type==='search') detail = `"${e.query}" → ${e.results} ผล`;
+          else if (e.type==='recommend') detail = `"${e.query||''}" → ${(e.top_results||[]).map(r=>`${r.id}(${r.score}%)`).join(', ')}`;
+          else if (e.type==='login') detail = `role: ${e.role||'?'}`;
+          return `<tr style="border-bottom:1px solid #F9FAFB;">
+            <td style="padding:7px 8px;color:var(--muted);white-space:nowrap;">${ts}</td>
+            <td style="padding:7px 8px;font-weight:600;font-family:'IBM Plex Sans',monospace;">${e.user}</td>
+            <td style="padding:7px 8px;white-space:nowrap;">${typeIcon[e.type]||''} ${typeLabel[e.type]||e.type}</td>
+            <td style="padding:7px 8px;color:var(--dark);">${detail}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── Sidebar summary ──
+  const today = new Date().toISOString().slice(0,10);
+  const todayLog = log.filter(e=>e.ts.startsWith(today));
+  document.getElementById('activitySummary').innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Log: ${log.length} events</div>
+    <div style="font-size:22px;font-weight:800;color:var(--red);margin-bottom:2px;">${todayLog.length}</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">events วันนี้</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${users.map(u=>{
+        const uLog = log.filter(e=>e.user===u);
+        const uViews = uLog.filter(e=>e.type==='view_scene').length;
+        const uLast = uLog.length ? new Date(uLog[uLog.length-1].ts).toLocaleDateString('th-TH') : '-';
+        return `<div style="background:#F9FAFB;border-radius:8px;padding:8px 10px;">
+          <div style="font-size:12px;font-weight:700;">${u}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">ดูฉาก: ${uViews}ครั้ง · ล่าสุด: ${uLast}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function clearActivityLog() {
+  if (!confirm('ต้องการล้าง Activity Log ทั้งหมดใช่ไหม? ไม่สามารถย้อนกลับได้')) return;
+  localStorage.removeItem(ACT_KEY);
+  renderActivityPanel();
+  showToast('🗑 ล้าง Activity Log แล้ว', 'red');
+}
+
+function exportActivityCSV() {
+  const log = getActivityLog();
+  const filterUser = document.getElementById('actFilterUser')?.value || 'all';
+  const filterType = document.getElementById('actFilterType')?.value || 'all';
+  const filtered = log.filter(e =>
+    (filterUser === 'all' || e.user === filterUser) &&
+    (filterType === 'all' || e.type === filterType)
+  );
+  if (!filtered.length) { showToast('ไม่มีข้อมูลที่จะ export', 'red'); return; }
+
+  const header = ['timestamp','user','type','scene_id','scene_title','query','results','top_results'];
+  const rows = filtered.map(e => [
+    e.ts, e.user, e.type,
+    e.scene_id||'', e.scene_title_th||e.scene_title||'',
+    e.query||'', e.results!=null?e.results:'',
+    (e.top_results||[]).map(r=>`${r.id}(${r.score}%)`).join('|')
+  ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url;
+  a.download = `vp_activity_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📥 Export CSV แล้ว', 'green');
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, type='', duration=2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type==='green'?'green':type==='red'?'red':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// EDITOR IMAGE UPLOAD (Full + Thumb)
+// ══════════════════════════════════════════════
+function handleEditorFileDrop(e, role, sceneId) {
+  e.preventDefault();
+  const zoneId = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
+  document.getElementById(zoneId)?.classList.remove('drag-over');
+  handleEditorFileSelect(e.dataTransfer.files, role, sceneId);
+}
+
+async function handleEditorFileSelect(files, role, sceneId) {
+  if (!files || !files.length) return;
+  let file = files[0];
+  if (!file.type.startsWith('image/')) { showToast('รองรับเฉพาะไฟล์ภาพ','red'); return; }
+
+  const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
+  const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${sceneId}`;
+  const zone      = document.getElementById(zoneId);
+  if (zone) { zone.classList.remove('has-file'); zone.classList.add('uploading'); }
+
+  showToast(`⏳ กำลัง convert ${role === 'full' ? 'Full Image' : 'Thumbnail'}…`);
+
+  try {
+    // Convert PNG/JPG → WebP; use custom quality for thumb
+    const needsConvert = file.name.match(/\.(png|jpg|jpeg)$/i);
+    if (needsConvert) {
+      const q = role === 'thumb' ? 0.55 : 0.82;
+      const result = await convertImageToWebP(file, { quality: q });
+      if (result.wasConverted) {
+        file = blobToFile(result.blob, result.filename);
+        showToast(`✅ ${role === 'full' ? 'Full' : 'Thumb'}: ${result.filename} (−${result.savedPct}%)`);
+      }
+    }
+
+    // Build virtual path for Supabase Storage
+    const s = scenes.find(x => x.id === sceneId);
+    const vPath = buildVirtualPath(sceneId, file.name, role, s);
+
+    // Upload to Supabase Storage
+    const uploadResult = await uploadFileToDisk(file, vPath);
+    const finalPath = (uploadResult.ok && uploadResult.url) ? uploadResult.url : vPath;
+    if (uploadResult.ok) {
+      showToast('✅ ภาพขึ้น Supabase Storage แล้ว', 'green');
+    } else {
+      console.warn(`[upload] Supabase unavailable: ${uploadResult.error}`);
+      showToast('⚠️ Supabase offline — ภาพจะแสดงเฉพาะ session นี้', 'red', 6000);
+    }
+
+    // Update form field
+    if (role === 'full') {
+      document.getElementById('f_filepath').value = finalPath;
+      updatePreview();
+    } else {
+      document.getElementById('f_thumb').value = finalPath;
+    }
+
+    // Update upload zone UI helper
+    const objUrl = URL.createObjectURL(file);
+    const setZoneFile = (cId, zId, f, url, rRole) => {
+      const el = document.getElementById(cId);
+      if (el) el.innerHTML = `
+        <div class="upload-file-info">
+          <img src="${url}" onerror="this.style.display='none'">
+          <div class="upload-file-info-text">
+            <div class="upload-file-name">${f.name}</div>
+            <div class="upload-file-size">${humanFileSize(f.size)} · ${f.type}</div>
+          </div>
+          <button class="upload-file-clear" onclick="clearEditorUpload('${rRole}','${sceneId}',event)" title="ลบ">×</button>
+        </div>`;
+      document.getElementById(zId)?.classList.remove('uploading','drag-over');
+      document.getElementById(zId)?.classList.add('has-file');
+    };
+    setZoneFile(contentId, zoneId, file, objUrl, role);
+
+    // ── If Full Image was uploaded → auto-generate + upload thumbnail ────────
+    if (role === 'full') {
+      const thumbZoneId    = `uploadZoneThumb_${sceneId}`;
+      const thumbContentId = `uploadThumbContent_${sceneId}`;
+      const thumbZone = document.getElementById(thumbZoneId);
+      if (thumbZone) { thumbZone.classList.add('uploading'); }
+      try {
+        const thumbBlob = await generateThumb(file, 320, 180);
+        const thumbFile = blobToFile(thumbBlob, `${sceneId}_thumb.webp`);
+        const thumbVPath = `_thumbnails/${sceneId}_thumb.webp`;
+        const thumbResult = await uploadFileToDisk(thumbFile, thumbVPath);
+        const thumbFinalPath = (thumbResult.ok && thumbResult.url) ? thumbResult.url : thumbVPath;
+        const thumbUrl = URL.createObjectURL(thumbBlob);
+        // Update thumb path field
+        const fThumb = document.getElementById('f_thumb');
+        if (fThumb) fThumb.value = thumbFinalPath;
+        // Update thumb upload zone UI
+        setZoneFile(thumbContentId, thumbZoneId, thumbFile, thumbUrl, 'thumb');
+        // Update sidebar thumbnail
+        const sliThumb = document.getElementById(`sli-thumb-${sceneId}`);
+        if (sliThumb) { sliThumb.src = thumbUrl; sliThumb.style.display = ''; }
+        showToast('✅ Upload + สร้าง Thumbnail อัตโนมัติแล้ว');
+      } catch(e) {
+        console.warn('[auto-thumb]', e);
+        showToast('⚠️ Upload สำเร็จ แต่ thumbnail สร้างไม่ได้: ' + e.message);
+        if (thumbZone) thumbZone.classList.remove('uploading');
+      }
+    } else {
+      // Thumb uploaded manually → update sidebar
+      const sliThumb = document.getElementById(`sli-thumb-${sceneId}`);
+      if (sliThumb) { sliThumb.src = objUrl; sliThumb.style.display = ''; }
+      showToast('✅ อัปโหลด Thumbnail สำเร็จ');
+    }
+
+  } catch(err) {
+    console.error('[handleEditorFileSelect]', err);
+    showToast('❌ Upload ล้มเหลว: ' + err.message, 'red');
+    if (zone) zone.classList.remove('uploading');
+  }
+}
+
+function buildVirtualPath(sceneId, filename, role, scene) {
+  // Thumb always goes to _thumbnails/
+  if (role === 'thumb') {
+    const ext  = filename.split('.').pop().toLowerCase();
+    return `_thumbnails/${sceneId}_thumb.${ext}`;
+  }
+  // Full: try to preserve folder structure from existing filepath, else auto-detect
+  if (scene && scene.filepath) {
+    const dir = scene.filepath.split('/').slice(0,-1).join('/');
+    if (dir) return `${dir}/${filename}`;
+  }
+  // Auto-detect folder from sceneId / filename
+  const lower = filename.toLowerCase();
+  let folder = 'indoor/misc';
+  if (lower.match(/scifi|sci.fi|portal|robot.display|future|cyber/)) folder = 'indoor/sci-fi';
+  else if (lower.match(/industr|factory|warehouse|robot.arm/)) folder = 'indoor/industrial';
+  else if (lower.match(/tunnel|cave|underground/)) folder = 'indoor/tunnel-cave';
+  else if (lower.match(/city|skyline|urban|street/)) folder = 'outdoor/city-skyline';
+  else if (lower.match(/nature|outdoor|mine|quarry|forest/)) folder = 'outdoor/nature-mine';
+  else if (lower.match(/studio|retro|music/)) folder = 'indoor/studio-retro';
+  else if (lower.match(/library|office|study/)) folder = 'indoor/library-study';
+  return `${folder}/${filename}`;
+}
+
+function clearEditorUpload(role, sceneId, e) {
+  e.stopPropagation();
+  const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${sceneId}`;
+  const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
+  const s = scenes.find(x => x.id === sceneId);
+  document.getElementById(contentId).innerHTML = role === 'full'
+    ? '<div class="upload-zone-icon">🖼</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q82</div>'
+    : '<div class="upload-zone-icon">🔳</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q55</div>';
+  document.getElementById(zoneId)?.classList.remove('has-file');
+  // Restore path from current scene data
+  if (role === 'full' && s) document.getElementById('f_filepath').value = s.filepath;
+  if (role === 'thumb' && s) document.getElementById('f_thumb').value   = s.thumb;
+}
+
+/** Restore upload zone state when opening editor */
+async function restoreUploadZones(s) {
+  for (const role of ['full','thumb']) {
+    const path = role === 'full' ? s.filepath : s.thumb;
+    if (!path) continue;
+    const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${s.id}`;
+    const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${s.id}`;
+
+    const ext = path.split('/').pop().split('.').pop().toUpperCase();
+    const contentEl = document.getElementById(contentId);
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div class="upload-file-info">
+          <img src="${path}" style="width:48px;height:27px;object-fit:cover;border-radius:4px;background:#e5e7eb" onerror="this.style.display='none'">
+          <div class="upload-file-info-text">
+            <div class="upload-file-name">${path.split('/').pop()}</div>
+            <div class="upload-file-size">${ext}</div>
+          </div>
+          <button class="upload-file-clear" onclick="clearEditorUpload('${role}','${s.id}',event)" title="ลบ">×</button>
+        </div>`;
+      document.getElementById(zoneId)?.classList.add('has-file');
+    }
+  }
+}
+
+function refreshThumbPreview(sceneId) {
+  // no-op for now — thumb only shows in sidebar & search
+}
+
+
+// ══════════════════════════════════════════════
+// LOCAL AI TAG — OLLAMA
+// ══════════════════════════════════════════════
+const OLLAMA_HOST_KEY  = 'vp_ollama_host';
+const OLLAMA_MODEL_KEY = 'vp_ollama_model';
+
+function openTagGuideModal(sceneId) {
+  if (sceneId) {
+    document.getElementById('tg_tag').value = `tag ${sceneId} แล้ว apply เข้า VP Library ให้เลย`;
+  } else {
+    document.getElementById('tg_tag').value = 'tag VP-0XX แล้ว apply เข้า VP Library ให้เลย';
+  }
+  document.getElementById('tagGuideOverlay').style.display = 'flex';
+}
+function closeTagGuideModal() {
+  document.getElementById('tagGuideOverlay').style.display = 'none';
+}
+function copyText(id, btn) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand('copy');
+  const orig = btn.textContent;
+  btn.textContent = '✓';
+  btn.style.background = '#10B981';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = '#6366F1'; }, 1500);
+}
+
+function openOllamaModal() {
+  const host  = localStorage.getItem(OLLAMA_HOST_KEY)  || 'http://localhost:11434';
+  const model = localStorage.getItem(OLLAMA_MODEL_KEY) || 'moondream';
+  document.getElementById('ollamaHostInput').value  = host;
+  document.getElementById('ollamaModelInput').value = model;
+  const st = document.getElementById('ollamaStatus');
+  st.style.display = 'none';
+  document.getElementById('ollamaOverlay').classList.add('open');
+  // Auto-fetch model list when opening
+  setTimeout(() => ollamaFetchModels(true), 200);
+}
+function closeOllamaModal() {
+  document.getElementById('ollamaOverlay').classList.remove('open');
+}
+function _ollamaGetSelectedModel() {
+  const sel = document.getElementById('ollamaModelSelect');
+  const inp = document.getElementById('ollamaModelInput');
+  if (sel && sel.style.display !== 'none' && sel.value) return sel.value;
+  return (inp ? inp.value.trim() : '') || 'moondream';
+}
+function saveOllamaSettings() {
+  const host  = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
+  const model = _ollamaGetSelectedModel();
+  localStorage.setItem(OLLAMA_HOST_KEY,  host);
+  localStorage.setItem(OLLAMA_MODEL_KEY, model);
+  showToast(`✓ บันทึกการตั้งค่า Ollama แล้ว (${model})`, 'green');
+  closeOllamaModal();
+}
+
+async function ollamaFetchModels(silent = false) {
+  const host = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
+  const btn  = document.getElementById('ollamaFetchBtn');
+  const sel  = document.getElementById('ollamaModelSelect');
+  const inp  = document.getElementById('ollamaModelInput');
+  const hint = document.getElementById('ollamaModelHint');
+  const st   = document.getElementById('ollamaStatus');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+
+  try {
+    const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data   = await res.json();
+    const models = (data.models || []).map(m => m.name).filter(Boolean);
+
+    if (models.length === 0) {
+      if (!silent) {
+        st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+        st.textContent = '⚠️ Ollama เชื่อมต่อได้แต่ยังไม่มี model — รัน: ollama pull moondream';
+      }
+      return;
+    }
+
+    // Saved model
+    const saved = localStorage.getItem(OLLAMA_MODEL_KEY) || inp.value.trim() || '';
+
+    // Build dropdown
+    sel.innerHTML = '';
+    // Vision-capable models first
+    const visionKeywords = ['llava','moondream','bakllava','cogvlm','minicpm-v','qwen-vl','internvl','phi3-vision','gemma3'];
+    const visionModels = models.filter(m => visionKeywords.some(k => m.toLowerCase().includes(k)));
+    const otherModels  = models.filter(m => !visionKeywords.some(k => m.toLowerCase().includes(k)));
+
+    if (visionModels.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = '👁 Vision Models (แนะนำ)';
+      visionModels.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        if (m === saved || m.startsWith(saved + ':')) opt.selected = true;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+    if (otherModels.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = '💬 Other Models';
+      otherModels.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        if (m === saved || m.startsWith(saved + ':')) opt.selected = true;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+    // If nothing selected yet, pick first vision model
+    if (!sel.value && visionModels.length > 0) sel.value = visionModels[0];
+
+    // Show dropdown, hide text input
+    sel.style.display = '';
+    inp.style.display = 'none';
+    hint.innerHTML = `<span style="color:#10B981">✅ พบ ${models.length} model</span> — เลือก Vision Model เพื่อวิเคราะห์ภาพ`;
+
+    if (!silent) {
+      st.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#166534;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+      st.textContent = `✅ โหลด ${models.length} model สำเร็จ — เลือก model ด้านบนแล้วกดบันทึก`;
+    }
+
+  } catch(e) {
+    sel.style.display  = 'none';
+    inp.style.display  = '';
+    hint.innerHTML = 'กด <strong>ดึงรายการ</strong> เพื่อโหลด model ที่ติดตั้งแล้ว หรือพิมพ์ชื่อเองได้เลย';
+    if (!silent) {
+      st.style.cssText = 'display:block;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+      st.textContent = `❌ ไม่สามารถเชื่อมต่อ ${host} — ตรวจสอบว่า "ollama serve" รันอยู่`;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ดึงรายการ'; }
+  }
+}
+
+async function ollamaCheckConnection() {
+  const host  = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
+  const model = _ollamaGetSelectedModel();
+  const st    = document.getElementById('ollamaStatus');
+  st.style.cssText = 'display:block;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+  st.textContent   = '⏳ กำลังตรวจสอบ…';
+
+  try {
+    const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data   = await res.json();
+    const models = (data.models || []).map(m => m.name);
+    const found  = models.some(m => m === model || m.startsWith(model + ':'));
+    if (found) {
+      st.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#166534;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+      st.textContent = `✅ เชื่อมต่อสำเร็จ — model "${model}" พร้อมใช้งาน`;
+    } else if (models.length > 0) {
+      st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+      st.textContent = `⚠️ เชื่อมต่อได้แต่ไม่พบ "${model}" — มี: ${models.join(', ')}`;
+      // Refresh dropdown too
+      ollamaFetchModels(true);
+    } else {
+      st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+      st.textContent = `⚠️ เชื่อมต่อได้แต่ยังไม่มี model — รัน: ollama pull moondream`;
+    }
+  } catch(e) {
+    st.style.cssText = 'display:block;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
+    st.textContent = `❌ ไม่สามารถเชื่อมต่อ ${host} — ตรวจสอบว่า "ollama serve" รันอยู่`;
+  }
+}
+
+async function aiTagSceneOllama(sceneId) {
+  const s = scenes.find(x => x.id === sceneId);
+  if (!s) return;
+
+  const host  = localStorage.getItem(OLLAMA_HOST_KEY)  || 'http://localhost:11434';
+  const model = localStorage.getItem(OLLAMA_MODEL_KEY) || _ollamaGetSelectedModel() || 'moondream';
+
+  const btn = document.getElementById('ollamaTagBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ AI…'; }
+
+  try {
+    // Resolve image — prefer full image (filepath) for accuracy, thumb only as fallback
+    const imgPath = s.filepath || s.thumb || '';
+    if (!imgPath) { showToast('⚠️ ไม่พบไฟล์ภาพสำหรับฉากนี้'); return; }
+
+    const imgBase64 = await loadImageAsBase64ForOllama(imgPath);
+    if (!imgBase64) { showToast('⚠️ โหลดภาพไม่สำเร็จ — ตรวจสอบ thumb path'); return; }
+    // DEBUG: log image size so we can verify the right image was loaded
+    console.log(`[AI Tag] imgPath="${imgPath}" base64len=${imgBase64.length} (~${Math.round(imgBase64.length*0.75/1024)}KB)`);
+    showToast(`🔍 โหลดภาพแล้ว ~${Math.round(imgBase64.length*0.75/1024)}KB — กำลังส่ง llava…`, 'blue');
+
+    const prompt = `You are a scene classifier for a Thai TV broadcast virtual production library. This image may show a single scene or a split-screen/composite of multiple views of the SAME location. Classify based on the PRIMARY or DOMINANT environment shown — focus on the LEFT or CENTER of the image if multiple panels exist.
+
+Respond ONLY with a JSON object — no markdown, no explanation, no extra text.
+
+{
+  "title_en": "<3-5 word English title for the PRIMARY scene, e.g. Modern Loft Interior Day>",
+  "world": "<one of: urban-city | interior-office | nature-outdoor | industrial | scifi-future | stylized-abstract | heritage-culture>",
+  "energy": "<one of: intense | balanced | open>",
+  "context_tags": ["<1-3 of: news-report | talk-interview | analysis-data | field-onsite | opener-drama | social-short | event-special>"],
+  "color_temp": "<one of: cool | warm | neutral | mixed>",
+  "brightness": "<one of: dark | low | medium | bright | high-key>",
+  "has_particles": <true or false>,
+  "dominant_colors_desc": "<2-3 words describing the main colors, e.g. warm wood brown, dark teal blue>"
+}
+
+RULES:
+- urban-city = OUTDOOR city streets/buildings/skyline ONLY
+- interior-office = ANY indoor space: loft, lobby, office, studio, home, room with furniture/stairs/plants
+- If image shows BOTH indoor and outdoor, classify the indoor area as the PRIMARY scene
+- industrial = factory/warehouse/machinery (NOT loft/studio)
+- nature-outdoor = nature, sky, mountains, forests, water (no buildings)
+world: urban-city=outdoor city streets buildings skyline, interior-office=indoor loft lobby studio office home stairs furniture, nature-outdoor=nature sky mountains water, industrial=factory warehouse machinery pipes, scifi-future=lab tech robot hologram futuristic, stylized-abstract=graphic data motion abstract, heritage-culture=temple monument historical
+energy: intense=dramatic high-contrast exciting, balanced=professional neutral steady, open=calm minimal warm friendly
+context: news-report=news standup, talk-interview=interview conversation, analysis-data=data explainer, field-onsite=outdoor reporting, opener-drama=dramatic opener, social-short=short clip, event-special=live event`;
+
+    // Check Ollama is reachable first
+    try {
+      const pingRes = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(4000) });
+      if (!pingRes.ok) throw new Error();
+    } catch(e) {
+      showToast(`❌ ไม่พบ Ollama ที่ ${host} — กด 🤖 Local AI ที่แถบด้านบนเพื่อตั้งค่า`);
+      openOllamaModal();
+      return;
+    }
+
+    const payload = JSON.stringify({
+      model: model,
+      prompt: prompt,
+      images: [imgBase64],
+      stream: false,
+      options: { temperature: 0.1, num_predict: 500 }
+    });
+
+    const res = await fetch(`${host}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      signal: AbortSignal.timeout(180000)
+    });
+
+    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+    const result = await res.json();
+    const raw    = result.response || '';
+    // DEBUG: log raw response so we can see what llava actually said
+    console.log('[AI Tag] raw response:', raw);
+
+    // Strip markdown fences, extract first {...}
+    let jsonStr = raw.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim();
+    const start = jsonStr.indexOf('{');
+    const end   = jsonStr.lastIndexOf('}') + 1;
+    if (start === -1 || end === 0) {
+      const nonVision = ['moondream','llama3','llama2','mistral','gemma','phi','qwen','deepseek','codellama','orca','falcon'];
+      const isNonVision = nonVision.some(m => model.toLowerCase().startsWith(m));
+      const hint = isNonVision
+        ? `"${model}" ไม่รองรับการวิเคราะห์ภาพ — กรุณาเปลี่ยนเป็น llava ใน 🤖 Local AI`
+        : `model "${model}" ไม่ส่ง JSON กลับมา — ลองเปลี่ยนเป็น llava`;
+      throw new Error(hint);
+    }
+    jsonStr = jsonStr.slice(start, end);
+
+    // Sanitize common LLM JSON issues before parsing:
+    // 1) Replace literal newlines / tabs inside string values with spaces
+    // 2) Remove invalid control characters (0x00–0x1F except tab/newline which we already handled)
+    // 3) Fix bad escape sequences: backslash NOT followed by valid JSON escape char
+    jsonStr = jsonStr
+      .replace(/\r\n/g, ' ')          // CRLF → space
+      .replace(/\r/g, ' ')            // CR → space
+      .replace(/\n/g, ' ')            // LF → space
+      .replace(/\t/g, ' ')            // tab → space
+      .replace(/[\x00-\x1F]/g, ' ')   // other control chars
+      // Fix bad escapes: \x, \u not followed by 4 hex, \' etc.
+      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+
+    let tagged;
+    try {
+      tagged = JSON.parse(jsonStr);
+    } catch(parseErr) {
+      // Last resort: try extracting key-value pairs manually for the fields we need
+      const extract = (key) => {
+        const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*)"`, 'i'));
+        return m ? m[1] : undefined;
+      };
+      const extractArr = (key) => {
+        const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]*)\\]`, 'i'));
+        if (!m) return [];
+        return m[1].match(/"([^"]*)"/g)?.map(s => s.replace(/"/g,'')) || [];
+      };
+      tagged = {
+        title_en:          extract('title_en'),
+        world:             extract('world'),
+        energy:            extract('energy'),
+        context_tags:      extractArr('context_tags'),
+        color_temp:        extract('color_temp'),
+        brightness:        extract('brightness'),
+        dominant_colors_desc: extract('dominant_colors_desc'),
+        has_particles:     /has_particles"\s*:\s*true/i.test(jsonStr),
+      };
+      // If we got nothing useful, throw the original error
+      if (!tagged.world && !tagged.title_en) throw new Error(`JSON parse ล้มเหลว: ${parseErr.message}`);
+    }
+
+    // Sanitize taxonomy enums
+    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
+    const validEnergy = ['intense','balanced','open'];
+    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
+    if (!validWorld.includes(tagged.world))   delete tagged.world;
+    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
+    if (Array.isArray(tagged.context_tags))
+      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0,3);
+
+    applyAiTagToForm(tagged, model);
+    showToast(`🤖 AI Tag เสร็จแล้ว (${model}) — ตรวจสอบและกด 💾 บันทึก`, 'green');
+
+  } catch(e) {
+    console.error('[aiTagSceneOllama]', e);
+    showToast('❌ AI Tag ล้มเหลว: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 AI Tag'; }
+  }
+}
+
+// ══════════════════════════════════════════════
+// CLAUDE API TAG (via local proxy vp-proxy.py)
+// ══════════════════════════════════════════════
+const CLAUDE_PROXY_URL = 'http://localhost:8081';
+
+async function aiTagSceneClaude(sceneId) {
+  const s = scenes.find(x => x.id === sceneId);
+  if (!s) return;
+
+  const btn = document.getElementById('claudeTagBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Claude…'; }
+
+  try {
+    // Check proxy is running
+    try {
+      const ping = await fetch(`${CLAUDE_PROXY_URL}/health`, { signal: AbortSignal.timeout(3000) });
+      if (!ping.ok) throw new Error();
+    } catch(e) {
+      showToast('❌ ไม่พบ bridge — รัน: python vp-bridge.py ก่อนใช้ Claude Tag');
+      return;
+    }
+
+    // Load full image
+    const imgPath = s.filepath || s.thumb || '';
+    if (!imgPath) { showToast('⚠️ ไม่พบไฟล์ภาพสำหรับฉากนี้'); return; }
+
+    const imgBase64 = await loadImageAsBase64ForOllama(imgPath); // reuse same loader
+    if (!imgBase64) { showToast('⚠️ โหลดภาพไม่สำเร็จ'); return; }
+
+    showToast(`✨ ส่งภาพให้ Claude วิเคราะห์…`, 'blue');
+
+    const res = await fetch(`${CLAUDE_PROXY_URL}/ai-tag`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: imgBase64 }),
+      signal: AbortSignal.timeout(90000)
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || `proxy error ${res.status}`);
+
+    const tagged = data.tagged;
+    console.log('[Claude Tag] result:', tagged);
+
+    // Sanitize enums
+    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
+    const validEnergy = ['intense','balanced','open'];
+    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
+    if (!validWorld.includes(tagged.world))   delete tagged.world;
+    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
+    if (Array.isArray(tagged.context_tags))
+      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0,3);
+
+    applyAiTagToForm(tagged, data.model || 'claude');
+    showToast(`✨ Claude Tag เสร็จแล้ว — ตรวจสอบและกด 💾 บันทึก`, 'green');
+
+  } catch(e) {
+    console.error('[aiTagSceneClaude]', e);
+    showToast('❌ Claude Tag ล้มเหลว: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✨ Claude Tag'; }
+  }
+}
+
+// ══════════════════════════════════════════════
+// THAI TEMPLATE GENERATOR
+// สร้าง notes + canvas_notes ภาษาไทยจาก structured fields
+// ══════════════════════════════════════════════
+const _TH = {
+  world: {
+    'urban-city':        'ฉากเมืองและถนน',
+    'interior-office':   'ฉากในร่ม / ห้องทำงาน',
+    'nature-outdoor':    'ฉากธรรมชาติกลางแจ้ง',
+    'industrial':        'ฉากโรงงาน / อุตสาหกรรม',
+    'scifi-future':      'ฉากอนาคต / เทคโนโลยี',
+    'stylized-abstract': 'ฉากกราฟิก / abstract',
+    'heritage-culture':  'ฉากวัฒนธรรม / ประวัติศาสตร์',
+  },
+  energy: {
+    'intense':  'เข้มข้น ดราม่า',
+    'balanced': 'สมดุล professional',
+    'open':     'เปิดโล่ง อบอุ่น',
+  },
+  context: {
+    'news-report':    'รายงานข่าว',
+    'talk-interview': 'สัมภาษณ์ / talk show',
+    'analysis-data':  'วิเคราะห์ข้อมูล',
+    'field-onsite':   'รายงาน on-site',
+    'opener-drama':   'เปิดรายการ / intro',
+    'social-short':   'คลิปสั้น / social media',
+    'event-special':  'งานพิเศษ / live event',
+  },
+  color_temp: {
+    'cool':    'แสงเย็น (Cool)',
+    'neutral': 'แสงกลาง (Neutral)',
+    'warm':    'แสงอุ่น (Warm)',
+    'mixed':   'แสงผสม',
+  },
+  brightness: {
+    'dark':     'มืด / low-key',
+    'low':      'แสงน้อย',
+    'medium':   'แสงปานกลาง',
+    'bright':   'สว่าง',
+    'high-key': 'High-key สว่างมาก',
+  },
+  lighting_style: {
+    'naturalistic':      'แสงธรรมชาติ',
+    'dramatic':          'แสงดราม่า',
+    'high-key news':     'High-key แบบข่าว',
+    'interview-neutral': 'แสง interview neutral',
+    'moody cinematic':   'Moody cinematic',
+    'neon-accent':       'Neon accent',
+    'silhouette':        'Silhouette',
+    'overcast flat':     'แสงสม่ำเสมอ overcast',
+  },
+  motion_type: {
+    'static':       'นิ่ง',
+    'subtle loop':  'เคลื่อนไหวเบาๆ loop',
+    'parallax':     'parallax',
+    'slow pan':     'pan ช้าๆ',
+    'timelapse':    'timelapse',
+    'particle loop':'particle loop',
+    'animated bg':  'background animation',
+  },
+  key_light_dir: {
+    'front':       'หน้าตรง',
+    'front-left':  'หน้าซ้าย',
+    'front-right': 'หน้าขวา',
+    'left':        'ซ้าย',
+    'right':       'ขวา',
+    'back-left':   'หลังซ้าย',
+    'back-right':  'หลังขวา',
+    'top':         'บน',
+    'practical':   'practical light',
+  },
+  key_light_type: {
+    'LED panel':      'LED panel',
+    'LED softbox':    'LED softbox',
+    'LED ring':       'LED ring',
+    'HMI':            'HMI',
+    'tungsten':       'Tungsten',
+    'practicals':     'Practical lights',
+    'natural window': 'แสงหน้าต่าง',
+    'neon':           'Neon',
+    'undefined':      'ไม่ระบุ',
+  },
+  environment: { 'indoor': 'ในร่ม', 'outdoor': 'กลางแจ้ง' },
+  time_of_day: {
+    'day':          'กลางวัน',
+    'golden-hour':  'ช่วง golden hour',
+    'night':        'กลางคืน',
+    'timeless':     'ไม่ระบุเวลา',
+  },
+};
+
+function _th(map, key) { return (map && key && map[key]) ? map[key] : (key || ''); }
+
+/**
+ * buildThaiNotes(tagged)
+ * สร้าง Production Notes ภาษาไทย — style เดียวกับ VP-001~010
+ * กระชับ ตรงประเด็น เน้น visual + use case จริง
+ */
+function buildThaiNotes(t) {
+  // ── บรรยายภาพ ──────────────────────────────────────────────────────────
+  const worldDesc = {
+    'urban-city':        'ฉากเมือง',
+    'interior-office':   'ฉากในร่ม',
+    'nature-outdoor':    'ฉากธรรมชาติ',
+    'industrial':        'ฉากอุตสาหกรรม',
+    'scifi-future':      'ฉาก Sci-Fi / เทคโนโลยี',
+    'stylized-abstract': 'ฉาก Abstract / กราฟิก',
+    'heritage-culture':  'ฉากวัฒนธรรม / ประวัติศาสตร์',
+  };
+  const energyDesc = {
+    'intense':  'บรรยากาศเข้มข้น ดราม่า',
+    'balanced': 'บรรยากาศ professional สมดุล',
+    'open':     'บรรยากาศเปิดโล่ง อบอุ่น',
+  };
+  const colorDesc = {
+    'cool': 'โทนแสงเย็น', 'warm': 'โทนแสงอุ่น',
+    'neutral': 'โทนแสงกลาง', 'mixed': 'แสงผสม warm-cool',
+  };
+  const brightDesc = {
+    'dark': 'มืด low-key', 'low': 'แสงน้อย',
+    'medium': 'แสงปานกลาง', 'bright': 'สว่าง', 'high-key': 'high-key สว่างมาก',
+  };
+  const ctxDesc = {
+    'news-report':    'รายงานข่าว',    'talk-interview': 'สัมภาษณ์',
+    'analysis-data':  'วิเคราะห์ข้อมูล', 'field-onsite':   'รายงาน on-site',
+    'opener-drama':   'เปิดรายการ / intro', 'social-short': 'คลิปสั้น social',
+    'event-special':  'งานพิเศษ / live',
+  };
+
+  const parts = [];
+
+  // ประโยคหลัก — บรรยายฉาก + บรรยากาศ + สีแสง + ความสว่าง
+  let main = worldDesc[t.world] || t.world || 'ฉาก VP';
+  const vibes = [energyDesc[t.energy], colorDesc[t.color_temp], brightDesc[t.brightness]]
+    .filter(Boolean);
+  if (vibes.length) main += ' — ' + vibes.join(', ');
+  if (t.has_particles) main += ' มีควัน/particle เพิ่มความลึก';
+  if (t.dominant_colors_desc) main += ` โทนสีหลัก: ${t.dominant_colors_desc}`;
+  parts.push(main + '.');
+
+  // ประโยค use case
+  const ctxLabels = (t.context_tags || []).map(c => ctxDesc[c] || c).join(', ');
+  if (ctxLabels) {
+    parts.push(`เหมาะสำหรับ ${ctxLabels} — ใช้เป็น background หลักหรือ bumper ในรายการของ THE STANDARD.`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
+ * buildThaiCanvasNotes(tagged)
+ * คำแนะนำ match แสง presenter — style VP-001 สั้น ตรง ใช้งานได้จริง
+ */
+function buildThaiCanvasNotes(t) {
+  const parts = [];
+
+  // Color temp — เรื่องสำคัญที่สุดสำหรับ VP matching
+  if (t.color_temp === 'warm') {
+    parts.push('ฉากโทนอุ่น — ใช้ gel CTO บน key light หรือตั้ง white balance ~3200K เพื่อ match สีผิว presenter กับฉาก.');
+  } else if (t.color_temp === 'cool') {
+    parts.push('ฉากโทนเย็น — ใช้ gel CTB บน key light หรือตั้ง white balance ~5600-6500K ให้ผิว presenter ไม่ดูเหลืองเกินไป.');
+  } else if (t.color_temp === 'mixed') {
+    parts.push('ฉากมี mixed color temp — ตรวจสอบสีผิว presenter บน vectorscope ให้อยู่ใกล้ skin tone line ระวังไม่ให้หน้าดูเขียวหรือม่วง.');
+  } else if (t.color_temp === 'neutral') {
+    parts.push('ฉากโทนแสงกลาง — ตั้ง white balance ~5600K (daylight) ให้ผิว presenter ดู natural.');
+  }
+
+  // Brightness — fill ratio และ exposure
+  if (t.brightness === 'dark' || t.brightness === 'low') {
+    parts.push('ฉากมืด — ลด fill light ให้อ่อน (ratio ~1:4 ถึง 1:6) เพื่อ blend หน้าผู้พูดเข้ากับฉากหลัง ระวังอย่าให้หน้าสว่างจนดูลอย.');
+  } else if (t.brightness === 'bright' || t.brightness === 'high-key') {
+    parts.push('ฉากสว่าง high-key — เพิ่มกำลัง key light presenter ให้สูงพอ (เทียบจากภาพบน monitor) ป้องกัน presenter ดูดำเมื่อเทียบกับฉาก.');
+  } else {
+    parts.push('presenter ควรอยู่ที่ 60-70 IRE บน waveform monitor — ตรวจ exposure ก่อน record เสมอ.');
+  }
+
+  // LED wall standard warning
+  parts.push('ยืนห่างจาก LED wall ≥ 1.5m เพื่อลด color spill และ light bleed จากฉาก.');
+
+  return parts.join(' ');
+}
+
+function applyAiTagToForm(tagged, modelName) {
+  const set = (id, val) => {
+    if (!val && val !== false) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = val;
+    el.style.transition = 'background .35s';
+    el.style.background = '#D1FAE5';
+    setTimeout(() => { el.style.background = ''; }, 1400);
+  };
+  const setSelect = (id, val) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Only set if option exists
+    const opts = Array.from(el.options).map(o => o.value);
+    if (opts.includes(val)) {
+      el.value = val;
+      el.style.transition = 'background .35s';
+      el.style.background = '#D1FAE5';
+      setTimeout(() => { el.style.background = ''; }, 1400);
+    }
+  };
+  const flashEl = id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.transition = 'background .35s';
+      el.style.background = '#D1FAE5';
+      setTimeout(() => { el.style.background = ''; }, 1400);
+    }
+  };
+
+  // ── Taxonomy ──────────────────────────────────────────
+  setSelect('f_world',  tagged.world);
+  setSelect('f_energy', tagged.energy);
+
+  if (Array.isArray(tagged.context_tags) && tagged.context_tags.length > 0) {
+    if (!tagState['te_context_tags']) tagState['te_context_tags'] = [];
+    tagged.context_tags.forEach(t => {
+      if (!tagState['te_context_tags'].includes(t)) tagState['te_context_tags'].push(t);
+    });
+    renderTagEditor('te_context_tags');
+    flashEl('te_context_tags');
+  }
+
+  // ── Titles ────────────────────────────────────────────
+  set('f_title',    tagged.title_en);
+  set('f_title_th', tagged.title_th);
+
+  // ── Canvas Matching Notes — stored in pending (no UI field) ──────────────
+  window._pendingCanvasNotes = buildThaiCanvasNotes(tagged);
+
+  // ── Production Notes — template-based Thai ────────────
+  const notesTh = buildThaiNotes(tagged);
+  set('f_notes', notesTh);
+}
+
+/** Load image for Ollama — returns raw base64 string (no data: prefix). */
+async function loadImageAsBase64ForOllama(imgPath) {
+  try {
+    let blob = null;
+
+    // Fetch image (http URLs for Supabase, or relative paths)
+    try {
+      const res = await fetch(imgPath + (imgPath.includes('?') ? '&' : '?') + '_ol=' + Date.now());
+      if (res.ok) {
+        const b = await res.blob();
+        if (b && b.size > 5000) blob = b;
+      }
+    } catch(e) { /* fetch failed */ }
+
+    if (!blob || blob.size === 0) return null;
+
+    console.log(`[loadImageAsBase64ForOllama] blob size: ${Math.round(blob.size/1024)}KB from "${imgPath}"`);
+
+    // Resize to 768px for better vision accuracy (was 512)
+    const blobUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = blobUrl; });
+    URL.revokeObjectURL(blobUrl);
+    const maxDim = 768;
+    const ratio  = Math.min(maxDim / img.width, maxDim / img.height, 1);
+    const canvas = document.createElement('canvas');
+    canvas.width  = Math.round(img.width  * ratio);
+    canvas.height = Math.round(img.height * ratio);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+    return dataUrl.split(',')[1]; // raw base64
+  } catch(e) {
+    console.warn('[loadImageAsBase64ForOllama]', e);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════
+// AUTO LOGIN CHECK
+// ══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadUsersDB(false);
+  const sess = sessionStorage.getItem(SESSION_KEY);
+  const isValidAdmin = ADMIN_USERS_DB && ADMIN_USERS_DB[sess] && ADMIN_USERS_DB[sess].role === 'admin';
+  if (sess && isValidAdmin) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('adminUI').classList.remove('hidden');
+    document.getElementById('exportBar').classList.remove('hidden');
+    document.getElementById('topbarUser').textContent = '👑 ' + sess;
+    initAdmin();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    if (currentId) saveScene(currentId);
+  }
+  if (e.key === 'Escape') {
+    closeConfirm();
+    closeNewModal();
+    closeUserModal();
+    closeOllamaModal();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// FALSE COLOR ENGINE — IRE luminance map (DaVinci Resolve style)
+// ══════════════════════════════════════════════════════════════
+const _ADMIN_FC_ZONES = [
+  { min:0,   max:2,   r:255, g:0,   b:255 },  // Clipped Black — Magenta
+  { min:2,   max:15,  r:26,  g:26,  b:255 },  // Underexposed  — Blue
+  { min:15,  max:30,  r:0,   g:112, b:255 },  // Low mid       — Light Blue
+  { min:30,  max:42,  r:0,   g:180, b:180 },  // Shadow mid    — Cyan
+  { min:42,  max:56,  r:0,   g:200, b:0   },  // Correct       — Green
+  { min:56,  max:70,  r:200, g:200, b:0   },  // Upper mid     — Yellow
+  { min:70,  max:87,  r:255, g:140, b:0   },  // Near clip     — Orange
+  { min:87,  max:98,  r:255, g:40,  b:0   },  // Overexposed   — Red
+  { min:98,  max:101, r:255, g:255, b:255 },  // Clipped White
+];
+
+function _adminIre2Color(lum) {
+  const ire = (lum / 255) * 100;
+  for (const z of _ADMIN_FC_ZONES) {
+    if (ire >= z.min && ire < z.max) return [z.r, z.g, z.b];
+  }
+  return [255, 255, 255];
+}
+
+async function _adminRenderFalseColor(imgEl, canvasEl) {
+  return new Promise((resolve, reject) => {
+    const draw = () => {
+      const W = imgEl.naturalWidth  || imgEl.offsetWidth;
+      const H = imgEl.naturalHeight || imgEl.offsetHeight;
+      if (!W || !H) { reject('img not ready'); return; }
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const ctx = off.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, W, H);
+      const data = ctx.getImageData(0, 0, W, H);
+      const px   = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+        const [r, g, b] = _adminIre2Color(lum);
+        px[i] = r; px[i+1] = g; px[i+2] = b;
+      }
+      ctx.putImageData(data, 0, 0);
+      canvasEl.width  = imgEl.offsetWidth  || W;
+      canvasEl.height = imgEl.offsetHeight || H;
+      canvasEl.getContext('2d').drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
+      resolve();
+    };
+    if (imgEl.complete && imgEl.naturalWidth) draw();
+    else {
+      imgEl.addEventListener('load', draw, { once:true });
+      imgEl.addEventListener('error', () => reject('img error'), { once:true });
+    }
+  });
+}
+
+let _adminFcActive = false;
+
+async function toggleAdminFalseColor(sceneId) {
+  const imgEl    = document.getElementById('previewImg');
+  const canvasEl = document.getElementById('editorFcCanvas');
+  const btnEl    = document.getElementById('editorFcBtn');
+  const iconEl   = document.getElementById('editorFcBtnIcon');
+  const legendEl = document.getElementById('editorFcLegend');
+  if (!imgEl || !canvasEl) return;
+
+  if (_adminFcActive) {
+    _adminFcActive = false;
+    canvasEl.classList.remove('active');
+    btnEl?.classList.remove('active');
+    legendEl?.classList.remove('show');
+    if (iconEl) iconEl.textContent = '⬛';
+  } else {
+    if (iconEl) iconEl.innerHTML = '<span class="fc-spin">⏳</span>';
+    btnEl?.classList.add('active');
+    try {
+      canvasEl.style.width  = imgEl.offsetWidth  + 'px';
+      canvasEl.style.height = imgEl.offsetHeight + 'px';
+      await _adminRenderFalseColor(imgEl, canvasEl);
+      _adminFcActive = true;
+      canvasEl.classList.add('active');
+      legendEl?.classList.add('show');
+      if (iconEl) iconEl.textContent = '🟢';
+    } catch(e) {
+      console.warn('[adminFalseColor]', e);
+      btnEl?.classList.remove('active');
+      if (iconEl) iconEl.textContent = '⬛';
+    }
+  }
+}
+
+</script>
+</body>
+</html>

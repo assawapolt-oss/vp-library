@@ -1,0 +1,3491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>VP Library — THE STANDARD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+  /* ── Theme variables ── */
+  :root {
+    --red:#CC2229; --green:#10B981; --yellow:#F59E0B;
+    /* Light (default) */
+    --dark:#1A1A2E; --bg:#F4F5F7; --card:#fff;
+    --border:#E5E7EB; --muted:#6B7280;
+    --nav-bg:#fff; --nav-border:#E5E7EB;
+    --input-bg:#fff; --tag-bg:#F3F4F6;
+  }
+  [data-theme="dark"] {
+    --dark:#F1F5F9; --bg:#0F1117; --card:#1E2130;
+    --border:#2D3148; --muted:#94A3B8;
+    --nav-bg:#161825; --nav-border:#2D3148;
+    --input-bg:#1E2130; --tag-bg:#252840;
+    color-scheme: dark;
+  }
+  [data-theme="dim"] {
+    --dark:#E2E8F0; --bg:#1C1F2E; --card:#252840;
+    --border:#333655; --muted:#8892A4;
+    --nav-bg:#1C1F2E; --nav-border:#333655;
+    --input-bg:#252840; --tag-bg:#2E3250;
+    color-scheme: dark;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; background:var(--bg); color:var(--dark); transition:background .25s, color .25s; }
+
+  /* ── Header title typewriter ── */
+  .vp-header-title { font-size:13px; font-weight:600; color:rgba(255,255,255,0.85); letter-spacing:.03em; white-space:nowrap; }
+  .vp-cursor { display:inline-block; color:rgba(255,255,255,0.7); animation:blink .75s step-end infinite; margin-left:1px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── Theme toggle button ── */
+  .theme-toggle { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.15); border:none; border-radius:20px; padding:4px 10px; cursor:pointer; font-size:13px; color:#fff; font-family:inherit; font-weight:600; transition:background .15s; }
+  .theme-toggle:hover { background:rgba(255,255,255,0.25); }
+  .theme-menu { position:absolute; top:52px; right:16px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:9000; overflow:hidden; min-width:150px; display:none; }
+  .theme-menu.open { display:block; animation:fadeInUp .15s ease; }
+  .theme-opt { display:flex; align-items:center; gap:10px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; color:var(--dark); transition:background .1s; }
+  .theme-opt:hover { background:var(--tag-bg); }
+  .theme-opt.active { color:var(--red); }
+
+  /* ── Topbar ── */
+  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
+  .topbar-logo { height:28px; width:auto; display:block; object-fit:contain; filter:brightness(0) invert(1); }
+  .topbar-title { font-size:15px; font-weight:700; }
+  .topbar-count { font-size:12px; opacity:.7; }
+
+  /* ── Modern minimal effects ── */
+  /* Fade-in on load */
+  @keyframes fadeInUp {
+    from { opacity:0; transform:translateY(14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  /* Skeleton shimmer */
+  @keyframes shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position:  600px 0; }
+  }
+  .skeleton {
+    border-radius:14px; overflow:hidden;
+    background: linear-gradient(90deg, #e8eaed 25%, #f5f6f7 50%, #e8eaed 75%);
+    background-size: 600px 100%;
+    animation: shimmer 1.3s infinite linear;
+  }
+  .skeleton-thumb { width:100%; aspect-ratio:16/9; }
+  .skeleton-line  { height:12px; margin:8px 12px 4px; border-radius:6px; }
+  .skeleton-line.short { width:55%; }
+
+  /* Card appear animation */
+  .scene-card { animation: fadeInUp .35s ease both; }
+  .scene-card:nth-child(1)  { animation-delay:.03s }
+  .scene-card:nth-child(2)  { animation-delay:.06s }
+  .scene-card:nth-child(3)  { animation-delay:.09s }
+  .scene-card:nth-child(4)  { animation-delay:.12s }
+  .scene-card:nth-child(5)  { animation-delay:.15s }
+  .scene-card:nth-child(6)  { animation-delay:.18s }
+  .scene-card:nth-child(n+7){ animation-delay:.21s }
+
+  /* Page section transition */
+  .view-section { animation: fadeInUp .25s ease both; }
+
+  /* ── Nav tabs (unified bar) ── */
+  .nav-bar { background:var(--nav-bg); border-bottom:2px solid var(--nav-border); padding:0 24px; display:flex; align-items:center; justify-content:space-between; }
+  .nav-left { display:flex; gap:0; }
+  .mode-tab { padding:14px 18px; font-size:13px; font-weight:700; color:var(--muted); border-bottom:3px solid transparent; cursor:pointer; transition:all .15s; border:none; background:none; font-family:inherit; margin-bottom:-2px; white-space:nowrap; }
+  .mode-tab:hover { color:var(--dark); }
+  .mode-tab.active { color:var(--red); border-bottom-color:var(--red); }
+  .nav-right { display:flex; align-items:center; gap:6px; }
+  .nav-ext-link { padding:6px 13px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; transition:all .12s; }
+  .nav-ext-link.outline { border:1.5px solid var(--border); color:var(--muted); background:var(--card); }
+  .nav-ext-link.outline:hover { border-color:var(--dark); color:var(--dark); }
+  .nav-ext-link.admin { border:1.5px solid #FCA5A5; color:#B91C1C; background:#FFF5F5; }
+  .nav-ext-link.admin:hover { background:#FEE2E2; border-color:#F87171; }
+
+  /* ══════════════ SEARCH MODE ══════════════ */
+  .search-bar { background:var(--nav-bg); border-bottom:1px solid var(--border); padding:16px 24px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .search-input { flex:1; min-width:200px; padding:10px 16px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; outline:none; }
+  .search-input:focus { border-color:var(--red); }
+  .filters { background:var(--nav-bg); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .filter-group { display:flex; flex-direction:column; gap:6px; }
+  .filter-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .filter-layer-label { display:flex; align-items:center; gap:6px; }
+  .layer-badge { display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; background:var(--red); color:#fff; letter-spacing:.04em; text-transform:none; flex-shrink:0; }
+  .filter-tags { display:flex; flex-wrap:wrap; gap:4px; }
+  .ftag { padding:4px 10px; border-radius:16px; border:1px solid var(--border); font-size:11px; font-weight:600; cursor:pointer; transition:all .12s; background:var(--card); color:var(--dark); font-family:inherit; }
+  .ftag:hover { border-color:var(--red); color:var(--red); }
+  .ftag.active { background:var(--red); border-color:var(--red); color:#fff; }
+  .results-bar { padding:12px 24px; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .results-bar-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .clear-btn { padding:5px 12px; border:1px solid var(--border); border-radius:6px; font-size:12px; cursor:pointer; background:var(--card); font-family:inherit; color:var(--muted); }
+  .clear-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* ── View toggle ── */
+  .view-toggle { display:flex; gap:4px; background:#F3F4F6; border-radius:8px; padding:3px; }
+  .vtbtn { padding:5px 12px; border-radius:6px; border:none; background:transparent; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; color:var(--muted); transition:all .12s; white-space:nowrap; }
+  .vtbtn.active { background:var(--card); color:var(--dark); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+
+  /* ── Info mode grid ── */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px; padding:0 24px 32px; }
+
+  /* ── Thumb mode grid ── */
+  .grid.thumb-mode { grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; padding:0 24px 32px; }
+
+  /* ── Cards shared ── */
+  .scene-card { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .scene-card:hover { transform:translateY(-3px) scale(1.012); box-shadow:0 8px 28px rgba(0,0,0,.12); border-color:#d1d5db; }
+  .scene-card .thumb-img { transition:transform .3s ease; }
+  .scene-card:hover .thumb-img { transform:scale(1.04); }
+  .scene-card:hover { border-color:var(--red); box-shadow:0 4px 16px rgba(204,34,41,0.12); transform:translateY(-2px); }
+
+  /* ── Info mode thumb (fixed height crop) ── */
+  .scene-thumb { width:100%; height:160px; object-fit:cover; background:#E5E7EB; display:block; }
+  .scene-thumb-placeholder { width:100%; height:160px; background:linear-gradient(135deg,#1A1A2E,#2A2A4E); display:flex; align-items:center; justify-content:center; font-size:32px; }
+  .scene-body { padding:14px; }
+
+  /* ── Thumb mode: true 16:9 ratio, no crop ── */
+  .thumb-mode .scene-card { border-radius:10px; }
+  .thumb-mode .scene-thumb-wrap { position:relative; width:100%; padding-top:56.25%; background:#111; border-radius:10px 10px 0 0; overflow:hidden; }
+  .thumb-mode .scene-thumb-wrap img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#111; }
+  .thumb-mode .scene-thumb-wrap .scene-thumb-placeholder { position:absolute; inset:0; width:100%; height:100%; }
+
+  /* hover overlay in thumb mode */
+  .thumb-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 55%); opacity:0; transition:opacity .18s; display:flex; flex-direction:column; justify-content:flex-end; padding:10px 11px; pointer-events:none; }
+  .thumb-mode .scene-card:hover .thumb-overlay { opacity:1; }
+  .thumb-overlay-id { font-size:10px; font-weight:700; color:rgba(255,255,255,.7); font-family:'IBM Plex Sans',monospace; letter-spacing:.06em; }
+  .thumb-overlay-title { font-size:12px; font-weight:700; color:#fff; line-height:1.35; margin-top:2px; }
+  .thumb-overlay-title-th { font-size:10px; color:rgba(255,255,255,.65); margin-top:1px; }
+  .scene-id { font-size:10px; font-weight:700; color:var(--red); letter-spacing:.08em; font-family:'IBM Plex Sans',monospace; }
+  .scene-title { font-size:13px; font-weight:700; margin:4px 0 6px; line-height:1.4; }
+  .scene-title-th { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .tag-row { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
+  .stag { display:inline-block; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600; }
+  .stag-env { background:#EFF6FF; color:#1D4ED8; }
+  .stag-mood { background:#F5F3FF; color:#6D28D9; }
+  .stag-editorial { background:#FFF5F5; color:var(--red); }
+  .stag-motion { background:#F0FDF4; color:#166534; }
+  .stag-usage { background:#FFFBEB; color:#92400E; }
+  .scene-meta { display:flex; gap:8px; font-size:11px; color:var(--muted); margin-top:8px; flex-wrap:wrap; }
+  .meta-pill { background:#F9FAFB; border:1px solid var(--border); padding:2px 7px; border-radius:4px; }
+  .notes-box { background:#FFF9C4; border-left:3px solid #F59E0B; border-radius:0 6px 6px 0; padding:6px 10px; font-size:11px; color:#78350F; margin-top:8px; line-height:1.5; }
+  .no-results { grid-column:1/-1; text-align:center; padding:60px; color:var(--muted); }
+  .no-results .nr-icon { font-size:48px; margin-bottom:12px; }
+  .no-results .nr-text { font-size:16px; font-weight:600; }
+  .no-results .nr-sub { font-size:13px; margin-top:4px; }
+
+  /* ══════════════ RECOMMEND MODE ══════════════ */
+  .rec-wrap { max-width:760px; margin:0 auto; padding:28px 24px 60px; }
+  .rec-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:16px; }
+  .rec-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:10px; }
+
+  /* Text input */
+  .rec-textarea { width:100%; min-height:96px; padding:13px 15px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; resize:vertical; outline:none; transition:border .15s; line-height:1.7; }
+  .rec-textarea:focus { border-color:var(--red); }
+  .rec-textarea::placeholder { color:#B0B8C4; }
+  .char-hint { font-size:11px; color:var(--muted); text-align:right; margin-top:4px; }
+
+  /* Topic pills */
+  .topic-pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .tpill { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); font-size:12px; font-weight:600; cursor:pointer; transition:all .12s; background:var(--card); color:var(--dark); font-family:inherit; }
+  .tpill:hover { border-color:var(--red); color:var(--red); }
+  .tpill.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* Mood grid */
+  .mood-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px; }
+  .mbtn { padding:10px 12px; border-radius:9px; border:1.5px solid var(--border); font-size:12px; font-weight:600; cursor:pointer; transition:all .12s; background:#fff; color:var(--dark); font-family:inherit; text-align:left; display:flex; align-items:center; gap:7px; }
+  .mbtn:hover { border-color:var(--red); }
+  .mbtn.active { background:#FFF0F0; border-color:var(--red); color:var(--red); }
+
+  /* Inline options row */
+  .opt-row { display:flex; flex-wrap:wrap; gap:6px; }
+  .obtn { padding:7px 14px; border-radius:8px; border:1.5px solid var(--border); font-size:12px; font-weight:600; cursor:pointer; transition:all .12s; background:var(--card); color:var(--dark); font-family:inherit; }
+  .obtn:hover { border-color:var(--red); }
+  .obtn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* Run button */
+  .rec-run-btn { width:100%; padding:14px; background:var(--red); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; margin-top:4px; }
+  .rec-run-btn:hover { opacity:.88; }
+
+  /* ── AI Status Banner ── */
+  .ai-status-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; margin-bottom:12px; font-size:12px; font-weight:600; transition:all .3s; }
+  .ai-status-bar.loading { background:#EFF6FF; border:1px solid #BFDBFE; color:#1D4ED8; }
+  .ai-status-bar.ready   { background:#F0FDF4; border:1px solid #A7F3D0; color:#065F46; }
+  .ai-status-bar.error   { background:#FFF5F5; border:1px solid #FCA5A5; color:#B91C1C; }
+  .ai-spinner { width:14px; height:14px; border:2px solid #BFDBFE; border-top-color:#1D4ED8; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+  .ai-progress { flex:1; height:4px; background:#DBEAFE; border-radius:2px; overflow:hidden; }
+  .ai-progress-fill { height:100%; background:#3B82F6; border-radius:2px; transition:width .4s ease; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── Score breakdown ── */
+  .score-breakdown { display:flex; gap:4px; margin-top:4px; margin-bottom:6px; }
+  .sb-item { flex:1; text-align:center; }
+  .sb-label { font-size:9px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  .sb-bar { height:3px; border-radius:2px; margin:2px 4px; }
+  .sb-clip { background:#8B5CF6; }
+  .sb-tag  { background:var(--green); }
+  .sb-num  { font-size:10px; font-weight:700; color:var(--muted); }
+
+  /* ── AI match badge ── */
+  .ai-badge { display:inline-flex; align-items:center; gap:3px; font-size:9px; font-weight:700; padding:1px 7px; border-radius:10px; background:#F5F3FF; color:#6D28D9; border:1px solid #DDD6FE; }
+
+  /* ── Result cards ── */
+  .rec-results { margin-top:8px; }
+  .rec-results-header { font-size:14px; font-weight:700; color:var(--muted); margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  .rcard { background:var(--card); border:1.5px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:14px; transition:all .15s; cursor:pointer; }
+  .rcard:hover { border-color:var(--red); box-shadow:0 4px 16px rgba(204,34,41,.1); }
+  .rcard-inner { display:flex; }
+  .rcard-thumb { width:180px; min-width:180px; height:120px; object-fit:cover; background:#E5E7EB; display:block; }
+  .rcard-thumb-ph { width:180px; min-width:180px; height:120px; background:linear-gradient(135deg,#1A1A2E,#2A2A4E); display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .rcard-body { flex:1; padding:14px 16px; min-width:0; }
+  .rcard-top { display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+  .rank-badge { font-size:10px; font-weight:700; color:#fff; padding:2px 9px; border-radius:4px; white-space:nowrap; }
+  .rank-1 { background:var(--red); }
+  .rank-2 { background:#6B7280; }
+  .rank-3 { background:#9CA3AF; }
+  .rcard-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
+  .rcard-title { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .rcard-title-th { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .score-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .score-track { flex:1; height:5px; background:#F3F4F6; border-radius:3px; overflow:hidden; }
+  .score-fill { height:100%; border-radius:3px; }
+  .score-fill.hi { background:var(--green); }
+  .score-fill.mid { background:var(--yellow); }
+  .score-fill.lo { background:#D1D5DB; }
+  .score-pct { font-size:11px; font-weight:700; color:var(--muted); width:32px; text-align:right; }
+  .match-tags { display:flex; flex-wrap:wrap; gap:3px; }
+  .mtag { font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600; }
+  .mtag-topic { background:#F0FDF4; color:#059669; border:1px solid #A7F3D0; }
+  .mtag-mood  { background:#F5F3FF; color:#6D28D9; border:1px solid #DDD6FE; }
+  .mtag-prod  { background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; }
+  .mtag-warn  { background:#FFFBEB; color:#B45309; border:1px solid #FDE68A; }
+  .rcard-notes { padding:8px 16px 12px; border-top:1px solid var(--border); font-size:11px; color:#78350F; background:#FFFDF0; line-height:1.6; }
+  .rcard-notes strong { color:var(--dark); }
+  .no-rec { text-align:center; padding:48px 0; color:var(--muted); }
+  .no-rec-icon { font-size:44px; margin-bottom:10px; }
+
+  /* ══════════════ FALSE COLOR ══════════════ */
+  .fc-wrap { position:relative; display:inline-block; width:100%; }
+  .fc-canvas { position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .2s; }
+  .fc-canvas.active { opacity:1; }
+  .fc-btn {
+    position:absolute; top:10px; left:10px; z-index:10;
+    background:rgba(0,0,0,.7); color:#fff; border:1.5px solid rgba(255,255,255,.25);
+    border-radius:7px; padding:5px 11px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; letter-spacing:.04em;
+    backdrop-filter:blur(4px); transition:background .15s,border-color .15s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .fc-btn:hover { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.5); }
+  .fc-btn.active { background:rgba(30,180,80,.85); border-color:#10B981; color:#fff; }
+  .fc-legend {
+    position:absolute; bottom:10px; left:10px; z-index:10;
+    display:none; flex-direction:column; gap:3px;
+    background:rgba(0,0,0,.75); border-radius:8px; padding:8px 10px;
+    backdrop-filter:blur(4px); font-size:10px; font-weight:700;
+    font-family:'IBM Plex Sans',monospace; letter-spacing:.04em;
+  }
+  .fc-legend.show { display:flex; }
+  .fc-legend-row { display:flex; align-items:center; gap:7px; color:#fff; }
+  .fc-legend-swatch { width:16px; height:10px; border-radius:2px; flex-shrink:0; }
+  .fc-spin { animation:fc-rotate .8s linear infinite; display:inline-block; }
+  @keyframes fc-rotate { to { transform:rotate(360deg); } }
+
+  /* ══════════════ MODAL (shared) ══════════════ */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--card); border-radius:16px; max-width:700px; width:100%; max-height:90vh; overflow-y:auto; }
+  .modal-img { width:100%; height:260px; object-fit:cover; border-radius:16px 16px 0 0; background:#E5E7EB; }
+  .modal-body { padding:24px; }
+  .modal-id { font-size:11px; font-weight:700; color:var(--red); letter-spacing:.08em; }
+  .modal-title { font-size:20px; font-weight:700; margin:6px 0 4px; }
+  .modal-title-th { font-size:14px; color:var(--muted); margin-bottom:16px; }
+  .modal-section { margin-bottom:16px; }
+  .modal-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px; }
+  .modal-tags { display:flex; flex-wrap:wrap; gap:5px; }
+  .modal-taxonomy-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  @media(max-width:480px){ .modal-taxonomy-grid { grid-template-columns:1fr 1fr; } }
+  .modal-notes { background:#FFF9C4; border-left:3px solid #F59E0B; border-radius:0 8px 8px 0; padding:10px 14px; font-size:13px; color:#78350F; line-height:1.6; }
+  .modal-close { position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .modal-header { position:relative; }
+  .path-box { background:#F9FAFB; border:1px solid var(--border); border-radius:6px; padding:8px 12px; font-size:12px; font-family:'IBM Plex Sans',monospace; color:var(--muted); word-break:break-all; }
+
+  /* ── Video preview collapsible ── */
+  .video-collapse-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:8px 0; user-select:none; }
+  .video-collapse-header:hover .video-collapse-chevron { color:var(--dark); }
+  .video-collapse-chevron { font-size:11px; color:var(--muted); transition:transform .2s; }
+  .video-collapse-chevron.open { transform:rotate(180deg); }
+  .video-collapse-body { overflow:hidden; transition:max-height .3s ease; max-height:0; }
+  .video-collapse-body.open { max-height:400px; }
+  .video-embed-wrap { border-radius:10px; overflow:hidden; background:#000; aspect-ratio:16/9; margin-top:6px; }
+  .video-embed-wrap iframe { width:100%; height:100%; border:none; display:block; }
+  .video-no-link { padding:16px; text-align:center; color:var(--muted); font-size:13px; }
+  .hidden { display:none !important; }
+
+  /* ══ FULLSCREEN LIGHTBOX ══ */
+  .ls-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:300; align-items:center; justify-content:center; }
+  .ls-overlay.open { display:flex; }
+  .ls-img { max-width:92vw; max-height:88vh; object-fit:contain; border-radius:6px; display:block; box-shadow:0 8px 40px rgba(0,0,0,.6); }
+  .ls-close { position:fixed; top:18px; right:22px; color:#fff; font-size:26px; cursor:pointer; background:rgba(255,255,255,.12); border:none; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; transition:background .12s; }
+  .ls-close:hover { background:rgba(255,255,255,.25); }
+  .ls-nav { position:fixed; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.12); color:#fff; border:none; font-size:28px; width:48px; height:64px; cursor:pointer; border-radius:8px; transition:background .12s; display:flex; align-items:center; justify-content:center; }
+  .ls-nav:hover { background:rgba(255,255,255,.25); }
+  .ls-prev { left:16px; }
+  .ls-next { right:16px; }
+  .ls-info { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,.75); font-size:12px; text-align:center; white-space:nowrap; background:rgba(0,0,0,.4); padding:6px 16px; border-radius:20px; }
+  .modal-img-wrap { cursor:zoom-in; position:relative; }
+  .modal-img-wrap:hover::after { content:'⛶  Full Screen'; position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,.65); color:#fff; font-size:11px; font-weight:700; padding:5px 12px; border-radius:6px; letter-spacing:.04em; }
+
+  /* ══ USED IN TRACKER ══ */
+  .ui-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ui-add-btn { padding:6px 13px; background:var(--dark); color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .12s; }
+  .ui-add-btn:hover { background:var(--red); }
+  .ui-list { display:flex; flex-direction:column; gap:7px; }
+  .ui-item { background:#F9FAFB; border:1px solid var(--border); border-radius:8px; padding:10px 13px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .ui-left { flex:1; min-width:0; }
+  .ui-proj { font-size:13px; font-weight:700; color:var(--dark); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ui-submeta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .ui-date { font-size:11px; color:var(--muted); }
+  .ui-plat { font-size:10px; font-weight:600; padding:2px 7px; border-radius:10px; }
+  .ui-plat-broadcast { background:#FFF0F0; color:var(--red); }
+  .ui-plat-youtube   { background:#FFF7ED; color:#C2410C; }
+  .ui-plat-social    { background:#F0FDF4; color:#059669; }
+  .ui-plat-web       { background:#EFF6FF; color:#1D4ED8; }
+  .ui-link { font-size:11px; color:var(--red); text-decoration:none; font-weight:600; white-space:nowrap; }
+  .ui-link:hover { text-decoration:underline; }
+  .ui-del { background:none; border:none; color:#D1D5DB; cursor:pointer; font-size:16px; line-height:1; padding:0; flex-shrink:0; margin-top:1px; }
+  .ui-del:hover { color:var(--red); }
+  .ui-empty { font-size:13px; color:var(--muted); font-style:italic; padding:4px 0 8px; }
+  .ui-form { background:#F0FDF4; border:1.5px solid #A7F3D0; border-radius:10px; padding:14px; margin-top:8px; display:none; flex-direction:column; gap:8px; }
+  .ui-form.open { display:flex; }
+  .ui-form input, .ui-form select { padding:8px 11px; border:1.5px solid var(--border); border-radius:7px; font-size:13px; font-family:inherit; outline:none; width:100%; }
+  .ui-form input:focus, .ui-form select:focus { border-color:var(--green); }
+  .ui-form-row { display:flex; gap:8px; }
+  .ui-form-row > * { flex:1; }
+  .ui-form-btns { display:flex; gap:8px; }
+  .ui-save-btn { padding:8px 18px; background:var(--green); color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .ui-cancel-btn { padding:8px 14px; background:var(--card); color:var(--muted); border:1px solid var(--border); border-radius:7px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .ui-export-btn { padding:5px 12px; background:none; color:var(--muted); border:1px solid var(--border); border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit; }
+  .ui-export-btn:hover { border-color:var(--dark); color:var(--dark); }
+  .ui-count-badge { font-size:10px; font-weight:700; background:var(--red); color:#fff; padding:1px 7px; border-radius:10px; margin-left:6px; }
+
+  /* ══ LOGIN MODAL ══ */
+  .auth-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:500; align-items:center; justify-content:center; }
+  .auth-overlay.open { display:flex; }
+  .auth-box { background:var(--card); border-radius:18px; padding:36px 32px 28px; width:100%; max-width:380px; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  .auth-logo { text-align:center; font-size:28px; margin-bottom:6px; }
+  .auth-title { text-align:center; font-size:18px; font-weight:700; color:var(--dark); margin-bottom:3px; }
+  .auth-sub   { text-align:center; font-size:12px; color:var(--muted); margin-bottom:24px; }
+  .auth-field { margin-bottom:14px; }
+  .auth-field label { display:block; font-size:11px; font-weight:700; color:var(--dark); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+  .auth-field input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; outline:none; box-sizing:border-box; }
+  .auth-field input:focus { border-color:var(--red); }
+  .auth-submit { width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; transition:background .15s; }
+  .auth-submit:hover { background:#B91C1C; }
+  .auth-submit:disabled { background:#D1D5DB; cursor:not-allowed; }
+  .auth-error { background:#FFF5F5; border:1px solid #FCA5A5; color:#B91C1C; border-radius:8px; padding:9px 13px; font-size:12px; font-weight:600; margin-bottom:12px; display:none; }
+  .auth-error.show { display:block; }
+
+  /* ══ LIGHTING BLUEPRINT ══ */
+  .lb-section { margin-top:4px; }
+  .lb-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:10px 14px; background:#0F172A; border-radius:10px; transition:background .15s; user-select:none; }
+  .lb-header:hover { background:#1E293B; }
+  .lb-header-left { display:flex; align-items:center; gap:8px; }
+  .lb-header-title { font-size:12px; font-weight:700; color:#F1F5F9; letter-spacing:.04em; }
+  .lb-header-sub { font-size:10px; color:#64748B; }
+  .lb-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; }
+  .lb-badge-set { background:#1E3A5F; color:#60A5FA; }
+  .lb-badge-empty { background:#1F2937; color:#6B7280; }
+  .lb-chevron { color:#64748B; font-size:12px; transition:transform .2s; }
+  .lb-chevron.open { transform:rotate(180deg); }
+  .lb-body { background:#0F172A; border-radius:0 0 10px 10px; border-top:1px solid #1E293B; padding:16px; display:none; }
+  .lb-body.open { display:block; }
+
+  /* ── Lighting Blueprint diagram (interactive canvas) ── */
+  .lb-diagram {
+    position:relative; width:100%; aspect-ratio:16/10;
+    background:#0B1120; border-radius:10px; overflow:hidden;
+    margin-bottom:16px; border:1px solid #1E293B;
+    user-select:none;
+  }
+  .lb-stage-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* sidebar controls on right of diagram */
+  .lb-diag-sidebar {
+    position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:5px; z-index:10;
+  }
+  .lb-diag-btn {
+    padding:4px 8px; border-radius:5px; font-size:9px; font-weight:700; letter-spacing:.04em;
+    border:1px solid #334155; background:#111827; color:#94A3B8; cursor:pointer; font-family:inherit;
+    white-space:nowrap; transition:all .15s;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none;
+  }
+  .lb-diag-btn:hover { background:#1E293B; color:#E2E8F0; }
+  .lb-diag-btn.active { background:#3B82F6; border-color:#3B82F6; color:#fff; }
+  .lb-diag-btn.lock-on { background:#F59E0B; border-color:#F59E0B; color:#000; }
+
+  /* presenter count panel */
+  .lb-presenter-row {
+    position:absolute; bottom:8px; left:8px; display:flex; align-items:center; gap:5px; z-index:10;
+  }
+  .lb-pcount-label { font-size:9px; font-weight:700; color:#4B5563; letter-spacing:.06em; text-transform:uppercase; }
+  .lb-pcount-btn {
+    width:22px; height:22px; border-radius:5px; border:1px solid #374151;
+    background:#111827; color:#64748B; font-size:11px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s;
+  }
+  .lb-pcount-btn:hover { border-color:#60A5FA; color:#60A5FA; }
+  .lb-pcount-btn.active { background:#1D4ED8; border-color:#3B82F6; color:#fff; }
+
+  /* fixture color themes */
+  .lb-fix-backlight  .lb-fixture-icon { background:#1A1200; border-color:#854D0E; }
+  .lb-fix-rimL       .lb-fixture-icon { background:#0C1A2E; border-color:#1D4ED8; }
+  .lb-fix-rimR       .lb-fixture-icon { background:#0C1A2E; border-color:#1D4ED8; }
+  .lb-fix-ambient    .lb-fixture-icon { background:#0D2818; border-color:#166534; }
+  .lb-fix-key        .lb-fixture-icon { background:#1F0D2A; border-color:#7C3AED; }
+  .lb-fix-fill       .lb-fixture-icon { background:#0F1E2E; border-color:#0EA5E9; }
+
+  /* controls grid */
+  .lb-controls { display:flex; flex-direction:column; gap:10px; }
+  .lb-fixture-row { background:#1E293B; border-radius:8px; padding:10px 12px; }
+  .lb-fix-row-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .lb-fix-row-icon { font-size:16px; }
+  .lb-fix-row-name { font-size:11px; font-weight:700; color:#E2E8F0; flex:1; }
+  .lb-fix-row-model { font-size:10px; color:#64748B; }
+  .lb-fix-on-off { width:28px; height:16px; border-radius:8px; border:none; cursor:pointer; font-size:9px; font-weight:700; transition:background .15s; flex-shrink:0; }
+  .lb-fix-on-off.on  { background:#22C55E; color:#fff; }
+  .lb-fix-on-off.off { background:#374151; color:#9CA3AF; }
+  .lb-sliders { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .lb-slider-group { display:flex; flex-direction:column; gap:3px; }
+  .lb-slider-label { font-size:9px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:.06em; display:flex; justify-content:space-between; }
+  .lb-slider-label span { color:#94A3B8; font-weight:400; text-transform:none; letter-spacing:0; }
+  input[type=range].lb-range { width:100%; height:4px; appearance:none; background:#334155; border-radius:2px; outline:none; cursor:pointer; }
+  input[type=range].lb-range::-webkit-slider-thumb { appearance:none; width:12px; height:12px; border-radius:50%; background:#60A5FA; cursor:pointer; }
+  /* temp slider gradient */
+  input[type=range].lb-range.temp-range::-webkit-slider-thumb { background:var(--thumb-color,#FCD34D); }
+  .lb-temp-bar { height:4px; border-radius:2px; background:linear-gradient(to right, #FCD34D, #ffffff, #93C5FD); margin-top:2px; }
+
+  /* FX row */
+  .lb-fx-row { background:#1E293B; border-radius:8px; padding:10px 12px; margin-top:4px; }
+  .lb-fx-title { font-size:11px; font-weight:700; color:#E2E8F0; margin-bottom:8px; }
+  .lb-fx-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .lb-fx-chip { padding:4px 10px; border-radius:16px; font-size:10px; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; background:transparent; font-family:inherit; }
+  .lb-fx-chip.active { background:#7C3AED; border-color:#7C3AED; color:#fff; }
+  .lb-fx-chip:not(.active) { border-color:#334155; color:#64748B; }
+
+  /* note */
+  .lb-note-area { margin-top:10px; }
+  .lb-note-label { font-size:9px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+  .lb-note-box { width:100%; min-height:56px; background:#111827; border:1px solid #334155; border-radius:6px; color:#CBD5E1; font-size:12px; padding:8px 10px; font-family:inherit; resize:vertical; box-sizing:border-box; }
+  .lb-note-box:focus { outline:none; border-color:#60A5FA; }
+  .lb-note-box:read-only { cursor:default; color:#64748B; }
+
+  /* action bar */
+  .lb-actions { display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #1E293B; }
+  .lb-btn { padding:7px 14px; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; border:none; font-family:inherit; transition:all .15s; }
+  .lb-btn-save   { background:#3B82F6; color:#fff; }
+  .lb-btn-save:hover { background:#2563EB; }
+  .lb-btn-reset  { background:#1E293B; color:#94A3B8; }
+  .lb-btn-reset:hover { background:#334155; color:#E2E8F0; }
+  .lb-btn-export { background:#1E293B; color:#64748B; margin-left:auto; }
+  .lb-btn-export:hover { color:#94A3B8; }
+  .lb-readonly-badge { font-size:10px; color:#4B5563; background:#111827; padding:3px 10px; border-radius:6px; margin-left:auto; font-weight:600; }
+  .lb-saved-flash { font-size:10px; color:#22C55E; font-weight:700; opacity:0; transition:opacity .3s; }
+
+  /* fullscreen overlay */
+  .lb-fullscreen-overlay {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:#070C14; flex-direction:column;
+  }
+  .lb-fullscreen-overlay.open { display:flex; }
+  .lb-fs-topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px; background:#0D1117; border-bottom:1px solid #1E293B; flex-shrink:0;
+  }
+  .lb-fs-title { font-size:13px; font-weight:700; color:#E2E8F0; }
+  .lb-fs-close { background:none; border:1px solid #334155; color:#94A3B8; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .lb-fs-close:hover { background:#1E293B; color:#fff; }
+  .lb-fs-canvas-wrap {
+    flex:1; position:relative; overflow:hidden;
+  }
+  .lb-fs-canvas-wrap canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .lb-fs-sidebar {
+    position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:5px; z-index:10;
+  }
+  .lb-fs-presenter {
+    position:absolute; bottom:8px; left:8px; display:flex; align-items:center; gap:5px; z-index:10;
+  }
+
+  /* FX inside fixture row */
+  .lb-fix-fx-section { margin-top:6px; border-top:1px solid #1E293B; padding-top:6px; }
+  .lb-fix-fx-toggle { background:none; border:none; color:#64748B; font-size:9px; font-weight:700; cursor:pointer; font-family:inherit; letter-spacing:.04em; padding:0; text-transform:uppercase; display:flex; align-items:center; gap:4px; }
+  .lb-fix-fx-toggle:hover { color:#94A3B8; }
+  .lb-fix-fx-body { display:none; margin-top:6px; }
+  .lb-fix-fx-body.open { display:block; }
+  .lb-fix-fx-chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+  .lb-fix-fx-chip { padding:3px 8px; border-radius:12px; font-size:9px; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; background:transparent; font-family:inherit; }
+  .lb-fix-fx-chip.active { background:#7C3AED; border-color:#7C3AED; color:#fff; }
+  .lb-fix-fx-chip:not(.active) { border-color:#334155; color:#64748B; }
+  .lb-fix-note-box { width:100%; background:#111827; border:1px solid #334155; border-radius:5px; color:#CBD5E1; font-size:10px; padding:5px 8px; font-family:inherit; resize:none; box-sizing:border-box; min-height:38px; }
+  .lb-fix-note-box:focus { outline:none; border-color:#60A5FA; }
+  .lb-fix-note-box::placeholder { color:#374151; }
+
+/* ══════════════════════════════════════════════
+   MOBILE RESPONSIVE  (≤ 640px)
+══════════════════════════════════════════════ */
+@media (max-width:640px) {
+
+  /* ── Topbar ── */
+  .topbar { padding:0 14px; height:46px; }
+  .topbar-logo { height:22px; }
+  .vp-header-title { display:none; }
+  .topbar-title { font-size:13px; }
+  .topbar-count { display:none; }
+  #userPill { padding:3px 8px 3px 5px !important; font-size:11px !important; }
+
+  /* ── Nav bar ── */
+  .nav-bar { padding:0 8px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .nav-left { gap:0; }
+  .mode-tab { padding:11px 12px; font-size:12px; }
+  .nav-right { flex-shrink:0; gap:4px; }
+  .nav-ext-link { padding:5px 8px; font-size:11px; gap:3px; }
+
+  /* ── Search bar ── */
+  .search-bar { padding:10px 12px; gap:8px; }
+  .search-input { min-width:0; font-size:14px; padding:9px 12px; }
+
+  /* ── Filters ── */
+  .filters { padding:8px 12px; gap:10px; }
+  .ftag { font-size:10px; padding:3px 8px; }
+
+  /* ── Results bar ── */
+  .results-bar { padding:8px 12px; font-size:12px; }
+  .view-toggle { display:none; } /* hide view toggle; default to thumb on mobile */
+
+  /* ── Cards grid ── */
+  .grid { grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:10px; padding:0 12px 24px; }
+  .grid.thumb-mode { grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px; padding:0 12px 24px; }
+  .scene-body { padding:10px; }
+  .scene-title { font-size:12px; }
+  .scene-title-th { font-size:11px; }
+
+  /* ── Modal ── */
+  .modal-overlay { padding:0; align-items:flex-end; }
+  .modal { border-radius:20px 20px 0 0; max-height:92vh; width:100%; }
+  .modal-img { height:200px; border-radius:20px 20px 0 0; }
+  .modal-body { padding:16px; }
+  .modal-title { font-size:17px; }
+  .modal-close { top:10px; right:10px; width:30px; height:30px; font-size:16px; }
+
+  /* ── Recommend mode ── */
+  .rec-wrap { padding:16px 12px 48px; }
+  .rcard-inner { flex-direction:column; }
+  .rcard-thumb, .rcard-thumb-ph { width:100%; min-width:0; height:160px; border-radius:14px 14px 0 0; }
+  .rcard-body { padding:12px; }
+  .mood-grid { grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); }
+
+  /* ── Auth box ── */
+  .auth-box { padding:28px 20px 22px; border-radius:18px 18px 0 0; }
+  .auth-overlay { align-items:flex-end; }
+
+  /* ── Lighting Blueprint controls ── */
+  .lb-body { padding:10px; }
+  .lb-diagram { aspect-ratio:4/3; } /* taller on mobile for more canvas */
+  .lb-diag-sidebar { top:4px; right:4px; gap:3px; }
+  .lb-diag-btn { font-size:8px; padding:3px 5px; }
+  .lb-presenter-row { bottom:4px; left:4px; gap:3px; }
+  .lb-pcount-btn { width:20px; height:20px; font-size:10px; }
+  .lb-sliders { grid-template-columns:1fr; } /* stack sliders vertically */
+  .lb-controls { gap:8px; }
+  .lb-fixture-row { padding:8px 10px; }
+  .lb-fix-row-name { font-size:10px; }
+  .lb-fix-row-model { display:none; } /* hide model on mobile, show in spec */
+  .lb-actions { flex-wrap:wrap; gap:6px; }
+  .lb-btn { padding:8px 12px; font-size:11px; }
+  .lb-btn-export { margin-left:0; }
+
+  /* ── Lightbox nav ── */
+  .ls-nav { width:38px; height:52px; font-size:22px; }
+  .ls-prev { left:6px; }
+  .ls-next { right:6px; }
+  .ls-info { font-size:11px; bottom:12px; max-width:80vw; white-space:normal; text-align:center; }
+}
+
+/* ── Fullscreen LB overlay — mobile safe ── */
+.lb-fullscreen-overlay {
+  /* use dvh so address bar doesn't cut it off */
+  height: 100dvh;
+  height: -webkit-fill-available;
+}
+.lb-fs-topbar {
+  /* prevent controls from going under notch / status bar */
+  padding: env(safe-area-inset-top, 8px) 14px 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 48px;
+}
+.lb-fs-title {
+  font-size: 12px;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Controls row wraps on small screens */
+#lb-fs-presenter-row,
+#lb-fs-sidebar-row {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+/* Close button — always visible, large touch target */
+.lb-fs-close {
+  min-width: 52px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #EF4444;
+  border-color: #EF4444;
+  color: #fff;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.lb-fs-close:hover, .lb-fs-close:active { background:#DC2626; border-color:#DC2626; }
+
+/* Canvas fills remaining space, accounting for bottom safe area */
+.lb-fs-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width:640px) {
+  .lb-fs-topbar { padding: env(safe-area-inset-top,8px) 10px 6px; }
+  .lb-fs-title { font-size:11px; max-width:30vw; }
+  .lb-diag-btn { font-size:8px; padding:4px 6px; }
+  /* On small screens, stack presenter row + sidebar into topbar nicely */
+  #lb-fs-sidebar-row { order:3; width:100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- Theme dropdown (positioned absolute from topbar) -->
+<div class="theme-menu" id="themeMenu">
+  <div class="theme-opt" id="themeOptLight" onclick="setTheme('light')">☀️ Light</div>
+  <div class="theme-opt" id="themeOptDim"   onclick="setTheme('dim')">🌙 Dim</div>
+  <div class="theme-opt" id="themeOptDark"  onclick="setTheme('dark')">⬛ Dark</div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar" style="position:relative">
+  <div style="display:flex;align-items:center;gap:14px">
+    <img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo">
+    <div class="vp-header-title" id="vp-header-title">Virtual Production Library<span class="vp-cursor">|</span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="topbar-count" id="totalCount"></div>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
+      <span id="themeIcon">☀️</span>
+    </button>
+    <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="promptLogin()" title="คลิกเพื่อเปลี่ยน User">
+      <span style="font-size:14px">👤</span>
+      <span id="userLabel">ไม่ได้ login</span>
+    </div>
+  </div>
+</div>
+
+<!-- Unified Nav Bar -->
+<div class="nav-bar">
+  <div class="nav-left">
+    <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">🔍 ค้นหาฉาก</button>
+    <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">✨ แนะนำฉาก</button>
+  </div>
+  <div class="nav-right">
+    <a class="nav-ext-link admin" href="vp-admin.html" target="_blank">⚙️ Admin</a>
+  </div>
+</div>
+
+<!-- ══════════════ SEARCH MODE ══════════════ -->
+<div id="modeSearch">
+  <div class="search-bar">
+    <input class="search-input" id="searchInput" placeholder="🔍  ค้นหา... เช่น robot, dramatic, Tech, tunnel, outdoor" oninput="renderCards()">
+  </div>
+  <div class="filters">
+    <!-- Show filter row (populated dynamically) -->
+    <div class="filter-group" id="showFilterGroup" style="display:none">
+      <div class="filter-label">📺 รายการ</div>
+      <div class="filter-tags" id="f-show"></div>
+    </div>
+    <!-- Layer 1: WORLD -->
+    <div class="filter-group">
+      <div class="filter-label filter-layer-label"><span class="layer-badge">L1</span> WORLD — ฉากอยู่ที่ไหน</div>
+      <div class="filter-tags">
+        <button class="ftag active" data-dim="world" data-val="all" onclick="setFilter('world','all',this)">ทั้งหมด</button>
+        <button class="ftag" data-dim="world" data-val="urban-city" onclick="setFilter('world','urban-city',this)">🌆 Urban &amp; City</button>
+        <button class="ftag" data-dim="world" data-val="interior-office" onclick="setFilter('world','interior-office',this)">🏢 Interior &amp; Office</button>
+        <button class="ftag" data-dim="world" data-val="nature-outdoor" onclick="setFilter('world','nature-outdoor',this)">🌿 Nature &amp; Outdoor</button>
+        <button class="ftag" data-dim="world" data-val="industrial" onclick="setFilter('world','industrial',this)">🏭 Industrial</button>
+        <button class="ftag" data-dim="world" data-val="scifi-future" onclick="setFilter('world','scifi-future',this)">🚀 Sci-Fi &amp; Future</button>
+        <button class="ftag" data-dim="world" data-val="stylized-abstract" onclick="setFilter('world','stylized-abstract',this)">🎭 Stylized &amp; Abstract</button>
+        <button class="ftag" data-dim="world" data-val="heritage-culture" onclick="setFilter('world','heritage-culture',this)">🏛 Heritage &amp; Culture</button>
+      </div>
+    </div>
+    <!-- Layer 2: ENERGY -->
+    <div class="filter-group">
+      <div class="filter-label filter-layer-label"><span class="layer-badge">L2</span> ENERGY — บรรยากาศและพลังงานของฉาก</div>
+      <div class="filter-tags">
+        <button class="ftag active" data-dim="energy" data-val="all" onclick="setFilter('energy','all',this)">ทั้งหมด</button>
+        <button class="ftag" data-dim="energy" data-val="intense" onclick="setFilter('energy','intense',this)">⚡ Intense</button>
+        <button class="ftag" data-dim="energy" data-val="balanced" onclick="setFilter('energy','balanced',this)">🌤 Balanced</button>
+        <button class="ftag" data-dim="energy" data-val="open" onclick="setFilter('energy','open',this)">✨ Open</button>
+      </div>
+    </div>
+    <!-- Layer 3: CONTEXT -->
+    <div class="filter-group">
+      <div class="filter-label filter-layer-label"><span class="layer-badge">L3</span> CONTEXT — ฉากนี้ใช้กับอะไร</div>
+      <div class="filter-tags">
+        <button class="ftag active" data-dim="context" data-val="all" onclick="setFilter('context','all',this)">ทั้งหมด</button>
+        <button class="ftag" data-dim="context" data-val="news-report" onclick="setFilter('context','news-report',this)">📰 News &amp; Report</button>
+        <button class="ftag" data-dim="context" data-val="talk-interview" onclick="setFilter('context','talk-interview',this)">🎙 Talk &amp; Interview</button>
+        <button class="ftag" data-dim="context" data-val="analysis-data" onclick="setFilter('context','analysis-data',this)">📊 Analysis &amp; Data</button>
+        <button class="ftag" data-dim="context" data-val="field-onsite" onclick="setFilter('context','field-onsite',this)">🌍 Field &amp; On-Site</button>
+        <button class="ftag" data-dim="context" data-val="opener-drama" onclick="setFilter('context','opener-drama',this)">🎬 Opener &amp; Drama</button>
+        <button class="ftag" data-dim="context" data-val="social-short" onclick="setFilter('context','social-short',this)">📱 Social &amp; Short</button>
+        <button class="ftag" data-dim="context" data-val="event-special" onclick="setFilter('context','event-special',this)">🏆 Event &amp; Special</button>
+      </div>
+    </div>
+  </div>
+  <div class="results-bar">
+    <div class="results-bar-left">
+      <span id="resultCount"></span>
+      <button class="clear-btn" onclick="clearAll()">✕ ล้าง filter ทั้งหมด</button>
+    </div>
+    <div class="view-toggle">
+      <button class="vtbtn active" id="vtInfo" onclick="setView('info')">📋 Info Mode</button>
+      <button class="vtbtn" id="vtThumb" onclick="setView('thumb')">🖼 Visual Mode</button>
+    </div>
+  </div>
+  <div class="grid" id="sceneGrid"></div>
+</div>
+
+<!-- ══════════════ RECOMMEND MODE ══════════════ -->
+<div id="modeRec" class="hidden">
+  <div class="rec-wrap">
+
+    <!-- Input card -->
+    <div class="rec-card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">บรรยายเนื้อหาของคุณ</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">พิมพ์ Key Message หรืออธิบายฉากที่ต้องการ — ภาษาไทยหรืออังกฤษก็ได้ ระบบ AI จะ match ให้อัตโนมัติ</div>
+      <textarea class="rec-textarea" id="recInput" maxlength="400"
+        placeholder="เช่น: รายงานเศรษฐกิจไทยปี 2025 ท่ามกลางความไม่แน่นอนของตลาดโลก หรือ sci-fi lab with dramatic lighting"
+        oninput="document.getElementById('recCharCount').textContent=this.value.length"></textarea>
+      <div class="char-hint"><span id="recCharCount">0</span>/400</div>
+
+      <div class="rec-section-title" style="margin-top:18px">📰 Editorial Fit <span style="font-weight:400;text-transform:none;letter-spacing:0">(เลือกได้หลายหัวข้อ)</span></div>
+      <div class="topic-pills" id="editorialPills">
+        <button class="tpill" onclick="toggleTopic(this,'News')">📰 News</button>
+        <button class="tpill" onclick="toggleTopic(this,'Business')">💰 Business</button>
+        <button class="tpill" onclick="toggleTopic(this,'Politics')">🗳 Politics</button>
+        <button class="tpill" onclick="toggleTopic(this,'Tech')">⚡ Tech</button>
+        <button class="tpill" onclick="toggleTopic(this,'Entertainment')">🎬 Entertainment</button>
+        <button class="tpill" onclick="toggleTopic(this,'Climate')">🌿 Climate</button>
+        <button class="tpill" onclick="toggleTopic(this,'Health')">🏥 Health</button>
+        <button class="tpill" onclick="toggleTopic(this,'Lifestyle')">✨ Lifestyle</button>
+        <button class="tpill" onclick="toggleTopic(this,'Culture')">🎭 Culture</button>
+      </div>
+
+      <!-- AI Status -->
+      <div id="aiStatusBar" class="ai-status-bar loading" style="margin-top:18px">
+        <div class="ai-spinner" id="aiSpinner"></div>
+        <div style="flex:1">
+          <div id="aiStatusText">กำลังโหลด Visual AI Model (ครั้งแรกใช้เวลา ~10–30 วินาที)</div>
+          <div class="ai-progress"><div class="ai-progress-fill" id="aiProgressFill" style="width:5%"></div></div>
+        </div>
+      </div>
+
+      <button class="rec-run-btn" onclick="runRec()" style="margin-top:14px">🎯 แนะนำฉากที่เหมาะสม</button>
+    </div>
+
+    <!-- Results -->
+    <div id="recResults" class="rec-results hidden"></div>
+
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">🎬</div>
+    <div class="auth-title">VP Library</div>
+    <div class="auth-sub">THE STANDARD — กรุณา Login เพื่อเข้าใช้งาน</div>
+    <div class="auth-error" id="authError">Username หรือ Password ไม่ถูกต้อง</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input type="text" id="authUser" placeholder="กรอก username" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('authPass').focus()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="authPass" placeholder="กรอก password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="auth-submit" id="authSubmit" onclick="doLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- FULLSCREEN LIGHTBOX -->
+<div class="ls-overlay" id="lsOverlay" onclick="closeLs(event)">
+  <button class="ls-close" onclick="closeLs()">✕</button>
+  <button class="ls-nav ls-prev" onclick="lsNav(-1);event.stopPropagation()">‹</button>
+  <div style="position:relative;max-width:92vw;max-height:88vh;display:flex;align-items:center;justify-content:center" onclick="event.stopPropagation()">
+    <img id="lsImg" class="ls-img" src="" alt="">
+    <canvas id="lsFcCanvas" class="fc-canvas" style="border-radius:8px"></canvas>
+    <button id="lsFcBtn" class="fc-btn" style="top:12px;left:12px" onclick="toggleFalseColor('ls');event.stopPropagation()" title="False Color IRE">
+      <span id="lsFcBtnIcon">⬛</span> FALSE COLOR
+    </button>
+    <div class="fc-legend" id="lsFcLegend">
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FFFFFF;border:1px solid #555"></div>98–100 IRE · Clipped White</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF2800"></div>87–98 IRE · Hot / Over</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF8C00"></div>70–87 IRE · Near clip</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#C8C800"></div>56–70 IRE · Upper mid</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00C800"></div>42–56 IRE · Correct exposure</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00B4B4"></div>30–42 IRE · Shadow mid</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#0070FF"></div>15–30 IRE · Low mid</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#1A1AFF"></div>2–15 IRE · Underexposed</div>
+      <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF00FF"></div>0–2 IRE · Clipped Black</div>
+    </div>
+  </div>
+  <button class="ls-nav ls-next" onclick="lsNav(1);event.stopPropagation()">›</button>
+  <div class="ls-info" id="lsInfo"></div>
+</div>
+
+<!-- MODAL (shared) -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-header">
+      <div class="modal-img-wrap fc-wrap" id="modalImgWrap" onclick="openLs(currentModalId)" style="cursor:zoom-in">
+        <img id="modalImg" class="modal-img" src="" alt="">
+        <canvas id="modalFcCanvas" class="fc-canvas" style="border-radius:16px 16px 0 0"></canvas>
+        <button id="modalFcBtn" class="fc-btn" onclick="toggleFalseColor('modal');event.stopPropagation()" title="False Color — IRE luminance map">
+          <span id="modalFcBtnIcon">⬛</span> FALSE COLOR
+        </button>
+        <div class="fc-legend" id="modalFcLegend">
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF00FF"></div>0–2 IRE · Clipped Black</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#1A1AFF"></div>2–15 IRE · Underexposed</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#0070FF"></div>15–30 IRE · Low mid</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00B4B4"></div>30–42 IRE · Shadow mid</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#00C800"></div>42–56 IRE · Correct exposure</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#C8C800"></div>56–70 IRE · Upper mid</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF8C00"></div>70–87 IRE · Near clip</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FF2800"></div>87–98 IRE · Hot / Over</div>
+          <div class="fc-legend-row"><div class="fc-legend-swatch" style="background:#FFFFFF;border:1px solid #555"></div>98–100 IRE · Clipped White</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Scene data ────────────────────────────────────────────────
+// DEFAULT_SCENES = hardcoded fallback; SCENES = live data from Supabase
+const DEFAULT_SCENES = [
+  {
+    id:"VP-001", title:"Sci-Fi Lab Portal — Robot & Steam", title_th:"ห้องแล็บไซไฟ พอร์ทัลหุ่นยนต์ มีควัน",
+    filepath:"indoor/sci-fi/VP-001-scifi-lab-portal-warm-dramatic-v1.webp",
+    thumb:"_thumbnails/VP-001_thumb.avif",
+    environment:"indoor", location_type:"sci-fi-lab",
+    mood:["dramatic","mysterious","futuristic"],
+    color_temp:"warm", brightness:"dark",
+    topics:["AI","robot","technology","innovation","sci-fi"],
+    editorial_fit:["Tech","Entertainment","Business"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:true, sfx_light_types:["portal-glow","light-rays","volumetric"],
+    motion_type:"subtle-ambient", style:"cinematic",
+    has_particles:true, particle_types:["smoke","steam"],
+    usage_type:["standup-report","explainer","podcast-video"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"scifi-future", energy:"intense", context_tags:["opener-drama","social-short"],
+    notes:"ลำแสงพอร์ทัลสว่างมาก — ต้องเพิ่ม key light ฝั่งซ้ายของ presenter เพื่อ match กับ background light direction"
+  },
+  {
+    id:"VP-002", title:"Sci-Fi Robot Display Room — Blue Tone", title_th:"ห้องแสดงหุ่นยนต์ไซไฟ โทนสีน้ำเงิน",
+    filepath:"indoor/sci-fi/VP-002-scifi-robot-display-cool-serious-v1.webp",
+    thumb:"_thumbnails/VP-002_thumb.avif",
+    environment:"indoor", location_type:"sci-fi-lab",
+    mood:["serious","authoritative","futuristic","mysterious"],
+    color_temp:"cool", brightness:"dark",
+    topics:["AI","robot","technology","humanoid","future"],
+    editorial_fit:["Tech","Business","News"],
+    time_of_day:"timeless", lighting_style:"studio-flat",
+    has_sfx_light:true, sfx_light_types:["neon-glow","display-screens"],
+    motion_type:"static", style:"cinematic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","news-anchor","interview-single"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"scifi-future", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview"],
+    notes:"Background นิ่งมาก เหมาะกับรายการข่าวที่ต้องการ tone จริงจัง ไม่ distract ผู้ชม"
+  },
+  {
+    id:"VP-003", title:"Industrial Robot Arms — Dark Studio", title_th:"แขนกลอุตสาหกรรม สตูดิโอมืด",
+    filepath:"indoor/industrial/VP-003-industrial-robot-arms-dark-tense-v1.webp",
+    thumb:"_thumbnails/VP-003_thumb.avif",
+    environment:"indoor", location_type:"industrial-factory",
+    mood:["tense","dramatic","mysterious","serious"],
+    color_temp:"cool", brightness:"dark",
+    topics:["automation","manufacturing","technology","industry","robot"],
+    editorial_fit:["Tech","Business","News"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"cinematic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","explainer"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"intense", context_tags:["news-report","analysis-data","opener-drama"],
+    notes:"แขนกลทั้งสองข้างสร้าง symmetry ดี — presenter ต้องยืนตรงกลาง ไม่ควรเดินซ้ายขวา"
+  },
+  {
+    id:"VP-004", title:"Warehouse Behind-the-Scenes — Warm", title_th:"คลังสินค้า / สตูดิโอหลังฉาก โทนอบอุ่น",
+    filepath:"indoor/industrial/VP-004-warehouse-bts-warm-neutral-v1.webp",
+    thumb:"_thumbnails/VP-004_thumb.avif",
+    environment:"indoor", location_type:"warehouse",
+    mood:["warm","neutral","approachable","authentic"],
+    color_temp:"warm", brightness:"medium",
+    topics:["filmmaking","production","behind-the-scenes","creative","studio"],
+    editorial_fit:["Entertainment","Lifestyle","Tech"],
+    time_of_day:"interior-lit", lighting_style:"practicals-only",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","documentary"],
+    subject_placement:"left", background_complexity:"complex-detailed",
+    platform_fit:["16:9"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"open", context_tags:["talk-interview","social-short","event-special"],
+    notes:"มีหุ่นยนต์นั่งอยู่ทางขวา — presenter ควรยืนซ้ายหรือกลาง ฉากให้ความรู้สึก authentic สูง"
+  },
+  {
+    id:"VP-005", title:"Underground Tunnel — Dark Dramatic", title_th:"อุโมงค์ใต้ดิน บรรยากาศมืด เข้มข้น",
+    filepath:"indoor/tunnel-cave/VP-005-tunnel-underground-dark-dramatic-v1.webp",
+    thumb:"_thumbnails/VP-005_thumb.avif",
+    environment:"indoor", location_type:"tunnel-cave",
+    mood:["dramatic","tense","serious","mysterious"],
+    color_temp:"neutral", brightness:"dark",
+    topics:["conflict","war","investigation","underground","crisis"],
+    editorial_fit:["News","Politics"],
+    time_of_day:"timeless", lighting_style:"dramatic-hard",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"documentary",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","documentary"],
+    subject_placement:"center", background_complexity:"medium",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"intense", context_tags:["news-report","field-onsite","opener-drama"],
+    notes:"⚠️ ฉากมืดมากที่สุดในคลัง — ต้อง key light presenter แรงกว่าปกติ 2 stop ขึ้นไป และเช็ค skin tone"
+  },
+  {
+    id:"VP-006", title:"Open-Pit Mine / Quarry — Outdoor Day", title_th:"เหมืองเปิด / เหมืองหิน กลางวัน",
+    filepath:"outdoor/nature-mine/VP-006-outdoor-mine-quarry-day-neutral-v1.webp",
+    thumb:"_thumbnails/VP-006_thumb.avif",
+    environment:"outdoor", location_type:"nature-mine",
+    mood:["serious","documentary","authentic","tense"],
+    color_temp:"neutral", brightness:"medium",
+    topics:["mining","industry","environment","climate","resources","economics"],
+    editorial_fit:["News","Business","Climate"],
+    time_of_day:"day", lighting_style:"natural-soft",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"documentary",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","documentary"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"nature-outdoor", energy:"balanced", context_tags:["news-report","field-onsite","analysis-data"],
+    notes:"ฉากกลางวันเดียวใน library — แสง natural hazy ต้องระวัง presenter ถูก overexpose"
+  },
+  {
+    id:"VP-007", title:"Robot Factory Floor — White Arms", title_th:"โรงงานหุ่นยนต์ แขนกลสีขาว อุตสาหกรรม",
+    filepath:"indoor/industrial/VP-007-industrial-robot-factory-cool-authoritative-v1.webp",
+    thumb:"_thumbnails/VP-007_thumb.avif",
+    environment:"indoor", location_type:"industrial-factory",
+    mood:["authoritative","serious","futuristic","documentary"],
+    color_temp:"cool", brightness:"medium",
+    topics:["manufacturing","automation","robot","industry","technology","economy"],
+    editorial_fit:["Business","Tech","News"],
+    time_of_day:"interior-lit", lighting_style:"studio-flat",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","news-anchor","documentary"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"industrial", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview"],
+    notes:"แสงในฉากสม่ำเสมอมาก — เป็นหนึ่งในฉากที่ match lighting presenter ได้ง่ายที่สุด เหมาะรายงานเศรษฐกิจ/อุตสาหกรรม"
+  },
+  {
+    id:"VP-008", title:"Retro Music Studio — Vintage Gear & Greenery", title_th:"สตูดิโอดนตรีวินเทจ เครื่องดนตรีคลาสสิก หน้าต่างมีต้นไม้",
+    filepath:"indoor/studio-retro/VP-008-retro-music-studio-warm-nostalgic-v1.webp",
+    thumb:"_thumbnails/VP-008_thumb.avif",
+    environment:"indoor", location_type:"studio-retro",
+    mood:["warm","nostalgic","approachable","authentic"],
+    color_temp:"warm", brightness:"medium",
+    topics:["music","culture","entertainment","lifestyle","arts","creativity"],
+    editorial_fit:["Entertainment","Lifestyle","Culture"],
+    time_of_day:"interior-lit", lighting_style:"practicals-only",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","podcast-video"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"heritage-culture", energy:"open", context_tags:["talk-interview","social-short","event-special"],
+    notes:"โทนอบอุ่นมาก เหมาะสำหรับเนื้อหา lifestyle/entertainment — window ด้านหลังให้ความรู้สึก natural แต่ต้องระวัง backlight ทำให้ presenter ถูก silhouette"
+  },
+  {
+    id:"VP-009", title:"Library Study Room — Academic & Medical", title_th:"ห้องสมุด/ห้องทำงาน บรรยากาศวิชาการ",
+    filepath:"indoor/library-study/VP-009-library-study-warm-academic-v1.webp",
+    thumb:"_thumbnails/VP-009_thumb.avif",
+    environment:"indoor", location_type:"library-study",
+    mood:["serious","authoritative","warm","professional"],
+    color_temp:"warm", brightness:"medium",
+    topics:["education","health","analysis","opinion","research","medicine","lifestyle"],
+    editorial_fit:["Lifestyle","News","Business","Health"],
+    time_of_day:"interior-lit", lighting_style:"natural-window",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["standup-report","interview-single","documentary","explainer"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"balanced", context_tags:["talk-interview","analysis-data","news-report"],
+    notes:"โปสเตอร์กายวิภาคบนผนังเหมาะสำหรับเนื้อหาสุขภาพ/การแพทย์ — แสง window ด้านหลังสม่ำเสมอดี เหมาะกับ interview หรือ explainer"
+  },
+  {
+    id:"VP-010", title:"City Skyline — News Desk Outdoor Day", title_th:"สกายไลน์เมือง กลางวัน ฉากโต๊ะข่าว outdoor",
+    filepath:"outdoor/city-skyline/VP-010-city-skyline-day-neutral-v1.webp",
+    thumb:"_thumbnails/VP-010_thumb.avif",
+    environment:"outdoor", location_type:"city-skyline",
+    mood:["serious","authoritative","neutral","professional"],
+    color_temp:"cool", brightness:"medium",
+    topics:["news","politics","business","economy","city","development","real-estate"],
+    editorial_fit:["News","Business","Politics"],
+    time_of_day:"day", lighting_style:"natural-overcast",
+    has_sfx_light:false, sfx_light_types:[],
+    motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[],
+    usage_type:["news-anchor","standup-report","interview-single"],
+    subject_placement:"center", background_complexity:"complex-detailed",
+    platform_fit:["16:9","9:16"],
+    resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"urban-city", energy:"balanced", context_tags:["news-report","analysis-data","talk-interview","event-special"],
+    notes:"ฉากข่าวกลางวัน outdoor ที่สะอาดที่สุดในคลัง — แสง overcast สม่ำเสมอดี presenter นั่งที่โต๊ะ เหมาะกับรายงานเศรษฐกิจ/การเมือง"
+  },
+  {
+    id:"VP-011", title:"Luxury Marble Gold Wall", title_th:"ผนังหินอ่อนทองหรูหรา",
+    filepath:"indoor/misc/INT_WALL_LUX-MINIMAL_MARBLE-GOLD_01.webp", thumb:"_thumbnails/VP-011_thumb.webp",
+    environment:"indoor", location_type:"", mood:[], color_temp:"warm", brightness:"low",
+    topics:[], editorial_fit:[], time_of_day:"timeless", lighting_style:"",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[], usage_type:[],
+    platform_fit:["16:9"], resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"intense", context_tags:["talk-interview","opener-drama"], show_ids:[],
+    notes:"ฉากในร่ม — ผนังหินอ่อนสีครีม/ทอง ตัดด้วยแผงไม้สีดำแนวตั้ง โคมไฟ wall sconce ให้แสงอุ่น Luxury Minimal สไตล์ high-end hotel. เหมาะสำหรับ talk-interview รายการพรีเมียม หรือ opener-drama ที่ต้องการความสง่างาม"
+  },
+  {
+    id:"VP-012", title:"Modern Loft Lobby Interior", title_th:"ล็อบบี้ล็อฟท์สมัยใหม่",
+    filepath:"indoor/misc/INT_NDUSTRIAL_LOFT_WOOD.webp", thumb:"_thumbnails/VP-012_thumb.webp",
+    environment:"indoor", location_type:"", mood:[], color_temp:"cool", brightness:"medium",
+    topics:[], editorial_fit:[], time_of_day:"timeless", lighting_style:"",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[], usage_type:[],
+    platform_fit:["16:9"], resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"interior-office", energy:"balanced", context_tags:["talk-interview","news-report","social-short"], show_ids:[],
+    notes:"ฉากในร่ม — โถงล็อบบี้ทรงสูง มีบันได ต้นไม้ขนาดใหญ่ และโต๊ะเก้าอี้ แสงธรรมชาติจากกระจกบานใหญ่ โทนเขียว-เทา cool neutral บรรยากาศโล่งสบาย เหมาะสำหรับ talk-interview, รายงานข่าว หรือ social-short"
+  },
+  {
+    id:"VP-013", title:"Classic Wood Library", title_th:"ห้องสมุดไม้คลาสสิก",
+    filepath:"indoor/misc/INT_LIBRARY_CLASSIC_WOOD_BOOKS.webp", thumb:"_thumbnails/VP-013_thumb.webp",
+    environment:"indoor", location_type:"", mood:[], color_temp:"warm", brightness:"medium",
+    topics:[], editorial_fit:[], time_of_day:"timeless", lighting_style:"",
+    has_sfx_light:false, sfx_light_types:[], motion_type:"static", style:"realistic",
+    has_particles:false, particle_types:[], usage_type:[],
+    platform_fit:["16:9"], resolution:"HD", is_loopable:false, engine:"AI-Generated", status:"active",
+    world:"heritage-culture", energy:"open", context_tags:["talk-interview","analysis-data","news-report"], show_ids:[],
+    notes:"ฉากในร่ม — ห้องสมุดคลาสสิก ชั้นหนังสือไม้เข้ม โต๊ะหนัง เก้าอี้สง่างาม บรรยากาศ academic/heritage สูง เหมาะสำหรับ analysis-data, talk-interview, หรือรายการ heritage"
+  }
+];
+
+// ── Load live SCENES from admin localStorage (same key as vp-admin.html) ──
+// Falls back to DEFAULT_SCENES if admin has never saved, or data is corrupt
+// ── Backfill new taxonomy fields from DEFAULT_SCENES if missing ──
+function migrateScene(s) {
+  const def = DEFAULT_SCENES.find(d => d.id === s.id);
+  const NEW_FIELDS = ['world','energy','context_tags','show_ids','video_url',
+    'key_light_dir','key_light_type','fill_light','back_light','lighting_ratio',
+    'presenter_zone','camera_setup','canvas_notes'];
+  const ARRAY_FIELDS = new Set(['context_tags','show_ids']);
+  const out = Object.assign({}, s);
+  NEW_FIELDS.forEach(field => {
+    if (out[field] === undefined || out[field] === null) {
+      out[field] = def ? (def[field] ?? (ARRAY_FIELDS.has(field) ? [] : ''))
+                       : (ARRAY_FIELDS.has(field) ? [] : '');
+    }
+  });
+  return out;
+}
+
+// SCENES โหลดจาก Supabase — source of truth สำหรับทุก deploy
+let SCENES = [];
+let _scenesReady = false;
+
+async function _loadScenes() {
+  // Priority 1: Supabase (permanent — ทำงานได้ทุก deploy)
+  try {
+    if (typeof supabase !== 'undefined') {
+      const _sc = supabase.createClient(
+        'https://pgaqdqbjyewwckpslyvx.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+      );
+      const { data: sceneRows, error } = await _sc
+        .from('scenes').select('*').order('sort_order', { ascending: true });
+      const { data: showRows } = await _sc.from('shows').select('*');
+
+      if (!error && sceneRows && sceneRows.length > 0) {
+        // แปลง DB row → scene object
+        SCENES = sceneRows.map(r => {
+          const def = DEFAULT_SCENES.find(d => d.id === r.id) || {};
+          return migrateScene({
+            id: r.id, title: r.title||def.title||'', title_th: def.title_th||'',
+            filepath: r.image_url||def.filepath||'', thumb: r.thumb_url||def.thumb||'',
+            added_date: r.created_at ? r.created_at.slice(0,10) : (def.added_date||''),
+            environment: def.environment||'', location_type: r.category||def.location_type||'',
+            location_country: def.location_country||'', mood: def.mood||[],
+            color_temp: def.color_temp||'neutral', brightness: def.brightness||'medium',
+            topics: def.topics||[], editorial_fit: def.editorial_fit||[],
+            time_of_day: def.time_of_day||'timeless', lighting_style: def.lighting_style||'',
+            has_sfx_light: def.has_sfx_light||false, sfx_light_types: def.sfx_light_types||[],
+            motion_type: def.motion_type||'static', style: def.style||'realistic',
+            has_particles: def.has_particles||false, particle_types: def.particle_types||[],
+            usage_type: def.usage_type||[], subject_placement: def.subject_placement||'center',
+            background_complexity: def.background_complexity||'medium',
+            platform_fit: def.platform_fit||['16:9'], resolution: def.resolution||'HD',
+            file_format: def.file_format||'webp', is_loopable: def.is_loopable||false,
+            engine: def.engine||'AI-Generated', status: 'active',
+            world: def.world||'', energy: def.energy||'',
+            context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
+            show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
+            video_url: def.video_url||'', notes: r.description||def.notes||'',
+          });
+        });
+
+        if (showRows && showRows.length > 0) {
+          const sf = showRows.map(r => ({ id:r.id, name:r.name, color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'' }));
+          try { localStorage.setItem('vp_shows_v1', JSON.stringify(sf)); } catch(e) {}
+        }
+
+        try { localStorage.setItem('vp_admin_scenes_v1', JSON.stringify(SCENES)); } catch(e) {}
+        _scenesReady = true;
+        return;
+      }
+    }
+  } catch(e) { /* fallback */ }
+
+  // Fallback: DEFAULT_SCENES (Supabase unavailable)
+  SCENES = JSON.parse(JSON.stringify(DEFAULT_SCENES));
+  _scenesReady = true;
+}
+
+/**
+ * resolveImgOrDisk(path) — returns a usable image URL
+ * http/blob/data → return directly
+ * relative path → test if loadable
+ */
+async function resolveImgOrDisk(path) {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+  // Test relative disk path
+  return new Promise(resolve => {
+    const test = new Image();
+    test.onload  = () => resolve(path);
+    test.onerror = () => resolve('');
+    test.src = path + '?t=' + Date.now();
+  });
+}
+
+/** After rendering cards, async-resolve images (uses data-vp-path attribute) */
+async function resolveCardImages() {
+  const imgs = document.querySelectorAll('img[data-vp-path]');
+  for (const img of imgs) {
+    const path = img.dataset.vpPath;
+    if (!path) continue;
+    const url = await resolveImgOrDisk(path);
+    if (url) {
+      img.style.display = 'block';
+      img.src = url;
+      // Hide the 🎬 placeholder once we have a real image
+      const ph = img.nextElementSibling;
+      if (ph && ph.classList.contains('scene-thumb-placeholder')) {
+        ph.style.display = 'none';
+      }
+    }
+    // If url is empty: placeholder stays visible (correct behavior)
+  }
+}
+
+// ══════════ MODE SWITCH ══════════
+function switchMode(mode) {
+  document.getElementById('modeSearch').classList.toggle('hidden', mode !== 'search');
+  document.getElementById('modeRec').classList.toggle('hidden', mode !== 'rec');
+  document.getElementById('tabSearch').classList.toggle('active', mode === 'search');
+  document.getElementById('tabRec').classList.toggle('active', mode === 'rec');
+}
+
+// ══════════ VIEW MODE ══════════
+// default to thumb (visual) mode on mobile
+let viewMode = window.innerWidth <= 640 ? 'thumb' : 'info';
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('vtInfo').classList.toggle('active', mode === 'info');
+  document.getElementById('vtThumb').classList.toggle('active', mode === 'thumb');
+  renderCards();
+}
+
+// ══════════ SEARCH LOGIC ══════════
+const filters = {world:'all', energy:'all', context:'all', show:'all'};
+
+function setFilter(dim, val, btn) {
+  filters[dim] = val;
+  document.querySelectorAll(`[data-dim="${dim}"]`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function clearAll() {
+  Object.keys(filters).forEach(k=>filters[k]='all');
+  document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.ftag[data-val="all"]').forEach(b=>b.classList.add('active'));
+  document.getElementById('searchInput').value='';
+  renderCards();
+}
+
+function matchesFilters(s) {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (q) {
+    const searchable = [
+      s.id, s.title, s.title_th,
+      ...(s.mood||[]), ...(s.topics||[]), ...(s.editorial_fit||[]),
+      s.environment, s.location_type, s.color_temp, s.lighting_style,
+      s.motion_type, s.style,
+      ...(s.usage_type||[]), ...(s.platform_fit||[]),
+      s.world||'', s.energy||'', ...(s.context_tags||[]),
+      s.notes||''
+    ].join(' ').toLowerCase();
+    if (!searchable.includes(q)) return false;
+  }
+  if (filters.world   !== 'all' && s.world !== filters.world) return false;
+  if (filters.energy  !== 'all' && s.energy !== filters.energy) return false;
+  if (filters.context !== 'all' && !(s.context_tags||[]).includes(filters.context)) return false;
+  if (filters.show    !== 'all' && !(s.show_ids||[]).includes(filters.show)) return false;
+  return true;
+}
+
+// ══════════ SHOW FILTER BAR ══════════
+function renderShowFilter() {
+  let shows = [];
+  try { shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
+  const grp = document.getElementById('showFilterGroup');
+  const bar = document.getElementById('f-show');
+  if (!shows.length) { grp.style.display='none'; return; }
+  grp.style.display='';
+  bar.innerHTML = `<button class="ftag active" data-dim="show" data-val="all" onclick="setFilter('show','all',this)">ทั้งหมด</button>`
+    + shows.map(sh=>{
+        const logo = sh.logo_url ? `<img src="${sh.logo_url}" style="height:14px;width:14px;object-fit:contain;border-radius:2px;margin-right:4px;vertical-align:middle" onerror="this.style.display='none'">` : '';
+        const dot  = sh.color    ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color};margin-right:5px;vertical-align:middle"></span>` : '';
+        return `<button class="ftag" data-dim="show" data-val="${sh.id}" onclick="setFilter('show','${sh.id}',this)">${logo}${dot}${sh.name}</button>`;
+      }).join('');
+}
+
+let _searchLogTimer = null;
+function showSkeletons(n) {
+  const grid = document.getElementById('sceneGrid');
+  grid.innerHTML = Array.from({length: n}, () => `
+    <div class="skeleton scene-card" style="animation:shimmer 1.3s infinite linear;background:linear-gradient(90deg,#e8eaed 25%,#f5f6f7 50%,#e8eaed 75%);background-size:600px 100%;">
+      <div class="skeleton-thumb" style="background:transparent;aspect-ratio:16/9;width:100%;"></div>
+      <div style="padding:4px 0 8px">
+        <div class="skeleton-line" style="height:11px;margin:8px 12px 4px;border-radius:6px;background:rgba(0,0,0,.08);"></div>
+        <div class="skeleton-line short" style="height:10px;margin:4px 12px 8px;width:55%;border-radius:6px;background:rgba(0,0,0,.06);"></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderCards() {
+  const filtered = SCENES.filter(matchesFilters);
+  document.getElementById('resultCount').textContent = `แสดง ${filtered.length} จาก ${SCENES.length} scenes`;
+  // Debounced search log (only after user stops typing 1.5s)
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) {
+    clearTimeout(_searchLogTimer);
+    _searchLogTimer = setTimeout(() => {
+      logActivity('search', { query: q, results: filtered.length });
+    }, 1500);
+  }
+  const grid = document.getElementById('sceneGrid');
+
+  // toggle grid class
+  grid.classList.toggle('thumb-mode', viewMode === 'thumb');
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><div class="nr-text">ไม่พบ scene ที่ตรงกับ filter</div><div class="nr-sub">ลองเปลี่ยน keyword หรือล้าง filter</div></div>`;
+    return;
+  }
+
+  // Show skeletons briefly then render real cards
+  showSkeletons(Math.min(filtered.length, 10));
+  setTimeout(() => {
+    grid.classList.toggle('thumb-mode', viewMode === 'thumb');
+
+  if (viewMode === 'thumb') {
+    // ── Thumbnail mode: true 16:9 ratio, hover overlay, no info body ──
+    grid.innerHTML = filtered.map(s => `
+      <div class="scene-card" onclick="openModal('${s.id}')">
+        <div class="scene-thumb-wrap">
+          <img class="thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
+          <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
+          <div class="thumb-overlay">
+            <div class="thumb-overlay-id">${s.id}</div>
+            <div class="thumb-overlay-title">${s.title}</div>
+            <div class="thumb-overlay-title-th">${s.title_th}</div>
+          </div>
+        </div>
+      </div>`).join('');
+  } else {
+    // ── Info mode: taxonomy-driven card ──
+    const WORLD_LBL  = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
+    const ENERGY_LBL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
+    const CTX_LBL    = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
+    let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
+
+    grid.innerHTML = filtered.map(s => {
+      const worldTag  = s.world  ? `<span class="stag stag-env">${WORLD_LBL[s.world]||s.world}</span>` : '';
+      const energyTag = s.energy ? `<span class="stag stag-mood">${ENERGY_LBL[s.energy]||s.energy}</span>` : '';
+      const ctxTags   = (s.context_tags||[]).slice(0,2).map(c=>`<span class="stag stag-editorial">${CTX_LBL[c]||c}</span>`).join('');
+      const showDots  = _shows.filter(sh=>(s.show_ids||[]).includes(sh.id))
+                              .map(sh=>`<span title="${sh.name}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color||'#9ca3af'};flex-shrink:0"></span>`).join('');
+      return `
+      <div class="scene-card" onclick="openModal('${s.id}')">
+        <img class="scene-thumb thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
+        <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
+        <div class="scene-body">
+          <div class="scene-id" style="display:flex;align-items:center;gap:5px">
+            ${s.id}
+            ${showDots ? `<span style="display:flex;gap:3px;align-items:center;margin-left:2px">${showDots}</span>` : ''}
+          </div>
+          <div class="scene-title">${s.title}</div>
+          <div class="scene-title-th">${s.title_th}</div>
+          <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
+          ${s.notes ? `<div class="notes-box">${s.notes}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Async: resolve image URLs
+  resolveCardImages();
+
+  }, 180); // skeleton duration
+}
+
+// ══════════════════════════════════════════════════════════════
+// RECOMMEND LOGIC — CLIP Hybrid (Image Embeddings + Tag)
+// ══════════════════════════════════════════════════════════════
+
+// ── CLIP Image Embeddings (pre-computed by Python, loaded from JSON) ──
+let CLIP_EMBEDDINGS = null;  // { "VP-001": [0.12, -0.34, ...], ... }  shape: (512,)
+let TOPIC_EMBEDDINGS = null;  // { "robot": [0.15, ...], "music": [...], ... }  shape: (512,)
+
+async function loadClipEmbeddings() {
+  try {
+    const res = await fetch('_database/clip_embeddings.json');
+    if (!res.ok) throw new Error('file not found');
+    CLIP_EMBEDDINGS = await res.json();
+    console.log(`CLIP embeddings loaded: ${Object.keys(CLIP_EMBEDDINGS).length} scenes`);
+  } catch(e) {
+    console.info('clip_embeddings.json not found — will use Tag-only matching until embeddings are generated.');
+  }
+}
+
+async function loadTopicEmbeddings() {
+  try {
+    const res = await fetch('_database/topic_embeddings.json');
+    if (!res.ok) throw new Error('file not found');
+    TOPIC_EMBEDDINGS = await res.json();
+    console.log(`Topic embeddings loaded: ${Object.keys(TOPIC_EMBEDDINGS).length} topics`);
+  } catch(e) {
+    console.info('topic_embeddings.json not found — will use manual topic selection only.');
+  }
+}
+
+// ── Transformers.js — AI text encoder ──────────────────────
+// Model: Xenova/clip-vit-base-patch32 (text encoder only, ~80MB, cached after first load)
+let clipTextEncoder = null;
+let aiReady = false;
+
+function setAIStatus(state, text, pct) {
+  const bar  = document.getElementById('aiStatusBar');
+  const spin = document.getElementById('aiSpinner');
+  const txt  = document.getElementById('aiStatusText');
+  const fill = document.getElementById('aiProgressFill');
+  if (!bar) return;
+  bar.className = 'ai-status-bar ' + state;
+  txt.textContent = text;
+  if (fill) fill.style.width = (pct || 0) + '%';
+  if (spin) spin.style.display = state === 'loading' ? 'block' : 'none';
+}
+
+async function initAI() {
+  // Don't bother loading AI text encoder if no image embeddings exist
+  if (!CLIP_EMBEDDINGS) {
+    setAIStatus('error',
+      '⚠️ ยังไม่มี clip_embeddings.json — ใช้ Tag matching ไปก่อน (รันสคริปต์ generate_embeddings.py เพื่อเปิด AI)',
+      100);
+    return;
+  }
+  try {
+    setAIStatus('loading', 'กำลังโหลด Visual AI model...', 10);
+    const { pipeline, env } = await import(
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
+    );
+    env.allowLocalModels = false;
+
+    clipTextEncoder = await pipeline('feature-extraction', 'Xenova/clip-vit-base-patch32', {
+      progress_callback: (p) => {
+        if (p.status === 'downloading') {
+          const pct = Math.round(10 + (p.loaded / (p.total || 1)) * 75);
+          setAIStatus('loading', `Downloading AI model… ${p.file || ''}`, pct);
+        }
+        if (p.status === 'loading') setAIStatus('loading', 'กำลังเตรียม Visual AI model…', 90);
+      }
+    });
+
+    setAIStatus('ready', '✅ Visual AI พร้อมแล้ว — AI matching เปิดใช้งาน', 100);
+    aiReady = true;
+  } catch(e) {
+    console.error('AI init failed:', e);
+    setAIStatus('error', '⚠️ Visual AI โหลดไม่ได้ — ใช้ Tag matching แทน', 100);
+  }
+}
+
+// Cosine similarity
+function cosineSim(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+  return (na && nb) ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+// ── Rec state ─────────────────────────────────────────────────
+const recState = { topics: new Set(), moods: new Set() };
+
+function toggleTopic(btn, t) { btn.classList.toggle('active'); recState.topics[btn.classList.contains('active')?'add':'delete'](t); }
+function toggleMood(btn, m)  { btn.classList.toggle('active'); recState.moods[btn.classList.contains('active')?'add':'delete'](m); }
+function pickOpt(btn, groupId) {
+  document.querySelectorAll('#'+groupId+' .obtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getOpt(groupId) { return document.querySelector('#'+groupId+' .obtn.active')?.dataset.val || null; }
+
+// ── Keyword map (Thai + English) ──────────────────────────────
+// ครอบคลุมทั้งคำที่คนพิมพ์ตามอารมณ์ และคำที่ match กับ topics/mood ในฉาก
+const KEYWORD_MAP = {
+  // ── บรรยากาศ / mood ──
+  'มืด':['dramatic','mysterious','tense'],'มืดมน':['dramatic','mysterious'],
+  'ตึงเครียด':['tense','dramatic','serious'],'เครียด':['tense','serious'],
+  'น่ากลัว':['tense','dramatic','mysterious'],'หลอน':['mysterious','tense'],
+  'ดุเดือด':['dramatic','tense'],'เข้มข้น':['dramatic','serious'],
+  'เงียบ':['serious','authoritative'],'จริงจัง':['serious','authoritative'],
+  'อบอุ่น':['warm','nostalgic','approachable'],'อุ่น':['warm','approachable'],
+  'เย็น':['cool','serious','authoritative'],'เย็นชา':['cool','serious'],
+  'ล้ำ':['futuristic','AI','technology'],'ล้ำยุค':['futuristic','technology'],
+  'อนาคต':['futuristic','technology','AI'],'อนาคต':['future','technology'],
+  'คลาสสิก':['nostalgic','warm','culture'],'ย้อนยุค':['nostalgic','warm'],
+  'วินเทจ':['nostalgic','warm','culture'],'เก่า':['nostalgic'],
+  'สบาย':['approachable','warm'],'เป็นกันเอง':['approachable','warm'],
+  'น่าเชื่อถือ':['authoritative','serious'],'มีอำนาจ':['authoritative'],
+  'โรแมนติก':['warm','nostalgic'],'นุ่มนวล':['warm','approachable'],
+
+  // ── สถานที่ ──
+  'ถ้ำ':['conflict','crisis','mysterious','underground'],'อุโมงค์':['conflict','crisis','investigation'],
+  'ใต้ดิน':['conflict','crisis','underground','mysterious'],'ใต้น้ำ':['mysterious','documentary'],
+  'โรงงาน':['manufacturing','industry','automation'],'โรงงานผลิต':['manufacturing','automation'],
+  'คลังสินค้า':['manufacturing','production','authentic'],'โกดัง':['manufacturing','authentic'],
+  'ห้องแล็บ':['AI','technology','innovation','sci-fi'],'แล็บ':['AI','technology','sci-fi'],
+  'ห้องสมุด':['education','research','health','medicine'],'ห้องทำงาน':['education','research'],
+  'สตูดิโอ':['entertainment','music','lifestyle','production'],'สตู':['entertainment','music'],
+  'เมือง':['city','urban','news','business'],'ตึก':['city','urban'],
+  'กลางแจ้ง':['outdoor','documentary','authentic'],'ข้างนอก':['outdoor','documentary'],
+  'ภายนอก':['outdoor','documentary'],'ฉากกลางวัน':['outdoor','day'],
+  'เหมือง':['mining','resources','industry','environment'],
+  'สกายไลน์':['city','news','politics','business'],'วิวเมือง':['city','urban'],
+  'ไซไฟ':['AI','technology','futuristic','sci-fi'],'sci-fi':['AI','futuristic','technology'],
+
+  // ── หัวข้อข่าว / content ──
+  'หุ่นยนต์':['robot','AI','automation'],'หุ่น':['robot','automation'],
+  'เอไอ':['AI','technology'],'ปัญญาประดิษฐ์':['AI','technology'],
+  'อุตสาหกรรม':['industry','manufacturing'],'การผลิต':['manufacturing','industry'],
+  'เศรษฐกิจ':['economy','business'],'การเงิน':['economy','business'],
+  'การเมือง':['politics','news'],'เลือกตั้ง':['politics','news'],
+  'รัฐบาล':['politics','news'],'นโยบาย':['politics','business'],
+  'สงคราม':['conflict','war'],'ความขัดแย้ง':['conflict','crisis'],
+  'วิกฤต':['crisis','conflict'],'วิกฤตการณ์':['crisis','conflict'],
+  'การสืบสวน':['investigation','news'],'สืบสวน':['investigation','news'],
+  'สิ่งแวดล้อม':['environment','climate'],'สภาพอากาศ':['climate','environment'],
+  'โลกร้อน':['climate','environment'],'คาร์บอน':['climate','environment'],
+  'สุขภาพ':['health','medicine'],'การแพทย์':['medicine','health'],
+  'โรค':['health','medicine'],'ยา':['medicine','health'],
+  'ดนตรี':['music','culture','arts'],'เพลง':['music','arts'],'เพลงร้อง':['music','entertainment'],
+  'บันเทิง':['entertainment','lifestyle'],'ภาพยนตร์':['entertainment'],
+  'อุตสาหกรรม':['industry','manufacturing'],
+  'อสังหา':['real-estate','city'],'อสังหาริมทรัพย์':['real-estate','city'],
+  'เทคโนโลยี':['technology','tech'],'นวัตกรรม':['innovation','technology'],
+  'การศึกษา':['education','research'],'วิจัย':['research','education'],
+  'วัฒนธรรม':['culture','lifestyle'],'ประเพณี':['culture','lifestyle'],
+  'ข่าว':['news'],'รายงาน':['news','documentary'],'สารคดี':['documentary'],
+  'แรงงาน':['economy','industry','automation'],'ธุรกิจ':['business','economy'],
+  'ทรัพยากร':['resources','economics'],'พลังงาน':['resources','environment'],
+  'ศิลปะ':['arts','culture'],'ไลฟ์สไตล์':['lifestyle'],
+  'ความมั่นคง':['politics','conflict','news'],'ความปลอดภัย':['conflict','news'],
+  'อาชญากรรม':['investigation','conflict','news'],'คดี':['investigation','news'],
+  'ธรรมชาติ':['environment','outdoor','documentary'],'ป่า':['environment','outdoor'],
+  'ทะเล':['environment','outdoor'],'น้ำ':['environment','outdoor'],
+  'ชนบท':['documentary','authentic','outdoor'],'เกษตร':['environment','industry'],
+
+  // ── English ──
+  'robot':['robot','AI','automation'],'ai':['AI','technology'],
+  'economy':['economy','business'],'politics':['politics','news'],
+  'war':['conflict','war'],'environment':['environment','climate'],
+  'health':['health','medicine'],'music':['music','culture'],'song':['music','entertainment'],
+  'technology':['technology','tech'],'future':['future','technology'],
+  'city':['city','urban'],'mining':['mining','resources'],
+  'industry':['industry','manufacturing'],'business':['business','economy'],
+  'news':['news'],'education':['education','research'],
+  'automation':['automation','manufacturing'],
+  'dark':['dramatic','mysterious','tense'],'dark':['dramatic','mysterious'],
+  'tense':['tense','dramatic'],'mysterious':['mysterious','tense'],
+  'dramatic':['dramatic'],'serious':['serious','authoritative'],
+  'warm':['warm'],'cool':['cool'],'futuristic':['futuristic','AI'],
+  'tunnel':['conflict','crisis','investigation','underground'],
+  'cave':['conflict','mysterious','underground'],
+  'underground':['conflict','crisis','mysterious'],
+  'library':['education','research','health','medicine'],
+  'studio':['entertainment','music','lifestyle'],
+  'skyline':['city','news','politics','business'],
+  'factory':['manufacturing','automation','industry'],
+  'warehouse':['manufacturing','production','authentic'],
+  'lab':['AI','technology','innovation','sci-fi'],
+  'outdoor':['outdoor','documentary'],'indoor':['indoor'],
+  'conflict':['conflict','war','crisis'],'crisis':['crisis','conflict'],
+  'science':['AI','technology','innovation'],
+  'retro':['nostalgic','warm','culture'],'vintage':['nostalgic','warm'],
+};
+
+function extractFromText(text) {
+  const out = new Set();
+  const lower = text.toLowerCase();
+  Object.entries(KEYWORD_MAP).forEach(([kw, tags]) => {
+    if (lower.includes(kw)) tags.forEach(t => out.add(t));
+  });
+  return out;
+}
+
+// ── Tag-based scoring (normalized 0–1) ───────────────────────
+// maxPossible คำนวณเฉพาะ dimensions ที่ user ระบุจริงๆ
+// ป้องกัน score ต่ำเทียมเพราะ fields ที่ไม่ได้ถาม
+function tagScore(s, allTopics) {
+  let score = 0, maxPossible = 0;
+  const tMatches = [];
+
+  // Topics match (weight 3 each) — ตรวจทั้ง topics[] และ editorial_fit[]
+  const sTopics      = Array.isArray(s.topics)       ? s.topics       : [];
+  const sEditorialFit = Array.isArray(s.editorial_fit) ? s.editorial_fit : [];
+  allTopics.forEach(t => {
+    maxPossible += 3;
+    const tLow = t.toLowerCase();
+    const hit = sTopics.map(x=>x.toLowerCase()).includes(tLow)
+             || sEditorialFit.map(x=>x.toLowerCase()).includes(tLow);
+    if (hit) { score += 3; tMatches.push(t); }
+  });
+
+  // ถ้าไม่มี topic input เลย ให้ทุกฉากมีคะแนนขั้นต่ำ 0.1 (แสดงทั้งหมด)
+  if (maxPossible === 0) return { rawScore: 0, normalized: 0.1, tMatches };
+
+  return {
+    rawScore: score,
+    normalized: score / maxPossible,
+    tMatches
+  };
+}
+
+// ── Translate Thai → English via Google Translate (free, no key) ──
+async function translateToEnglish(text) {
+  // ตรวจว่ามีภาษาไทยไหม (Unicode range U+0E00–U+0E7F)
+  if (!/[\u0E00-\u0E7F]/.test(text)) return text; // English อยู่แล้ว
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    // response format: [[[translated, original, ...], ...], ...]
+    const translated = data[0].map(chunk => chunk[0]).join(' ').trim();
+    console.log(`🌐 Translated: "${text}" → "${translated}"`);
+    return translated || text;
+  } catch(e) {
+    console.warn('Translation failed, using original text:', e.message);
+    return text; // fallback ใช้ต้นฉบับ
+  }
+}
+
+// ── Extract topics from text: KEYWORD_MAP always runs as base,
+//    semantic matching adds on top when topic_embeddings available ──
+async function extractTopicsFromText(text) {
+  const out = new Set();
+  if (!text || text.length < 2) return out;
+
+  // 1️⃣ Always: KEYWORD_MAP (fast, reliable Thai+English fallback)
+  const lower = text.toLowerCase();
+  Object.entries(KEYWORD_MAP).forEach(([kw, tags]) => {
+    if (lower.includes(kw)) tags.forEach(t => out.add(t));
+  });
+
+  // 2️⃣ If topic_embeddings available: semantic boost (adds extra matches)
+  if (TOPIC_EMBEDDINGS && clipTextEncoder) {
+    try {
+      const textEn = await translateToEnglish(text);
+      const encoded = await clipTextEncoder([textEn], { pooling:'cls', normalize:true });
+      const userVec = Array.from(encoded[0].data);
+      Object.entries(TOPIC_EMBEDDINGS).forEach(([topic, topicVec]) => {
+        if (cosineSim(userVec, topicVec) > 0.5) out.add(topic);
+      });
+    } catch(e) { /* silent — KEYWORD_MAP already ran */ }
+  }
+
+  return out;
+}
+
+// ── Main runRec — CLIP + Tag hybrid ──────────────────────────
+async function runRec() {
+  const text      = document.getElementById('recInput').value.trim();
+  const fromText  = await extractTopicsFromText(text);   // KEYWORD_MAP + optional semantic
+  const allTopics = new Set([...fromText, ...recState.topics]);
+
+  const box = document.getElementById('recResults');
+  box.classList.remove('hidden');
+
+  // ── CLIP text encoding (พร้อม auto-translate Thai → English) ──
+  let clipScores = {};
+  const canUseClip = aiReady && clipTextEncoder && CLIP_EMBEDDINGS && text.length > 2;
+
+  if (canUseClip) {
+    try {
+      // แปล Thai → English ก่อน เพราะ CLIP ถูก train ด้วย English
+      const textEn = await translateToEnglish(text);
+      const prompt = `a photo of ${textEn}`;
+      const out = await clipTextEncoder([prompt], { pooling:'cls', normalize:true });
+      const queryVec = Array.from(out[0].data);
+      SCENES.forEach(s => {
+        const imgVec = CLIP_EMBEDDINGS[s.id];
+        clipScores[s.id] = imgVec ? Math.max(0, cosineSim(queryVec, imgVec)) : 0;
+      });
+    } catch(e) { console.warn('CLIP scoring failed:', e); }
+  }
+
+  // ── Blend weights ─────────────────────────────────────────
+  // CLIP available: 65% CLIP image similarity + 35% Tag
+  // CLIP offline:   100% Tag
+  const W_CLIP = canUseClip ? 0.65 : 0;
+  const W_TAG  = 1 - W_CLIP;
+
+  // ── Score all scenes ──────────────────────────────────────
+  const scored = SCENES.map(s => {
+    const ts   = tagScore(s, allTopics);
+    const clip = clipScores[s.id] || 0;
+    const hybrid = W_CLIP * clip + W_TAG * ts.normalized;
+    return {
+      s, hybrid,
+      clipPct: Math.round(clip * 100),
+      tagPct:  Math.round(ts.normalized * 100),
+      rawTagScore: ts.rawScore,
+      tMatches: ts.tMatches,
+    };
+  })
+  // เรียงตาม hybrid score เสมอ แสดงทั้งหมด
+  .sort((a, b) => b.hybrid - a.hybrid);
+
+  const top = scored.slice(0, 5);
+  const maxH = top.length ? top[0].hybrid : 1;
+  const rankLabel = ['🥇 อันดับ 1 — แนะนำสูงสุด','🥈 อันดับ 2','🥉 อันดับ 3','อันดับ 4','อันดับ 5'];
+  const rankCls   = ['rank-1','rank-2','rank-3','rank-2','rank-3'];
+
+  if (!top.length) {
+    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">🔍</div><div style="font-size:15px;font-weight:600;color:var(--muted)">ไม่พบฉากที่ match — ลองพิมพ์เนื้อหาหรือเลือก Mood</div></div>`;
+    box.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+
+  const modeBadge = canUseClip
+    ? `<span class="ai-badge">🧠 AI Visual Match</span>`
+    : `<span class="ai-badge" style="background:#F9FAFB;color:#6B7280;border-color:#E5E7EB">🏷 Tag Match</span>`;
+
+  box.innerHTML = `<div class="rec-results-header">พบ <strong>${scored.length}</strong> ฉากที่เข้ากัน — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
+    top.map((r, i) => {
+      const pct = Math.round(r.hybrid / maxH * 100);
+      const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
+      return `<div class="rcard" onclick="openModal('${r.s.id}')">
+        <div class="rcard-inner">
+          <img class="rcard-thumb" src="${r.s.thumb}" alt="${r.s.title}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="rcard-thumb-ph" style="display:none">🎬</div>
+          <div class="rcard-body">
+            <div class="rcard-top">
+              <span class="rank-badge ${rankCls[i]}">${rankLabel[i]}</span>
+              <span class="rcard-id">${r.s.id}</span>
+            </div>
+            <div class="rcard-title">${r.s.title}</div>
+            <div class="rcard-title-th">${r.s.title_th}</div>
+            <div class="score-row">
+              <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
+              <span class="score-pct">${pct}%</span>
+            </div>
+            ${canUseClip ? `
+            <div class="score-breakdown">
+              <div class="sb-item"><div class="sb-label">🧠 AI</div><div class="sb-bar sb-clip" style="background:linear-gradient(90deg,#8B5CF6 ${r.clipPct}%,#EDE9FE ${r.clipPct}%)"></div><div class="sb-num">${r.clipPct}%</div></div>
+              <div class="sb-item"><div class="sb-label">🏷 Tag</div><div class="sb-bar sb-tag" style="background:linear-gradient(90deg,#10B981 ${r.tagPct}%,#D1FAE5 ${r.tagPct}%)"></div><div class="sb-num">${r.tagPct}%</div></div>
+            </div>` : ''}
+            <div class="match-tags">
+              ${r.tMatches.map(t=>`<span class="mtag mtag-topic">🎯 ${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${r.s.notes?`<div class="rcard-notes"><strong>📝 Production Note:</strong> ${r.s.notes}</div>`:''}
+      </div>`;
+    }).join('');
+
+  // Log recommend event
+  logActivity('recommend', {
+    query: text,
+    topics: [...allTopics],
+    top_results: top.map(r => ({ id: r.s.id, score: Math.round(r.hybrid * 100) }))
+  });
+
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ══════════ MODAL (shared) ══════════
+let currentModalId = null;
+
+// ── Video URL → embed helper (used in template literals) ──
+function videoEmbedUrlJs(url) {
+  if (!url) return '';
+  url = url.trim();
+  let m = url.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?dnt=1`;
+  return '';
+}
+
+function toggleVideoCollapse(id) {
+  const body = document.getElementById(`vid-body-${id}`);
+  const chev = document.getElementById(`vid-chev-${id}`);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+function openModal(id) {
+  const s = SCENES.find(x=>x.id===id);
+  if (!s) return;
+  currentModalId = id;
+  logActivity('view_scene', { scene_id: id, scene_title: s.title, scene_title_th: s.title_th });
+  const img = document.getElementById('modalImg');
+  img.style.display = 'none';
+  img.src = '';
+  // Resolve image URL (Supabase http URL or relative disk path)
+  const tryPaths = [s.filepath, s.thumb].filter(Boolean);
+  (async () => {
+    for (const p of tryPaths) {
+      const url = await resolveImgOrDisk(p);
+      if (url) { img.src = url; img.style.display = 'block'; return; }
+    }
+    // Nothing found — keep hidden
+  })();
+
+  const usedEntries = getUsedIn(id);
+  const uiBadge = usedEntries.length ? `<span class="ui-count-badge">${usedEntries.length}</span>` : '';
+
+  // ── Show pills (read from localStorage) ──
+  let _shows = [];
+  try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
+  const sceneShows = _shows.filter(sh=>(s.show_ids||[]).includes(sh.id));
+  const showPills = sceneShows.map(sh=>{
+    const logo = sh.logo_url?`<img src="${sh.logo_url}" style="height:12px;width:12px;object-fit:contain;border-radius:2px;margin-right:4px;vertical-align:middle" onerror="this.style.display='none'">`:''
+    const dot  = sh.color?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${sh.color};margin-right:4px;vertical-align:middle"></span>`:''
+    return `<span class="stag stag-editorial" style="border:1.5px solid ${sh.color||'var(--border)'};color:${sh.color||'inherit'}">${logo}${dot}${sh.name}</span>`
+  }).join('')
+
+  // ── World / Energy / Context label maps ──
+  const WORLD_LABEL  = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
+  const ENERGY_LABEL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'}
+  const CTX_LABEL    = {'news-report':'📰 News & Report','talk-interview':'🎙 Talk & Interview','analysis-data':'📊 Analysis & Data','field-onsite':'🌍 Field & On-Site','opener-drama':'🎬 Opener & Drama','social-short':'📱 Social & Short','event-special':'🏆 Event & Special'}
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-id">${s.id} · ${s.engine} · ${s.resolution}</div>
+    <div class="modal-title">${s.title}</div>
+    <div class="modal-title-th">${s.title_th}</div>
+
+    ${sceneShows.length?`<div class="modal-section"><div class="modal-section-title">📺 รายการ</div><div class="modal-tags">${showPills}</div></div>`:''}
+
+    <div class="modal-section">
+      <div class="modal-taxonomy-grid">
+        <div>
+          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L1</span>WORLD</div>
+          <div>${s.world?`<span class="stag stag-env">${WORLD_LABEL[s.world]||s.world}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
+        </div>
+        <div>
+          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L2</span>ENERGY</div>
+          <div>${s.energy?`<span class="stag stag-mood">${ENERGY_LABEL[s.energy]||s.energy}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
+        </div>
+        <div>
+          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L3</span>CONTEXT</div>
+          <div class="modal-tags" style="flex-wrap:wrap;gap:4px">${(s.context_tags||[]).length?(s.context_tags.map(c=>`<span class="stag stag-editorial">${CTX_LABEL[c]||c}</span>`).join('')):`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section"><div class="modal-section-title">📁 File Path</div><div class="path-box">${s.filepath}</div></div>
+
+    ${s.notes?`<div class="modal-section"><div class="modal-section-title">📝 Production Notes</div><div class="modal-notes">${s.notes}</div></div>`:''}
+
+    <!-- ── Video Preview ── -->
+    <div class="modal-section">
+      <div class="video-collapse-header" onclick="toggleVideoCollapse('${id}')">
+        <div class="modal-section-title" style="margin-bottom:0">▶️ Video Preview${s.video_url ? ' <span style="color:var(--green);font-size:9px;font-weight:700;margin-left:6px">● มีวิดีโอ</span>' : ''}</div>
+        <span class="video-collapse-chevron" id="vid-chev-${id}">▼</span>
+      </div>
+      <div class="video-collapse-body" id="vid-body-${id}">
+        ${s.video_url ? `<div class="video-embed-wrap"><iframe src="${videoEmbedUrlJs(s.video_url)}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe></div>` : `<div class="video-no-link">🎬 ยังไม่มี video preview<br><span style="font-size:11px">Admin สามารถเพิ่ม YouTube/Vimeo link ได้ในหน้า Admin</span></div>`}
+      </div>
+    </div>
+
+    <!-- ── Lighting Blueprint ── -->
+    <div class="modal-section lb-section">
+      ${renderLightingBlueprint(id)}
+    </div>
+
+    <div class="modal-section" id="usedInSection">
+      <div class="ui-header">
+        <div class="modal-section-title" style="margin-bottom:0">📺 ใช้ในงาน${uiBadge}</div>
+        <div style="display:flex;gap:6px">
+          <button class="ui-export-btn" onclick="exportUsedIn('${id}')">↗ Export JSON</button>
+          <button class="ui-add-btn" onclick="toggleAddForm('${id}')">＋ เพิ่มงาน</button>
+        </div>
+      </div>
+      <div id="uiList_${id}">${renderUsedInHTML(id)}</div>
+      <div class="ui-form" id="uiForm_${id}">
+        <input id="uiTitle_${id}" placeholder="ชื่อรายการ / บทความ / Episode" />
+        <div class="ui-form-row">
+          <input id="uiDate_${id}" type="date" value="${new Date().toISOString().slice(0,10)}">
+          <select id="uiPlat_${id}">
+            <option value="broadcast">📺 Broadcast / TV</option>
+            <option value="youtube">▶️ YouTube</option>
+            <option value="social">📱 Social Media</option>
+            <option value="web">🌐 Web / Article</option>
+          </select>
+        </div>
+        <input id="uiUrl_${id}" placeholder="URL ลิงก์งาน (ถ้ามี)" />
+        <div class="ui-form-btns">
+          <button class="ui-save-btn" onclick="saveUsage('${id}')">✓ บันทึก</button>
+          <button class="ui-cancel-btn" onclick="toggleAddForm('${id}')">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+  // auto-open LB body and init canvas
+  requestAnimationFrame(() => {
+    const body = document.getElementById(`lb-body-${id}`);
+    const chev = document.getElementById(`lb-chev-${id}`);
+    if (body && !body.classList.contains('open')) {
+      body.classList.add('open');
+      if (chev) chev.classList.add('open');
+    }
+    lbInitCanvasForScene(id);
+  });
+}
+
+function closeModal(e) {
+  if (!e||e.target===document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+    resetFalseColor('modal');
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.getElementById('lsOverlay').classList.remove('open');
+    resetFalseColor('modal');
+    resetFalseColor('ls');
+  }
+});
+
+// ══════════ FULLSCREEN LIGHTBOX ══════════
+let lsCurrentIdx = 0;
+
+function openLs(id) {
+  lsCurrentIdx = SCENES.findIndex(s=>s.id===id);
+  if(lsCurrentIdx<0) return;
+  showLsScene(lsCurrentIdx);
+  document.getElementById('lsOverlay').classList.add('open');
+}
+function showLsScene(idx) {
+  const s = SCENES[idx];
+  const img = document.getElementById('lsImg');
+  img.alt = s.title;
+  img.src = '';
+  document.getElementById('lsInfo').textContent = `${s.id} · ${s.title}  (${idx+1}/${SCENES.length})`;
+  (async () => {
+    const tryPaths = [s.filepath, s.thumb].filter(Boolean);
+    for (const p of tryPaths) {
+      const url = await resolveImgOrDisk(p);
+      if (url) { img.src = url; return; }
+    }
+  })();
+}
+function lsNav(dir) {
+  lsCurrentIdx = (lsCurrentIdx + dir + SCENES.length) % SCENES.length;
+  resetFalseColor('ls'); // clear FC when switching scene
+  showLsScene(lsCurrentIdx);
+}
+function closeLs(e) {
+  if (!e||e.target===document.getElementById('lsOverlay')) {
+    document.getElementById('lsOverlay').classList.remove('open');
+    resetFalseColor('ls');
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lsOverlay').classList.contains('open')) return;
+  if(e.key==='ArrowRight') lsNav(1);
+  if(e.key==='ArrowLeft') lsNav(-1);
+});
+
+// ══════════ LIGHTING BLUEPRINT ══════════
+const LB_KEY = 'vp_lighting_v1';
+
+// Default blueprint — includes positions (0-1 of canvas), diffuser, blackflag
+function lbDefault() {
+  return {
+    fixtures: {
+      // fixtures placed OUTSIDE the stage perimeter (around it), stage occupies centre
+      backlight: { on:true,  intensity:75, temp:5600, model:'ARRI SkyPanel S60-C',  note:'', diffuser:false, fx:[], px:0.50, py:0.06, role:'backlight' },
+      rimL:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, fx:[], px:0.06, py:0.42, role:'rimL' },
+      rimR:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, fx:[], px:0.94, py:0.42, role:'rimR' },
+      ambient:   { on:true,  intensity:40, temp:5600, model:'ARRI SkyPanel S30-C',   note:'', diffuser:true,  fx:[], px:0.88, py:0.08, role:'ambient' },
+      key:       { on:true,  intensity:80, temp:5600, model:'Aputure LS 300d II',    note:'', diffuser:false, fx:[], px:0.22, py:0.88, role:'key' },
+      fill:      { on:true,  intensity:45, temp:5600, model:'Nanlite Forza 300B',    note:'', diffuser:false, fx:[], px:0.78, py:0.88, role:'fill' },
+    },
+    blackFlags: [
+      { px:0.12, py:0.55, w:0.08, h:0.05, angle:0 },
+    ],
+    diffusers: [],
+    // stage: occupies central ~60% of canvas area
+    stage: { px:0.50, py:0.50, wm:4, dm:3, locked:false },
+    // each presenter as individual object with position
+    presenters: [
+      { px:0.50, py:0.52 }
+    ],
+    // furniture objects
+    furniture: {
+      anchorDesk:  { on:false, px:0.50, py:0.50, w:0.22, h:0.05 },
+      interviewChairL: { on:false, px:0.42, py:0.52, w:0.04, h:0.04 },
+      interviewChairR: { on:false, px:0.58, py:0.52, w:0.04, h:0.04 },
+    },
+    note: '',
+  };
+}
+
+const LB_FIXTURE_META = {
+  backlight: { label:'Backlight (Overhead)', color:'#F59E0B', offColor:'#374151', borderColor:'#854D0E' },
+  rimL:      { label:'Rim Light Left',       color:'#3B82F6', offColor:'#374151', borderColor:'#1D4ED8' },
+  rimR:      { label:'Rim Light Right',      color:'#3B82F6', offColor:'#374151', borderColor:'#1D4ED8' },
+  ambient:   { label:'Ambient (SkyPanel)',   color:'#22C55E', offColor:'#374151', borderColor:'#166534' },
+  key:       { label:'Key Light',            color:'#A855F7', offColor:'#374151', borderColor:'#7C3AED' },
+  fill:      { label:'Fill Light',           color:'#0EA5E9', offColor:'#374151', borderColor:'#0284C7' },
+};
+
+const LB_FX_OPTIONS = [
+  { id:'strobe-slow',  label:'⚡ Strobe Slow'  },
+  { id:'strobe-fast',  label:'⚡ Strobe Fast'  },
+  { id:'flicker',      label:'🕯 Flicker'       },
+  { id:'pulse',        label:'🌊 Pulse'         },
+  { id:'chase',        label:'🎭 Chase'         },
+  { id:'lightning',    label:'⛈ Lightning'     },
+  { id:'candle',       label:'🕯 Candle'        },
+  { id:'fire',         label:'🔥 Fire'          },
+];
+
+function getAllLB() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; }
+}
+function getLB(id) {
+  const all = getAllLB();
+  return all[id] ? JSON.parse(JSON.stringify(all[id])) : lbDefault();
+}
+function saveLB(id, data) {
+  const all = getAllLB();
+  all[id] = data;
+  localStorage.setItem(LB_KEY, JSON.stringify(all));
+}
+
+function isAdmin() {
+  const role = localStorage.getItem('vp_user_role') || '';
+  const u = localStorage.getItem('vp_user_id') || '';
+  return role === 'admin' || u.toLowerCase().startsWith('admin');
+}
+
+function tempToColor(k) {
+  // rough 2700K=orange → 5600K=white → 8000K=blue
+  if (k <= 3200) return `#F97316`;
+  if (k <= 4500) return `#FCD34D`;
+  if (k <= 5600) return `#FFFFFF`;
+  if (k <= 6500) return `#BAE6FD`;
+  return `#93C5FD`;
+}
+
+function renderLightingBlueprint(sceneId) {
+  const lb      = getLB(sceneId);
+  const hasData = getAllLB()[sceneId] != null;
+  const admin   = isAdmin();
+  const ro      = !admin;
+
+  const fixtureRows = Object.entries(LB_FIXTURE_META).map(([key, m]) => {
+    const f = lb.fixtures[key];
+    const tempK = f.temp;
+    const tCol  = tempToColor(tempK);
+    const fx    = f.fx || [];
+    // icon changes when off
+    const onIcon  = key==='backlight'?'💡':key==='ambient'?'🟢':key==='key'?'🟣':key==='fill'?'🔷':'🔵';
+    const rowIcon = f.on ? onIcon : '⬛';
+    const fxChips = LB_FX_OPTIONS.map(fxo =>
+      `<button class="lb-fix-fx-chip${fx.includes(fxo.id)?' active':''}"
+        ${ro?'disabled':''}
+        onclick="lbToggleFixFx('${sceneId}','${key}','${fxo.id}',this)">${fxo.label}</button>`
+    ).join('');
+    const hasFx = fx.length > 0;
+    return `
+    <div class="lb-fixture-row" id="lb-row-${sceneId}-${key}" style="opacity:${f.on?1:0.5}">
+      <div class="lb-fix-row-header">
+        <span class="lb-fix-row-icon" id="lb-rowicon-${sceneId}-${key}">${rowIcon}</span>
+        <span class="lb-fix-row-name">${m.label}</span>
+        ${admin ? `
+          <button class="lb-diag-btn${f.diffuser?' active':''}" style="font-size:8px;padding:2px 6px;margin-right:2px"
+            onclick="lbToggleDiffuser('${sceneId}','${key}',this)" title="Diffuser ติดกับไฟ">🧣</button>
+        ` : (f.diffuser ? `<span style="font-size:10px;color:#60A5FA;margin-right:4px" title="มี Diffuser">🧣</span>` : '')}
+        <span class="lb-fix-row-model" id="lb-model-disp-${sceneId}-${key}">${f.model}</span>
+        ${admin ? `<button class="lb-fix-on-off ${f.on?'on':'off'}" id="lb-onoff-${sceneId}-${key}"
+          onclick="lbToggleOnOff('${sceneId}','${key}')">${f.on?'ON':'OFF'}</button>` :
+          `<span class="lb-fix-on-off ${f.on?'on':'off'}" style="cursor:default;display:inline-flex;align-items:center;justify-content:center">${f.on?'ON':'OFF'}</span>`}
+      </div>
+      <div class="lb-sliders">
+        <div class="lb-slider-group">
+          <div class="lb-slider-label">Intensity <span id="lb-int-val-${sceneId}-${key}">${f.intensity}%</span></div>
+          <input type="range" class="lb-range" min="0" max="100" value="${f.intensity}"
+            ${ro?'disabled':''}
+            oninput="lbUpdateSlider('${sceneId}','${key}','intensity',this.value)"
+            style="opacity:${f.on?1:.4}">
+        </div>
+        <div class="lb-slider-group">
+          <div class="lb-slider-label">Color Temp <span id="lb-temp-val-${sceneId}-${key}" style="color:${tCol}">${tempK}K</span></div>
+          <input type="range" class="lb-range temp-range" min="2700" max="8000" step="100" value="${tempK}"
+            ${ro?'disabled':''}
+            style="--thumb-color:${tCol};opacity:${f.on?1:.4}"
+            oninput="lbUpdateSlider('${sceneId}','${key}','temp',this.value)">
+          <div class="lb-temp-bar"></div>
+        </div>
+      </div>
+      ${admin ? `
+      <details style="margin-top:8px">
+        <summary style="font-size:10px;color:#64748B;cursor:pointer;user-select:none">⚙ Fixture Spec</summary>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+          <input style="background:#111827;border:1px solid #334155;border-radius:5px;color:#CBD5E1;font-size:11px;padding:5px 8px;font-family:inherit;width:100%;box-sizing:border-box"
+            placeholder="ยี่ห้อ/รุ่น เช่น ARRI SkyPanel S60-C" value="${f.model}"
+            oninput="lbUpdateModel('${sceneId}','${key}',this.value)">
+        </div>
+      </details>` : ''}
+      <!-- FX + Note collapsible per fixture -->
+      <div class="lb-fix-fx-section">
+        <button class="lb-fix-fx-toggle" onclick="lbToggleFixFxPanel('${sceneId}','${key}')">
+          <span id="lb-fx-chev-${sceneId}-${key}">${hasFx?'▾':'▸'}</span>
+          ⚡ FX${hasFx?' <span style=\'color:#A78BFA;font-weight:700\'>'+fx.length+'</span>':''} &amp; Note
+        </button>
+        <div class="lb-fix-fx-body${hasFx?' open':''}" id="lb-fxbody-${sceneId}-${key}">
+          <div class="lb-fix-fx-chips" style="margin-bottom:6px">${fxChips}</div>
+          ${admin ? `
+          <textarea class="lb-fix-note-box" id="lb-fixnote-${sceneId}-${key}"
+            placeholder="Note เฉพาะไฟตัวนี้..."
+            oninput="lbUpdateFixNote('${sceneId}','${key}',this.value)">${f.note||''}</textarea>
+          ` : (f.note ? `<div style="font-size:10px;color:#64748B;padding:2px 0">📎 ${f.note}</div>` : '')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // stage size inputs
+  const stg = lb.stage || { wm:4, dm:3, locked:false };
+  const prs = lb.presenters || [{px:0.5,py:0.52}];
+  const pc  = prs.length;
+  const fur = lb.furniture || {};
+
+  return `
+  <div class="lb-header" onclick="lbToggleBody('${sceneId}')">
+    <div class="lb-header-left">
+      <span style="font-size:16px">💡</span>
+      <div>
+        <div class="lb-header-title">LIGHTING BLUEPRINT</div>
+        <div class="lb-header-sub">Backlight · Rim L/R · Ambient · Key · Fill · FX</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="lb-badge ${hasData?'lb-badge-set':'lb-badge-empty'}">${hasData?'✓ Configured':'Not set'}</span>
+      <span class="lb-chevron" id="lb-chev-${sceneId}">▼</span>
+    </div>
+  </div>
+  <div class="lb-body" id="lb-body-${sceneId}">
+
+    <!-- ─ Interactive Stage Diagram ─ -->
+    <div class="lb-diagram" id="lb-diag-${sceneId}">
+      <canvas class="lb-stage-canvas" id="lb-canvas-${sceneId}"></canvas>
+
+      <!-- Sidebar controls -->
+      <div class="lb-diag-sidebar">
+        <button class="lb-diag-btn" onclick="lbOpenFullscreen('${sceneId}')" title="Fullscreen">⛶ Full</button>
+        ${admin ? `
+          <button class="lb-diag-btn${stg.locked?' lock-on':''}" id="lb-lock-${sceneId}"
+            onclick="lbToggleStageLock('${sceneId}')" title="${stg.locked?'🔒 Locked':'🔓 Unlocked'}">
+            ${stg.locked?'🔒 LOCK':'🔓 FREE'}
+          </button>
+          <button class="lb-diag-btn" onclick="lbAddBlackFlag('${sceneId}')" title="เพิ่ม Black Flag">🚩 +Flag</button>
+          <button class="lb-diag-btn" onclick="lbAddDiffuser('${sceneId}')" title="เพิ่ม Diffuser Panel">🧣 +Diff</button>
+          <div style="width:100%;height:1px;background:#1E293B;margin:2px 0"></div>
+          <button class="lb-diag-btn${fur.anchorDesk?.on?' active':''}" id="lb-fur-${sceneId}-anchorDesk"
+            onclick="lbToggleFurniture('${sceneId}','anchorDesk')" title="โต๊ะผู้ประกาศ">📺 โต๊ะ</button>
+          <button class="lb-diag-btn${fur.interviewChairL?.on?' active':''}" id="lb-fur-${sceneId}-interviewChairL"
+            onclick="lbToggleFurniture('${sceneId}','interviewChairL')" title="เก้าอี้ซ้าย">💺 L</button>
+          <button class="lb-diag-btn${fur.interviewChairR?.on?' active':''}" id="lb-fur-${sceneId}-interviewChairR"
+            onclick="lbToggleFurniture('${sceneId}','interviewChairR')" title="เก้าอี้ขวา">💺 R</button>
+          <div style="width:100%;height:1px;background:#1E293B;margin:2px 0"></div>
+          <button class="lb-diag-btn" onclick="lbSwapKeyFill('${sceneId}')" title="สลับ Key ↔ Fill position">⇄ Key/Fill</button>
+        ` : ''}
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px">
+          <div style="font-size:8px;color:#4B5563;text-align:center;letter-spacing:.04em">STAGE</div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <input type="number" min="1" max="20" value="${stg.wm}" ${ro?'readonly':''}
+              style="width:34px;background:#111827;border:1px solid #334155;border-radius:4px;color:#CBD5E1;font-size:10px;padding:3px 4px;text-align:center"
+              oninput="lbUpdateStage('${sceneId}','wm',this.value)"
+              title="ความกว้าง (เมตร)">
+            <span style="font-size:8px;color:#4B5563">×</span>
+            <input type="number" min="1" max="20" value="${stg.dm}" ${ro?'readonly':''}
+              style="width:34px;background:#111827;border:1px solid #334155;border-radius:4px;color:#CBD5E1;font-size:10px;padding:3px 4px;text-align:center"
+              oninput="lbUpdateStage('${sceneId}','dm',this.value)"
+              title="ความลึก (เมตร)">
+            <span style="font-size:8px;color:#4B5563">m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Presenter count -->
+      <div class="lb-presenter-row">
+        <span class="lb-pcount-label">พิธีกร</span>
+        ${[1,2,3,4].map(n => `
+          <button class="lb-pcount-btn${pc===n?' active':''}" id="lb-pc-${sceneId}-${n}"
+            onclick="lbSetPresenterCount('${sceneId}',${n})" ${ro&&pc!==n?'disabled':''}>
+            ${n}
+          </button>`).join('')}
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="lb-controls">
+      ${fixtureRows}
+
+      <!-- Director's note -->
+      <div class="lb-note-area">
+        <div class="lb-note-label">📝 Director / DP Note</div>
+        <textarea class="lb-note-box" id="lb-note-${sceneId}"
+          placeholder="เช่น: ใส่ diffusion ที่ backlight, presenter ต้องไม่เดินออกนอก 1m จากจุดยืน..."
+          ${ro?'readonly':''}
+          oninput="lbUpdateNote('${sceneId}',this.value)">${lb.note||''}</textarea>
+      </div>
+
+      <!-- Action bar -->
+      <div class="lb-actions">
+        ${admin ? `
+          <button class="lb-btn lb-btn-save" onclick="lbSave('${sceneId}')">💾 บันทึก Blueprint</button>
+          <button class="lb-btn lb-btn-reset" onclick="lbReset('${sceneId}')">↺ Reset</button>
+          <span class="lb-saved-flash" id="lb-saved-${sceneId}">✓ Saved!</span>
+          <button class="lb-btn lb-btn-export" onclick="lbExportAll()">↗ Export All JSON</button>
+        ` : `
+          <span class="lb-readonly-badge">🔒 Admin เท่านั้นที่ edit ได้</span>
+          ${hasData ? `<button class="lb-btn lb-btn-export" style="margin-left:0" onclick="lbExportAll()">↗ Export</button>` : ''}
+        `}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── LB live update helpers ──────────────────────────────────
+const _lbDraft = {};
+
+function lbGetDraft(id) {
+  if (!_lbDraft[id]) _lbDraft[id] = getLB(id);
+  const d = _lbDraft[id];
+  // migrate stage
+  if (!d.stage) d.stage = { px:0.50, py:0.50, wm:4, dm:3, locked:false };
+  // migrate presenters: old presenterCount → new presenters array
+  if (!d.presenters) {
+    const n = d.presenterCount || 1;
+    const spacing = 0.12;
+    d.presenters = Array.from({length:n}, (_,i) => ({
+      px: 0.50 + (i - (n-1)/2) * spacing,
+      py: 0.52
+    }));
+    delete d.presenterCount;
+  }
+  if (!d.blackFlags) d.blackFlags = [];
+  if (!d.diffusers)  d.diffusers  = [];
+  // ensure h field on flags and diffusers
+  d.blackFlags.forEach(f => { if (f.h===undefined) f.h = (f.w||0.08)*0.6; });
+  d.diffusers.forEach(f  => { if (f.h===undefined) f.h = (f.w||0.12)*0.55; });
+  // furniture
+  if (!d.furniture) d.furniture = {
+    anchorDesk:      { on:false, px:0.50, py:0.50, w:0.22, h:0.05 },
+    interviewChairL: { on:false, px:0.42, py:0.52, w:0.04, h:0.04 },
+    interviewChairR: { on:false, px:0.58, py:0.52, w:0.04, h:0.04 },
+  };
+  if (!d.furniture.anchorDesk)      d.furniture.anchorDesk      = { on:false, px:0.50, py:0.50, w:0.22, h:0.05 };
+  if (!d.furniture.interviewChairL) d.furniture.interviewChairL = { on:false, px:0.42, py:0.52, w:0.04, h:0.04 };
+  if (!d.furniture.interviewChairR) d.furniture.interviewChairR = { on:false, px:0.58, py:0.52, w:0.04, h:0.04 };
+  // remove old top-level fx (now per-fixture)
+  if (d.fx !== undefined) delete d.fx;
+  // fixture defaults
+  const POS = { backlight:{px:0.50,py:0.06}, rimL:{px:0.06,py:0.42}, rimR:{px:0.94,py:0.42}, ambient:{px:0.88,py:0.08}, key:{px:0.22,py:0.88}, fill:{px:0.78,py:0.88} };
+  Object.keys(d.fixtures).forEach(k => {
+    const f = d.fixtures[k];
+    if (f.diffuser === undefined) f.diffuser = false;
+    if (!f.fx) f.fx = [];
+    if (!f.role) f.role = k;
+    if (f.px === undefined) { f.px = POS[k]?.px ?? 0.5; f.py = POS[k]?.py ?? 0.5; }
+  });
+  return d;
+}
+
+function lbToggleBody(id) {
+  const body = document.getElementById(`lb-body-${id}`);
+  const chev = document.getElementById(`lb-chev-${id}`);
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+  if (open) requestAnimationFrame(() => lbDrawCanvas(id));
+}
+
+function lbToggleOnOff(sceneId, key) {
+  const d = lbGetDraft(sceneId);
+  d.fixtures[key].on = !d.fixtures[key].on;
+  const on = d.fixtures[key].on;
+  const btn = document.getElementById(`lb-onoff-${sceneId}-${key}`);
+  btn.textContent = on ? 'ON' : 'OFF';
+  btn.className = `lb-fix-on-off ${on?'on':'off'}`;
+  // icon change in row
+  const iconMap = { backlight:'💡', rimL:'🔵', rimR:'🔵', ambient:'🟢', key:'🟣', fill:'🔷' };
+  const iconEl = document.getElementById(`lb-rowicon-${sceneId}-${key}`);
+  if (iconEl) iconEl.textContent = on ? (iconMap[key]||'💡') : '⬛';
+  const row = document.getElementById(`lb-row-${sceneId}-${key}`);
+  if (row) row.style.opacity = on ? '1' : '0.5';
+  lbDrawCanvas(sceneId);
+}
+
+function lbToggleDiffuser(sceneId, key, btn) {
+  const d = lbGetDraft(sceneId);
+  d.fixtures[key].diffuser = !d.fixtures[key].diffuser;
+  btn.classList.toggle('active', d.fixtures[key].diffuser);
+  lbDrawCanvas(sceneId);
+}
+
+function lbUpdateSlider(sceneId, key, field, val) {
+  const d = lbGetDraft(sceneId);
+  d.fixtures[key][field] = Number(val);
+  if (field === 'intensity') {
+    document.getElementById(`lb-int-val-${sceneId}-${key}`).textContent = val + '%';
+  } else {
+    const col = tempToColor(Number(val));
+    const el = document.getElementById(`lb-temp-val-${sceneId}-${key}`);
+    el.textContent = val + 'K'; el.style.color = col;
+  }
+  lbDrawCanvas(sceneId);
+}
+function lbUpdateModel(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].model = val; }
+function lbUpdateFixNote(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].note = val; }
+
+function lbToggleFixFx(sceneId, fixtureKey, fxId, btn) {
+  const d = lbGetDraft(sceneId);
+  if (!d.fixtures[fixtureKey].fx) d.fixtures[fixtureKey].fx = [];
+  const arr = d.fixtures[fixtureKey].fx;
+  const idx = arr.indexOf(fxId);
+  if (idx >= 0) { arr.splice(idx,1); btn.classList.remove('active'); }
+  else          { arr.push(fxId);    btn.classList.add('active'); }
+  // update chevron label
+  const chev = document.getElementById(`lb-fx-chev-${sceneId}-${fixtureKey}`);
+  if (chev) chev.textContent = arr.length > 0 ? '▾' : '▸';
+}
+
+function lbToggleFixFxPanel(sceneId, key) {
+  const body = document.getElementById(`lb-fxbody-${sceneId}-${key}`);
+  const chev = document.getElementById(`lb-fx-chev-${sceneId}-${key}`);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (chev) chev.textContent = open ? '▾' : '▸';
+}
+
+function lbUpdateNote(sceneId, val) { lbGetDraft(sceneId).note = val; }
+
+function lbUpdateStage(sceneId, field, val) {
+  const d = lbGetDraft(sceneId);
+  d.stage[field] = Math.max(1, Math.min(20, Number(val)||1));
+  lbDrawCanvas(sceneId);
+}
+
+function lbToggleStageLock(sceneId) {
+  const d = lbGetDraft(sceneId);
+  d.stage.locked = !d.stage.locked;
+  const btn = document.getElementById(`lb-lock-${sceneId}`);
+  if (btn) {
+    btn.textContent = d.stage.locked ? '🔒 LOCK' : '🔓 FREE';
+    btn.classList.toggle('lock-on', d.stage.locked);
+  }
+  lbDrawCanvas(sceneId);
+}
+
+function lbSetPresenterCount(sceneId, n) {
+  const d = lbGetDraft(sceneId);
+  const cur = d.presenters.length;
+  if (n > cur) {
+    // add presenters spread around stage centre
+    for (let i=cur; i<n; i++) {
+      d.presenters.push({ px: 0.35 + Math.random()*0.30, py: 0.48 + Math.random()*0.08 });
+    }
+  } else if (n < cur) {
+    d.presenters = d.presenters.slice(0, n);
+  }
+  [1,2,3,4].forEach(i => {
+    const btn = document.getElementById(`lb-pc-${sceneId}-${i}`);
+    if (btn) btn.classList.toggle('active', i===n);
+    // also fs buttons
+    const fb = document.getElementById(`lb-fspc-${i}`);
+    if (fb) fb.classList.toggle('active', i===n);
+  });
+  lbDrawCanvas(sceneId);
+  if (_lbFsScene===sceneId) lbFsRedraw();
+}
+
+function lbSwapKeyFill(sceneId) {
+  const d = lbGetDraft(sceneId);
+  const kf = d.fixtures;
+  // swap positions
+  [kf.key.px, kf.fill.px] = [kf.fill.px, kf.key.px];
+  [kf.key.py, kf.fill.py] = [kf.fill.py, kf.key.py];
+  // swap roles
+  [kf.key.role, kf.fill.role] = [kf.fill.role, kf.key.role];
+  lbDrawCanvas(sceneId);
+  if (_lbFsScene===sceneId) lbFsRedraw();
+}
+
+function lbToggleFurniture(sceneId, fk) {
+  const d = lbGetDraft(sceneId);
+  if (!d.furniture[fk]) return;
+  d.furniture[fk].on = !d.furniture[fk].on;
+  const btn = document.getElementById(`lb-fur-${sceneId}-${fk}`);
+  if (btn) btn.classList.toggle('active', d.furniture[fk].on);
+  lbDrawCanvas(sceneId);
+  if (_lbFsScene===sceneId) lbFsRedraw();
+}
+
+function lbAddBlackFlag(sceneId) {
+  const d = lbGetDraft(sceneId);
+  if (!d.blackFlags) d.blackFlags = [];
+  d.blackFlags.push({ px: 0.15 + Math.random()*0.12, py: 0.35 + Math.random()*0.3, w:0.10, angle:0 });
+  lbDrawCanvas(sceneId);
+}
+
+function lbAddDiffuser(sceneId) {
+  const d = lbGetDraft(sceneId);
+  if (!d.diffusers) d.diffusers = [];
+  d.diffusers.push({ px: 0.3 + Math.random()*0.4, py: 0.15 + Math.random()*0.3, w:0.12, angle:0 });
+  lbDrawCanvas(sceneId);
+}
+
+function lbSave(sceneId) {
+  const d = _lbDraft[sceneId];
+  if (!d) return;
+  saveLB(sceneId, d);
+  const fl = document.getElementById(`lb-saved-${sceneId}`);
+  if (fl) { fl.style.opacity = 1; setTimeout(() => fl.style.opacity = 0, 2000); }
+  openModal(sceneId);
+}
+function lbReset(sceneId) {
+  if (!confirm('Reset Lighting Blueprint เป็นค่า default?')) return;
+  delete _lbDraft[sceneId];
+  const all = getAllLB(); delete all[sceneId];
+  localStorage.setItem(LB_KEY, JSON.stringify(all));
+  openModal(sceneId);
+}
+function lbExportAll() {
+  const all = getAllLB();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));
+  a.download = `vp-lighting-blueprints-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+// ── Fullscreen ────────────────────────────────────────────────
+let _lbFsScene = null;
+let _lbFsRo    = null;
+
+function lbOpenFullscreen(sceneId) {
+  _lbFsScene = sceneId;
+  let ov = document.getElementById('lb-fs-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'lb-fs-overlay';
+    ov.className = 'lb-fullscreen-overlay';
+    ov.innerHTML = `
+      <div class="lb-fs-topbar">
+        <span class="lb-fs-title">💡 LIGHTING BLUEPRINT</span>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;flex:1;justify-content:flex-end">
+          <div id="lb-fs-presenter-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"></div>
+          <div id="lb-fs-sidebar-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"></div>
+          <button class="lb-fs-close" onclick="lbCloseFullscreen()">✕ ปิด</button>
+        </div>
+      </div>
+      <div class="lb-fs-canvas-wrap" id="lb-fs-wrap">
+        <canvas id="lb-fs-canvas"></canvas>
+        <!-- Floating close fallback for mobile -->
+        <button onclick="lbCloseFullscreen()" style="
+          position:absolute;top:10px;right:10px;z-index:20;
+          background:#EF4444;color:#fff;border:none;border-radius:50%;
+          width:40px;height:40px;font-size:18px;font-weight:900;cursor:pointer;
+          display:none;align-items:center;justify-content:center;
+          box-shadow:0 2px 8px rgba(0,0,0,0.5);" id="lb-fs-float-close">✕</button>
+      </div>`;
+    document.body.appendChild(ov);
+    // ESC key
+    document.addEventListener('keydown', e => { if(e.key==='Escape') lbCloseFullscreen(); });
+  }
+
+  // populate presenter buttons
+  const d = lbGetDraft(sceneId);
+  const pcFS = (d.presenters||[{px:.5,py:.52}]).length;
+  const admin = isAdmin();
+  document.getElementById('lb-fs-presenter-row').innerHTML =
+    `<span class="lb-pcount-label">พิธีกร</span>` +
+    [1,2,3,4].map(n => `<button class="lb-pcount-btn${pcFS===n?' active':''}" id="lb-fspc-${n}"
+      onclick="lbFsSetPresenter(${n})">${n}</button>`).join('');
+
+  // sidebar controls
+  const stg = d.stage;
+  const furFS = d.furniture||{};
+  document.getElementById('lb-fs-sidebar-row').innerHTML = admin ? `
+    <button class="lb-diag-btn${stg.locked?' lock-on':''}" id="lb-fs-lock"
+      onclick="lbFsToggleLock()">${stg.locked?'🔒 LOCK':'🔓 FREE'}</button>
+    <button class="lb-diag-btn" onclick="lbAddBlackFlag('${_lbFsScene}');lbFsRedraw()">🚩 +Flag</button>
+    <button class="lb-diag-btn" onclick="lbAddDiffuser('${_lbFsScene}');lbFsRedraw()">🧣 +Diff</button>
+    <button class="lb-diag-btn${furFS.anchorDesk?.on?' active':''}"
+      onclick="lbToggleFurniture('${_lbFsScene}','anchorDesk');lbFsRedraw()">📺</button>
+    <button class="lb-diag-btn${furFS.interviewChairL?.on?' active':''}"
+      onclick="lbToggleFurniture('${_lbFsScene}','interviewChairL');lbFsRedraw()">💺L</button>
+    <button class="lb-diag-btn${furFS.interviewChairR?.on?' active':''}"
+      onclick="lbToggleFurniture('${_lbFsScene}','interviewChairR');lbFsRedraw()">💺R</button>
+    <button class="lb-diag-btn" onclick="lbSwapKeyFill('${_lbFsScene}')">⇄ K/F</button>
+    <input type="number" min="1" max="20" value="${stg.wm}"
+      style="width:34px;background:#111827;border:1px solid #334155;border-radius:4px;color:#CBD5E1;font-size:10px;padding:3px 4px;text-align:center"
+      oninput="lbUpdateStage('${_lbFsScene}','wm',this.value);lbFsRedraw()" title="กว้าง m">
+    <span style="font-size:9px;color:#4B5563">×</span>
+    <input type="number" min="1" max="20" value="${stg.dm}"
+      style="width:34px;background:#111827;border:1px solid #334155;border-radius:4px;color:#CBD5E1;font-size:10px;padding:3px 4px;text-align:center"
+      oninput="lbUpdateStage('${_lbFsScene}','dm',this.value);lbFsRedraw()" title="ลึก m">
+    <span style="font-size:9px;color:#4B5563">m</span>` : '';
+
+  ov.classList.add('open');
+
+  // show floating close button on touch / small screen
+  const floatClose = document.getElementById('lb-fs-float-close');
+  if (floatClose) {
+    const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window);
+    floatClose.style.display = isMobile ? 'flex' : 'none';
+  }
+
+  // lock body scroll while fullscreen is open
+  document.body.style.overflow = 'hidden';
+
+  // init canvas drag on FS canvas
+  requestAnimationFrame(() => {
+    lbFsRedraw();
+    lbInitFsDrag(sceneId);
+    // resize observer
+    const wrap = document.getElementById('lb-fs-wrap');
+    if (wrap && !wrap._fsRo) {
+      wrap._fsRo = new ResizeObserver(() => lbFsRedraw());
+      wrap._fsRo.observe(wrap);
+    }
+  });
+}
+
+function lbCloseFullscreen() {
+  const ov = document.getElementById('lb-fs-overlay');
+  if (ov) ov.classList.remove('open');
+  document.body.style.overflow = '';
+  // sync back: redraw main canvas
+  if (_lbFsScene) lbDrawCanvas(_lbFsScene);
+  _lbFsScene = null;
+}
+
+function lbFsRedraw() {
+  if (!_lbFsScene) return;
+  const canvas = document.getElementById('lb-fs-canvas');
+  if (!canvas) return;
+  const wrap = document.getElementById('lb-fs-wrap');
+  canvas.width  = wrap.offsetWidth  || 800;
+  canvas.height = wrap.offsetHeight || 450;
+  // reuse draw engine by temporarily swapping canvas id
+  const origId = `lb-canvas-${_lbFsScene}`;
+  const origEl = document.getElementById(origId);
+  if (origEl) origEl.id = '__lb_tmp__';
+  canvas.id = origId;
+  lbDrawCanvas(_lbFsScene);
+  canvas.id = 'lb-fs-canvas';
+  if (origEl) origEl.id = origId;
+}
+
+function lbFsSetPresenter(n) {
+  if (!_lbFsScene) return;
+  lbSetPresenterCount(_lbFsScene, n); // handles redraw + button updates
+}
+
+function lbFsToggleLock() {
+  if (!_lbFsScene) return;
+  const d = lbGetDraft(_lbFsScene);
+  d.stage.locked = !d.stage.locked;
+  const btn = document.getElementById('lb-fs-lock');
+  if (btn) { btn.textContent=d.stage.locked?'🔒 LOCK':'🔓 FREE'; btn.classList.toggle('lock-on', d.stage.locked); }
+  // also sync main canvas lock btn
+  const mb = document.getElementById(`lb-lock-${_lbFsScene}`);
+  if (mb) { mb.textContent=d.stage.locked?'🔒 LOCK':'🔓 FREE'; mb.classList.toggle('lock-on', d.stage.locked); }
+  lbFsRedraw();
+}
+
+function lbInitFsDrag(sceneId) {
+  const canvas = document.getElementById('lb-fs-canvas');
+  if (!canvas || canvas._lbDragInited) return;
+  canvas._lbDragInited = true;
+  lbAttachDragListeners(canvas, sceneId, () => lbFsRedraw());
+}
+
+// ── Canvas polyfill: roundRect ──
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.lineTo(x+w-r, y); this.arcTo(x+w,y, x+w,y+r, r);
+    this.lineTo(x+w, y+h-r); this.arcTo(x+w,y+h, x+w-r,y+h, r);
+    this.lineTo(x+r, y+h); this.arcTo(x,y+h, x,y+h-r, r);
+    this.lineTo(x, y+r); this.arcTo(x,y, x+r,y, r);
+    this.closePath();
+  };
+}
+
+// ── Canvas drawing engine ─────────────────────────────────────
+const _lbDrag = {}; // drag state per scene
+
+function lbDrawCanvas(sceneId) {
+  const canvas = document.getElementById(`lb-canvas-${sceneId}`);
+  if (!canvas) return;
+  const d = lbGetDraft(sceneId);
+  const W = canvas.offsetWidth  || 560;
+  const H = canvas.offsetHeight || 315;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const admin = isAdmin();
+
+  // ── helpers ──
+  const h2r = (hex,a) => {
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+  };
+  const drawResizeHandle = (rx,ry) => {
+    ctx.fillStyle='#F59E0B'; ctx.strokeStyle='#92400E'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(rx,ry,4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  };
+  const drawDeleteBtn = (x,y) => {
+    ctx.fillStyle='#EF4444';
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('✕',x,y);
+  };
+
+  // ── Background grid (finer) ──
+  ctx.strokeStyle = '#161D2C'; ctx.lineWidth = 0.5;
+  const gStep = Math.min(W,H)/24;
+  for (let x=0; x<=W; x+=gStep) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y=0; y<=H; y+=gStep) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // ── Stage floor — bigger (70% of canvas short side) ──
+  const stg    = d.stage;
+  const locked = stg.locked;
+  const sx     = stg.px * W;
+  const sy     = stg.py * H;
+  const maxM   = Math.max(stg.wm, stg.dm);
+  const scale  = Math.min(W,H) * 0.72 / maxM;   // was 0.55 → now 0.72
+  const sw     = stg.wm * scale;
+  const sh     = stg.dm * scale;
+
+  // floor fill
+  ctx.fillStyle = locked ? 'rgba(251,191,36,0.05)' : 'rgba(30,58,138,0.12)';
+  ctx.fillRect(sx-sw/2, sy-sh/2, sw, sh);
+  // floor edge solid line
+  ctx.strokeStyle = locked ? '#F59E0B' : '#3B82F6';
+  ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.strokeRect(sx-sw/2, sy-sh/2, sw, sh);
+  // dimension label
+  ctx.fillStyle = locked ? '#F59E0B' : '#3B82F6';
+  ctx.font = 'bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText(`${stg.wm}m × ${stg.dm}m`, sx, sy-sh/2-5);
+  // stage resize handle (bottom-right corner) — admin only, unlocked
+  if (admin && !locked) drawResizeHandle(sx+sw/2, sy+sh/2);
+
+  // ── Furniture ──
+  const fur = d.furniture || {};
+  // Anchor desk
+  if (fur.anchorDesk?.on) {
+    const f=fur.anchorDesk;
+    const fx=f.px*W, fy=f.py*H, fw=f.w*W, fh=Math.max(f.h*H, 10);
+    ctx.fillStyle='rgba(120,85,40,0.55)'; ctx.strokeStyle='#A16207'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(fx-fw/2,fy-fh/2,fw,fh,4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#FDE68A'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('📺 โต๊ะ',fx,fy);
+    if (admin) { drawDeleteBtn(fx+fw/2+6,fy-fh/2-6); drawResizeHandle(fx+fw/2,fy+fh/2); }
+  }
+  // Interview chairs
+  ['interviewChairL','interviewChairR'].forEach((ck,ci) => {
+    if (!fur[ck]?.on) return;
+    const f=fur[ck];
+    const fx=f.px*W, fy=f.py*H, fr=Math.max(f.w*W,12)/2;
+    ctx.fillStyle='rgba(55,65,81,0.80)'; ctx.strokeStyle='#6B7280'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(fx,fy,fr,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#D1D5DB'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(ci===0?'💺L':'💺R',fx,fy);
+    if (admin) drawDeleteBtn(fx+fr+5,fy-fr-5);
+  });
+
+  // ── Presenters ──
+  (d.presenters||[]).forEach((p,i) => {
+    const px=p.px*W, py=p.py*H;
+    const sz=Math.max(14, scale*0.38);
+    ctx.font=`${sz}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=0.85; ctx.fillText('🧍',px,py); ctx.globalAlpha=1;
+    ctx.fillStyle='#60A5FA'; ctx.font='bold 7px sans-serif'; ctx.textBaseline='alphabetic';
+    ctx.fillText(`P${i+1}`,px,py+sz/2+8);
+    ctx.textBaseline='alphabetic';
+  });
+
+  // ── Black Flags (pure opaque black) ──
+  (d.blackFlags||[]).forEach((bf,i) => {
+    const bx=bf.px*W, by=bf.py*H;
+    const bw=Math.max((bf.w||0.08)*W, 20);
+    const bh=Math.max((bf.h||bw*0.5/W)*H, 10);
+    ctx.save(); ctx.translate(bx,by); ctx.rotate((bf.angle||0)*Math.PI/180);
+    // solid black fill with bright border
+    ctx.fillStyle='#000000';
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.5;
+    ctx.fillRect(-bw/2,-bh/2,bw,bh);
+    ctx.strokeRect(-bw/2,-bh/2,bw,bh);
+    // label
+    ctx.fillStyle='#FFFFFF'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`FLAG ${i+1}`,0,0);
+    if (admin) {
+      drawDeleteBtn(bw/2+6,-bh/2-6);
+      drawResizeHandle(bw/2,bh/2);   // bottom-right resize
+    }
+    ctx.restore();
+  });
+
+  // ── Standalone Diffusers (pure white) ──
+  (d.diffusers||[]).forEach((df,i) => {
+    const dx=df.px*W, dy=df.py*H;
+    const dw=Math.max((df.w||0.12)*W, 20);
+    const dh=Math.max((df.h||dw*0.55/W)*H, 10);
+    ctx.save(); ctx.translate(dx,dy); ctx.rotate((df.angle||0)*Math.PI/180);
+    // bright white fill
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    ctx.strokeStyle='#93C5FD'; ctx.lineWidth=2;
+    ctx.shadowColor='rgba(147,197,253,0.7)'; ctx.shadowBlur=8;
+    ctx.fillRect(-dw/2,-dh/2,dw,dh);
+    ctx.shadowBlur=0;
+    ctx.strokeRect(-dw/2,-dh/2,dw,dh);
+    ctx.fillStyle='#1E3A5F'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`DIFF ${i+1}`,0,0);
+    if (admin) {
+      drawDeleteBtn(dw/2+6,-dh/2-6);
+      drawResizeHandle(dw/2,dh/2);
+    }
+    ctx.restore();
+  });
+
+  // ── Light cone glow from fixtures ──
+  Object.entries(d.fixtures).forEach(([,f]) => {
+    if (!f.on) return;
+    const fx=f.px*W, fy=f.py*H;
+    const col=tempToColor(f.temp);
+    const alpha=0.03+(f.intensity/100)*0.09;
+    const radius=Math.min(W,H)*0.45*(f.intensity/100);
+    if (radius<2) return;
+    const grad=ctx.createRadialGradient(fx,fy,0,fx,fy,radius);
+    grad.addColorStop(0,h2r(col,alpha*2.8));
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath(); ctx.arc(fx,fy,radius,0,Math.PI*2); ctx.fill();
+  });
+
+  // ── Fixtures ──
+  Object.entries(d.fixtures).forEach(([key,f]) => {
+    const meta=LB_FIXTURE_META[key];
+    if (!meta) return;
+    const fx=f.px*W, fy=f.py*H, sz=28;
+    const col=f.on?meta.color:'#374151';
+    const alpha=f.on?0.4+(f.intensity/100)*0.6:0.3;
+
+    // light role badge for key/fill
+    const role=f.role||key;
+    if (role==='key'||role==='fill') {
+      ctx.fillStyle=role==='key'?'rgba(168,85,247,0.15)':'rgba(14,165,233,0.12)';
+      ctx.strokeStyle=role==='key'?'#A855F7':'#0EA5E9'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.arc(fx,fy,sz*1.0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (f.on) {
+      const glow=ctx.createRadialGradient(fx,fy,sz*0.4,fx,fy,sz*1.4);
+      glow.addColorStop(0,h2r(col,0.18*(f.intensity/100)));
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(fx,fy,sz*1.4,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=f.on?col+'22':'#1F2937';
+    ctx.strokeStyle=f.on?meta.borderColor:'#4B5563'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(fx-sz/2,fy-sz/2,sz,sz,7); ctx.fill(); ctx.stroke();
+    if (f.diffuser&&f.on) {
+      ctx.fillStyle='rgba(147,197,253,0.22)';
+      ctx.beginPath(); ctx.roundRect(fx-sz/2,fy-sz/2,sz,sz,7); ctx.fill();
+      ctx.strokeStyle='#93C5FD'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(fx-sz/2-3,fy-sz/2-3,sz+6,sz+6,9); ctx.stroke();
+    }
+    ctx.globalAlpha=f.on?1:0.3;
+    ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const iconMap={backlight:'💡',rimL:'🔵',rimR:'🔵',ambient:'🟢',key:'🟣',fill:'🔷'};
+    ctx.fillText(f.on?(iconMap[key]||'💡'):'⬛',fx,fy);
+    ctx.globalAlpha=f.on?0.9:0.4;
+    ctx.font='bold 8px sans-serif'; ctx.fillStyle='#94A3B8'; ctx.textBaseline='alphabetic';
+    // show role if swapped
+    const dispRole={backlight:'BL',rimL:'Rim L',rimR:'Rim R',ambient:'Amb',key:'Key',fill:'Fill'};
+    const roleLabel=role!==key?`[${role.toUpperCase()}]`:(dispRole[key]||key);
+    ctx.fillText(roleLabel,fx,fy+sz/2+10);
+    ctx.font='bold 9px sans-serif';
+    ctx.fillStyle=f.on?tempToColor(f.temp):'#6B7280';
+    ctx.fillText(f.on?f.intensity+'%':'OFF',fx,fy+sz/2+20);
+    ctx.globalAlpha=1;
+  });
+
+  // ── Stage top label ──
+  ctx.fillStyle='rgba(100,116,139,0.6)'; ctx.font='600 9px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('▲ CAMERA',sx,sy+sh/2+14);
+  ctx.textBaseline='alphabetic';
+
+  _lbDrag[sceneId]=_lbDrag[sceneId]||{};
+  _lbDrag[sceneId].W=W; _lbDrag[sceneId].H=H;
+  _lbDrag[sceneId].scale=scale; _lbDrag[sceneId].sw=sw; _lbDrag[sceneId].sh=sh;
+}
+
+// ── Shared drag hit-test engine (used by both main and FS canvas) ──
+function lbBuildHitFn(canvasEl, sceneId) {
+  return function getHit(ex, ey, isTouch) {
+    const d=lbGetDraft(sceneId), W=canvasEl.width, H=canvasEl.height, sz=28;
+    const cl=(v,mn=0,mx=1)=>Math.max(mn,Math.min(mx,v));
+    const stg=d.stage, maxM=Math.max(stg.wm,stg.dm), sc=Math.min(W,H)*0.72/maxM;
+    const sw=stg.wm*sc, sh=stg.dm*sc, sx=stg.px*W, sy=stg.py*H;
+    // touch targets are larger (finger ~44px, add extra hit area)
+    const T = isTouch ? 18 : 9;   // del/resize hit radius
+    const TR = isTouch ? 14 : 7;  // resize handle radius
+
+    // fixtures (highest priority)
+    for (const [key,f] of Object.entries(d.fixtures)) {
+      if (Math.abs(ex-f.px*W)<sz && Math.abs(ey-f.py*H)<sz) return {type:'fixture',key};
+    }
+    // black flags
+    for (let i=0;i<(d.blackFlags||[]).length;i++) {
+      const bf=d.blackFlags[i];
+      const bw=Math.max((bf.w||0.08)*W,20), bh=Math.max((bf.h||bw*0.5/W)*H,10);
+      const bx=bf.px*W, by=bf.py*H;
+      if (Math.abs(ex-(bx+bw/2+6))<T && Math.abs(ey-(by-bh/2-6))<T) return {type:'flag-del',idx:i};
+      if (Math.abs(ex-(bx+bw/2))<TR && Math.abs(ey-(by+bh/2))<TR) return {type:'flag-resize',idx:i};
+      if (Math.abs(ex-bx)<bw/2+3 && Math.abs(ey-by)<bh/2+3) return {type:'flag',idx:i};
+    }
+    // standalone diffusers
+    for (let i=0;i<(d.diffusers||[]).length;i++) {
+      const df=d.diffusers[i];
+      const dw=Math.max((df.w||0.12)*W,20), dh=Math.max((df.h||dw*0.55/W)*H,10);
+      const dx=df.px*W, dy=df.py*H;
+      if (Math.abs(ex-(dx+dw/2+6))<T && Math.abs(ey-(dy-dh/2-6))<T) return {type:'diff-del',idx:i};
+      if (Math.abs(ex-(dx+dw/2))<TR && Math.abs(ey-(dy+dh/2))<TR) return {type:'diff-resize',idx:i};
+      if (Math.abs(ex-dx)<dw/2+3 && Math.abs(ey-dy)<dh/2+3) return {type:'diffuser',idx:i};
+    }
+    // furniture
+    const fur=d.furniture||{};
+    if (fur.anchorDesk?.on) {
+      const f=fur.anchorDesk, fx=f.px*W, fy=f.py*H, fw=f.w*W, fh=Math.max(f.h*H,10);
+      if (Math.abs(ex-(fx+fw/2+6))<9&&Math.abs(ey-(fy-fh/2-6))<9) return {type:'fur-del',fk:'anchorDesk'};
+      if (Math.abs(ex-(fx+fw/2))<7&&Math.abs(ey-(fy+fh/2))<7) return {type:'fur-resize',fk:'anchorDesk'};
+      if (Math.abs(ex-fx)<fw/2+3&&Math.abs(ey-fy)<fh/2+3) return {type:'furniture',fk:'anchorDesk'};
+    }
+    for (const ck of ['interviewChairL','interviewChairR']) {
+      if (!fur[ck]?.on) continue;
+      const f=fur[ck], fx=f.px*W, fy=f.py*H, fr=Math.max(f.w*W,12)/2;
+      if (Math.abs(ex-(fx+fr+5))<9&&Math.abs(ey-(fy-fr-5))<9) return {type:'fur-del',fk:ck};
+      if (Math.hypot(ex-fx,ey-fy)<fr+5) return {type:'furniture',fk:ck};
+    }
+    // presenters (anyone can reposition)
+    for (let i=0;i<(d.presenters||[]).length;i++) {
+      const p=d.presenters[i];
+      if (Math.hypot(ex-p.px*W, ey-p.py*H)<18) return {type:'presenter',idx:i};
+    }
+    // stage resize handle
+    if (!stg.locked && Math.abs(ex-(sx+sw/2))<9 && Math.abs(ey-(sy+sh/2))<9) return {type:'stage-resize'};
+    // stage move
+    if (!stg.locked && Math.abs(ex-sx)<sw/2+4 && Math.abs(ey-sy)<sh/2+4) return {type:'stage'};
+    return null;
+  };
+}
+
+function lbInitDrag(sceneId) {
+  const canvas = document.getElementById(`lb-canvas-${sceneId}`);
+  if (!canvas || canvas._lbDragInited) return;
+  canvas._lbDragInited = true;
+  lbAttachDragListeners(canvas, sceneId, () => lbDrawCanvas(sceneId));
+}
+
+function lbAttachDragListeners(canvas, sceneId, redraw) {
+  let dragging=null, downPos=null;
+  const getHit = lbBuildHitFn(canvas, sceneId);
+
+  function pos(e) {
+    const r=canvas.getBoundingClientRect();
+    // touchend has empty e.touches — use changedTouches; mouseevents use e directly
+    const src = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : e);
+    // scale CSS pixels → canvas pixels (critical on mobile where canvas is CSS-scaled)
+    const scaleX = canvas.width  / r.width;
+    const scaleY = canvas.height / r.height;
+    return {x:(src.clientX-r.left)*scaleX, y:(src.clientY-r.top)*scaleY};
+  }
+
+  function onDown(e) {
+    const {x,y}=pos(e);
+    const isTouch=!!e.touches;
+    const hit=getHit(x,y,isTouch);
+    if (!hit) return;
+    // non-admin can only move presenters
+    if (!isAdmin() && hit.type!=='presenter') return;
+    e.preventDefault(); downPos={x,y,isTouch};
+    const d=lbGetDraft(sceneId);
+    if (hit.type==='fixture') {
+      const f=d.fixtures[hit.key]; dragging={type:'fixture',key:hit.key,sx:x,sy:y,origPx:f.px,origPy:f.py};
+    } else if (hit.type==='flag') {
+      const bf=d.blackFlags[hit.idx]; dragging={type:'flag',idx:hit.idx,sx:x,sy:y,origPx:bf.px,origPy:bf.py};
+    } else if (hit.type==='flag-resize') {
+      const bf=d.blackFlags[hit.idx]; dragging={type:'flag-resize',idx:hit.idx,sx:x,sy:y,origW:bf.w||0.08,origH:bf.h||(bf.w||0.08)*0.5};
+    } else if (hit.type==='diffuser') {
+      const df=d.diffusers[hit.idx]; dragging={type:'diffuser',idx:hit.idx,sx:x,sy:y,origPx:df.px,origPy:df.py};
+    } else if (hit.type==='diff-resize') {
+      const df=d.diffusers[hit.idx]; dragging={type:'diff-resize',idx:hit.idx,sx:x,sy:y,origW:df.w||0.12,origH:df.h||(df.w||0.12)*0.55};
+    } else if (hit.type==='furniture') {
+      const f=d.furniture[hit.fk]; dragging={type:'furniture',fk:hit.fk,sx:x,sy:y,origPx:f.px,origPy:f.py};
+    } else if (hit.type==='fur-resize') {
+      const f=d.furniture[hit.fk]; dragging={type:'fur-resize',fk:hit.fk,sx:x,sy:y,origW:f.w,origH:f.h};
+    } else if (hit.type==='presenter') {
+      const p=d.presenters[hit.idx]; dragging={type:'presenter',idx:hit.idx,sx:x,sy:y,origPx:p.px,origPy:p.py};
+    } else if (hit.type==='stage') {
+      dragging={type:'stage',sx:x,sy:y,origPx:d.stage.px,origPy:d.stage.py};
+    } else if (hit.type==='stage-resize') {
+      const ds=_lbDrag[sceneId]||{}; dragging={type:'stage-resize',sx:x,sy:y,origWm:d.stage.wm,origDm:d.stage.dm,sc:ds.scale||1};
+    }
+  }
+
+  function onMove(e) {
+    if (!dragging) return; e.preventDefault();
+    const {x,y}=pos(e), d=lbGetDraft(sceneId);
+    const W=canvas.width, H=canvas.height;
+    const ddx=(x-dragging.sx)/W, ddy=(y-dragging.sy)/H;
+    const cl=(v,mn=0,mx=1)=>Math.max(mn,Math.min(mx,v));
+    if (dragging.type==='fixture') {
+      d.fixtures[dragging.key].px=cl(dragging.origPx+ddx,0.01,0.99);
+      d.fixtures[dragging.key].py=cl(dragging.origPy+ddy,0.01,0.99);
+    } else if (dragging.type==='flag') {
+      d.blackFlags[dragging.idx].px=cl(dragging.origPx+ddx);
+      d.blackFlags[dragging.idx].py=cl(dragging.origPy+ddy);
+    } else if (dragging.type==='flag-resize') {
+      const newW=Math.max(0.03, dragging.origW+ddx*2);
+      const newH=Math.max(0.02, dragging.origH+ddy*2);
+      d.blackFlags[dragging.idx].w=newW;
+      d.blackFlags[dragging.idx].h=newH;
+    } else if (dragging.type==='diffuser') {
+      d.diffusers[dragging.idx].px=cl(dragging.origPx+ddx);
+      d.diffusers[dragging.idx].py=cl(dragging.origPy+ddy);
+    } else if (dragging.type==='diff-resize') {
+      const nW=Math.max(0.04, dragging.origW+ddx*2);
+      const nH=Math.max(0.02, dragging.origH+ddy*2);
+      d.diffusers[dragging.idx].w=nW;
+      d.diffusers[dragging.idx].h=nH;
+    } else if (dragging.type==='furniture') {
+      d.furniture[dragging.fk].px=cl(dragging.origPx+ddx);
+      d.furniture[dragging.fk].py=cl(dragging.origPy+ddy);
+    } else if (dragging.type==='fur-resize') {
+      d.furniture[dragging.fk].w=Math.max(0.05,dragging.origW+ddx*2);
+      d.furniture[dragging.fk].h=Math.max(0.02,dragging.origH+ddy*2);
+    } else if (dragging.type==='presenter') {
+      d.presenters[dragging.idx].px=cl(dragging.origPx+ddx,0.02,0.98);
+      d.presenters[dragging.idx].py=cl(dragging.origPy+ddy,0.02,0.98);
+    } else if (dragging.type==='stage') {
+      d.stage.px=cl(dragging.origPx+ddx,0.1,0.9);
+      d.stage.py=cl(dragging.origPy+ddy,0.1,0.9);
+    } else if (dragging.type==='stage-resize') {
+      const sc=dragging.sc||1;
+      d.stage.wm=Math.max(1,Math.round((dragging.origWm+ddx*W/sc)*2)/2);
+      d.stage.dm=Math.max(1,Math.round((dragging.origDm+ddy*H/sc)*2)/2);
+    }
+    redraw(); canvas.style.cursor='grabbing';
+  }
+
+  function onUp(e) {
+    if (downPos && isAdmin()) {
+      const {x,y}=pos(e);
+      // touch events jitter more — use larger threshold for touch
+      const isTouch = downPos.isTouch || !!e.changedTouches;
+      const tapThresh = isTouch ? 18 : 6;
+      if (Math.abs(x-downPos.x)+Math.abs(y-downPos.y) < tapThresh) {
+        // re-check hit at original downPos for touch (more reliable than changedTouches)
+        const hx = isTouch ? downPos.x : x;
+        const hy = isTouch ? downPos.y : y;
+        const hit=getHit(hx,hy,isTouch), d=lbGetDraft(sceneId);
+        if (hit?.type==='flag-del')  { d.blackFlags.splice(hit.idx,1); redraw(); }
+        else if (hit?.type==='diff-del') { d.diffusers.splice(hit.idx,1); redraw(); }
+        else if (hit?.type==='fur-del')  { d.furniture[hit.fk].on=false; redraw(); }
+      }
+    }
+    dragging=null; downPos=null; canvas.style.cursor='';
+  }
+
+  function onHover(e) {
+    if (dragging) return;
+    const {x,y}=pos(e), hit=(isAdmin()||true)?getHit(x,y):null;
+    if (!hit) { canvas.style.cursor='default'; return; }
+    const del=['flag-del','diff-del','fur-del'];
+    const rsz=['flag-resize','diff-resize','fur-resize','stage-resize'];
+    canvas.style.cursor = del.includes(hit.type)?'pointer':rsz.includes(hit.type)?'nwse-resize':'grab';
+  }
+
+  canvas.addEventListener('mousedown',  onDown, {passive:false});
+  canvas.addEventListener('mousemove',  e=>{onMove(e);onHover(e);}, {passive:false});
+  canvas.addEventListener('mouseup',    onUp);
+  canvas.addEventListener('mouseleave', onUp);
+  canvas.addEventListener('touchstart', onDown, {passive:false});
+  canvas.addEventListener('touchmove',  onMove, {passive:false});
+  canvas.addEventListener('touchend',   onUp,   {passive:false});
+  canvas.addEventListener('touchcancel',onUp);
+}
+
+// init canvas after body renders
+function lbInitCanvasForScene(sceneId) {
+  requestAnimationFrame(() => {
+    lbDrawCanvas(sceneId);
+    lbInitDrag(sceneId);
+    // resize observer
+    const canvas = document.getElementById(`lb-canvas-${sceneId}`);
+    if (canvas && !canvas._resizeObs) {
+      const ro = new ResizeObserver(() => lbDrawCanvas(sceneId));
+      ro.observe(canvas.parentElement);
+      canvas._resizeObs = true;
+    }
+  });
+}
+
+// ══════════ USED IN TRACKER ══════════
+const UI_KEY = 'vp_used_in_v1';
+
+function getAllUsedIn() {
+  try { return JSON.parse(localStorage.getItem(UI_KEY)||'{}'); } catch(e) { return {}; }
+}
+function getUsedIn(id) {
+  return getAllUsedIn()[id] || [];
+}
+function saveUsedIn(id, entries) {
+  const all = getAllUsedIn();
+  all[id] = entries;
+  localStorage.setItem(UI_KEY, JSON.stringify(all));
+}
+
+function platLabel(p) {
+  return {broadcast:'📺 Broadcast',youtube:'▶️ YouTube',social:'📱 Social',web:'🌐 Web'}[p]||p;
+}
+function platCls(p) {
+  return {broadcast:'ui-plat-broadcast',youtube:'ui-plat-youtube',social:'ui-plat-social',web:'ui-plat-web'}[p]||'';
+}
+
+function renderUsedInHTML(id) {
+  const entries = getUsedIn(id);
+  if(!entries.length) return `<div class="ui-empty">ยังไม่มีบันทึกการใช้งาน</div>`;
+  return `<div class="ui-list">${entries.map((e,i)=>`
+    <div class="ui-item">
+      <div class="ui-left">
+        <div class="ui-proj">${e.title}</div>
+        <div class="ui-submeta">
+          <span class="ui-date">${e.date}</span>
+          <span class="ui-plat ${platCls(e.platform)}">${platLabel(e.platform)}</span>
+          ${e.url?`<a class="ui-link" href="${e.url}" target="_blank" onclick="event.stopPropagation()">🔗 ดูงาน</a>`:''}
+        </div>
+      </div>
+      <button class="ui-del" onclick="deleteUsage('${id}',${i});event.stopPropagation()" title="ลบ">✕</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+function toggleAddForm(id) {
+  const form = document.getElementById(`uiForm_${id}`);
+  form.classList.toggle('open');
+  if(form.classList.contains('open')) document.getElementById(`uiTitle_${id}`).focus();
+}
+
+function saveUsage(id) {
+  const title = document.getElementById(`uiTitle_${id}`).value.trim();
+  if(!title) { alert('กรุณากรอกชื่องาน'); return; }
+  const entry = {
+    title,
+    date: document.getElementById(`uiDate_${id}`).value,
+    platform: document.getElementById(`uiPlat_${id}`).value,
+    url: document.getElementById(`uiUrl_${id}`).value.trim()
+  };
+  const entries = getUsedIn(id);
+  entries.unshift(entry);
+  saveUsedIn(id, entries);
+  document.getElementById(`uiList_${id}`).innerHTML = renderUsedInHTML(id);
+  document.getElementById(`uiForm_${id}`).classList.remove('open');
+  // update badge
+  const badge = document.querySelector(`#usedInSection .modal-section-title`);
+  if(badge) badge.innerHTML = `📺 ใช้ในงาน${entries.length?`<span class="ui-count-badge">${entries.length}</span>`:''}`;
+}
+
+function deleteUsage(id, idx) {
+  const entries = getUsedIn(id);
+  entries.splice(idx,1);
+  saveUsedIn(id, entries);
+  document.getElementById(`uiList_${id}`).innerHTML = renderUsedInHTML(id);
+  const badge = document.querySelector(`#usedInSection .modal-section-title`);
+  if(badge) badge.innerHTML = `📺 ใช้ในงาน${entries.length?`<span class="ui-count-badge">${entries.length}</span>`:''}`;
+}
+
+function exportUsedIn(id) {
+  const entries = getUsedIn(id);
+  const json = JSON.stringify(entries, null, 2);
+  const blob = new Blob([`// used_in data for ${id}\n// วางใน field "used_in" ของ scenes.json\n${json}`], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${id}-used_in.txt`;
+  a.click();
+}
+
+// ── Init ──
+// โหลด scenes จาก Supabase แล้วค่อย render ทุกอย่าง
+_loadScenes().then(() => {
+  document.getElementById('totalCount').textContent = `${SCENES.length} scenes · v2.0`;
+  document.getElementById('vtInfo')?.classList.toggle('active', viewMode==='info');
+  document.getElementById('vtThumb')?.classList.toggle('active', viewMode==='thumb');
+  renderShowFilter();
+  renderCards();
+  // Load AI embeddings หลัง scenes พร้อมแล้ว
+  Promise.all([loadClipEmbeddings(), loadTopicEmbeddings()]).then(() => initAI());
+});
+
+// ── Auth system ────────────────────────────────────────────────
+const USER_KEY = 'vp_user_id';
+const USER_ROLE_KEY = 'vp_user_role';
+let USERS_DB = null;
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch('_database/users.json?v=' + Date.now());
+    if (r.ok) USERS_DB = await r.json();
+  } catch(e) { console.warn('Could not load users.json', e); }
+}
+
+function initUser() {
+  const saved = localStorage.getItem(USER_KEY);
+  const el = document.getElementById('userLabel');
+  if (!saved) {
+    el.textContent = 'ไม่ได้ login';
+    showAuthOverlay();
+  } else {
+    el.textContent = isAdmin() ? ('👑 ' + saved) : saved;
+  }
+}
+
+function showAuthOverlay() {
+  document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('authUser').focus(), 100);
+}
+
+function promptLogin() {
+  // If already logged in, show logout option
+  const current = localStorage.getItem(USER_KEY);
+  if (current) {
+    const action = confirm(`ปัจจุบัน login เป็น: ${current}\n\nกด OK เพื่อ Logout\nกด Cancel เพื่อยกเลิก`);
+    if (action) {
+      logActivity('logout', { username: current });
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(USER_ROLE_KEY);
+      initUser();
+    }
+  } else {
+    showAuthOverlay();
+  }
+}
+
+async function doLogin() {
+  const userEl = document.getElementById('authUser');
+  const passEl = document.getElementById('authPass');
+  const errEl  = document.getElementById('authError');
+  const btnEl  = document.getElementById('authSubmit');
+
+  const username = userEl.value.trim().toLowerCase();
+  const password  = passEl.value;
+
+  if (!username || !password) {
+    errEl.textContent = 'กรุณากรอก Username และ Password';
+    errEl.classList.add('show');
+    return;
+  }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'กำลังตรวจสอบ...';
+  errEl.classList.remove('show');
+
+  // Load users if not loaded yet
+  if (!USERS_DB) await loadUsers();
+
+  let authenticated = false;
+  let role = 'editor';
+  let displayName = username;
+
+  if (USERS_DB && USERS_DB[username]) {
+    const stored = USERS_DB[username];
+    const hashed = await sha256(password);
+    if (hashed === stored.hash) {
+      authenticated = true;
+      role = stored.role || 'editor';
+      displayName = stored.name || username;
+    }
+  }
+
+  btnEl.disabled = false;
+  btnEl.textContent = 'เข้าสู่ระบบ';
+
+  if (authenticated) {
+    localStorage.setItem(USER_KEY, username);
+    localStorage.setItem(USER_ROLE_KEY, role);
+    document.getElementById('authOverlay').classList.remove('open');
+    passEl.value = '';
+    userEl.value = '';
+    logActivity('login', { username, role });
+    initUser();
+  } else {
+    errEl.textContent = 'Username หรือ Password ไม่ถูกต้อง';
+    errEl.classList.add('show');
+    passEl.value = '';
+    passEl.focus();
+  }
+}
+
+// Load users DB, then init user session
+loadUsers().then(() => initUser());
+
+// ── Activity Logger ──────────────────────────────────────────
+const ACT_KEY = 'vp_activity_log';
+const ACT_MAX = 2000; // keep last 2000 events
+
+function logActivity(type, data = {}) {
+  const user = localStorage.getItem(USER_KEY) || 'anonymous';
+  const entry = {
+    ts: new Date().toISOString(),
+    user,
+    type,   // 'view_scene' | 'search' | 'recommend' | 'login' | 'logout'
+    ...data
+  };
+  try {
+    const raw = localStorage.getItem(ACT_KEY);
+    const log = raw ? JSON.parse(raw) : [];
+    log.push(entry);
+    // trim to max
+    if (log.length > ACT_MAX) log.splice(0, log.length - ACT_MAX);
+    localStorage.setItem(ACT_KEY, JSON.stringify(log));
+  } catch(e) { /* silent */ }
+}
+
+// ══════════════════════════════════════════════════════════════
+// THEME SYSTEM
+// ══════════════════════════════════════════════════════════════
+const THEME_ICONS = { light:'☀️', dim:'🌙', dark:'⬛' };
+const THEME_KEY   = 'vp_theme';
+
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t === 'light' ? '' : t);
+  document.getElementById('themeIcon').textContent = THEME_ICONS[t];
+  // mark active
+  ['light','dim','dark'].forEach(n => {
+    document.getElementById('themeOpt' + n.charAt(0).toUpperCase() + n.slice(1))
+      ?.classList.toggle('active', n === t);
+  });
+  localStorage.setItem(THEME_KEY, t);
+  document.getElementById('themeMenu').classList.remove('open');
+}
+
+function toggleThemeMenu() {
+  const m = document.getElementById('themeMenu');
+  m.classList.toggle('open');
+}
+
+// Close theme menu when clicking outside
+document.addEventListener('click', e => {
+  const btn  = document.getElementById('themeToggleBtn');
+  const menu = document.getElementById('themeMenu');
+  if (menu && !menu.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// Load saved theme
+(function() {
+  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  if (saved !== 'light') setTheme(saved);
+  else document.getElementById('themeIcon').textContent = '☀️';
+  document.getElementById('themeOptLight')?.classList.toggle('active', saved === 'light');
+})();
+
+// ══════════════════════════════════════════════════════════════
+// HEADER TITLE LOOP EFFECT
+// ══════════════════════════════════════════════════════════════
+(function initTitleEffect() {
+  const el = document.getElementById('vp-header-title');
+  if (!el) return;
+  const words  = ['Virtual Production', 'VP', 'Scene'];
+  const suffix = ' Library';
+  let wi = 0, ci = 0, deleting = false, pausing = false;
+  const cursor = '<span class="vp-cursor">|</span>';
+
+  function tick() {
+    const word   = words[wi];
+    const target = word + suffix;
+    if (pausing) { pausing = false; setTimeout(tick, 1400); return; }
+    if (!deleting) {
+      ci++;
+      el.innerHTML = target.slice(0, ci) + cursor;
+      if (ci >= target.length) { deleting = true; pausing = true; setTimeout(tick, 60); return; }
+      setTimeout(tick, 68);
+    } else {
+      ci--;
+      el.innerHTML = target.slice(0, ci) + cursor;
+      if (ci <= 0) { deleting = false; wi = (wi + 1) % words.length; setTimeout(tick, 350); return; }
+      setTimeout(tick, 38);
+    }
+  }
+  setTimeout(tick, 800);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// FALSE COLOR ENGINE — IRE luminance map (DaVinci Resolve style)
+// ══════════════════════════════════════════════════════════════
+/*
+ * IRE zones mapped to classic false color palette:
+ *   0– 2  Magenta  #FF00FF  Clipped black / crushed shadow
+ *   2–15  Blue     #1A1AFF  Underexposed
+ *  15–30  Lt Blue  #0070FF  Low mid
+ *  30–42  Cyan     #00B4B4  Shadow mid
+ *  42–56  Green    #00C800  Correct exposure (skin tone zone ~45-55 IRE)
+ *  56–70  Yellow   #C8C800  Upper midtone
+ *  70–87  Orange   #FF8C00  Near clip / hot
+ *  87–98  Red      #FF2800  Overexposed
+ *  98–100 White    #FFFFFF  Clipped white
+ *
+ * Luminance = 0.2126R + 0.7152G + 0.0722B  (ITU-R BT.709)
+ * IRE = luminance / 255 * 100
+ */
+
+const FC_ZONES = [
+  { min:0,   max:2,   r:255, g:0,   b:255 },  // Clipped Black — Magenta
+  { min:2,   max:15,  r:26,  g:26,  b:255 },  // Underexposed  — Blue
+  { min:15,  max:30,  r:0,   g:112, b:255 },  // Low mid       — Light Blue
+  { min:30,  max:42,  r:0,   g:180, b:180 },  // Shadow mid    — Cyan
+  { min:42,  max:56,  r:0,   g:200, b:0   },  // Correct       — Green
+  { min:56,  max:70,  r:200, g:200, b:0   },  // Upper mid     — Yellow
+  { min:70,  max:87,  r:255, g:140, b:0   },  // Near clip     — Orange
+  { min:87,  max:98,  r:255, g:40,  b:0   },  // Overexposed   — Red
+  { min:98,  max:101, r:255, g:255, b:255 },  // Clipped White — White
+];
+
+/** Map a luminance value (0–255) to false color RGB */
+function _ire2color(lum) {
+  const ire = (lum / 255) * 100;
+  for (const z of FC_ZONES) {
+    if (ire >= z.min && ire < z.max) return [z.r, z.g, z.b];
+  }
+  return [255, 255, 255];
+}
+
+/**
+ * renderFalseColor(imgEl, canvasEl)
+ * Draws the false color overlay onto canvasEl sized to match imgEl.
+ * Uses OffscreenCanvas for performance if available.
+ */
+function renderFalseColor(imgEl, canvasEl) {
+  return new Promise((resolve, reject) => {
+    // Wait until img is fully loaded
+    const draw = () => {
+      const W = imgEl.naturalWidth  || imgEl.width  || imgEl.offsetWidth;
+      const H = imgEl.naturalHeight || imgEl.height || imgEl.offsetHeight;
+      if (!W || !H) { reject('img not loaded'); return; }
+
+      // Use offscreen canvas for pixel work then copy to display canvas
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const ctx = off.getContext('2d');
+
+      // Draw source image
+      ctx.drawImage(imgEl, 0, 0, W, H);
+      const data = ctx.getImageData(0, 0, W, H);
+      const px   = data.data;
+
+      // Process each pixel
+      for (let i = 0; i < px.length; i += 4) {
+        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+        const [r, g, b] = _ire2color(lum);
+        px[i]   = r;
+        px[i+1] = g;
+        px[i+2] = b;
+        // px[i+3] alpha unchanged (keep 255)
+      }
+      ctx.putImageData(data, 0, 0);
+
+      // Size display canvas to match the rendered img element (CSS size)
+      canvasEl.width  = imgEl.offsetWidth  || W;
+      canvasEl.height = imgEl.offsetHeight || H;
+      const dispCtx = canvasEl.getContext('2d');
+      dispCtx.drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
+      resolve();
+    };
+
+    if (imgEl.complete && imgEl.naturalWidth) {
+      draw();
+    } else {
+      imgEl.addEventListener('load', draw, { once: true });
+      imgEl.addEventListener('error', () => reject('img load error'), { once: true });
+    }
+  });
+}
+
+// State: which contexts have FC active
+const _fcState = { modal: false, ls: false };
+
+async function toggleFalseColor(ctx) {
+  const isActive = _fcState[ctx];
+  const imgEl    = document.getElementById(ctx === 'modal' ? 'modalImg'    : 'lsImg');
+  const canvasEl = document.getElementById(ctx === 'modal' ? 'modalFcCanvas' : 'lsFcCanvas');
+  const btnEl    = document.getElementById(ctx === 'modal' ? 'modalFcBtn'  : 'lsFcBtn');
+  const iconEl   = document.getElementById(ctx === 'modal' ? 'modalFcBtnIcon' : 'lsFcBtnIcon');
+  const legendEl = document.getElementById(ctx === 'modal' ? 'modalFcLegend' : 'lsFcLegend');
+  if (!imgEl || !canvasEl) return;
+
+  if (isActive) {
+    // Turn OFF
+    _fcState[ctx] = false;
+    canvasEl.classList.remove('active');
+    btnEl?.classList.remove('active');
+    legendEl?.classList.remove('show');
+    if (iconEl) iconEl.textContent = '⬛';
+  } else {
+    // Turn ON — render then show
+    if (iconEl) iconEl.innerHTML = '<span class="fc-spin">⏳</span>';
+    btnEl?.classList.add('active');
+    try {
+      // Size canvas to match display element
+      canvasEl.style.width  = imgEl.offsetWidth  + 'px';
+      canvasEl.style.height = imgEl.offsetHeight + 'px';
+      await renderFalseColor(imgEl, canvasEl);
+      _fcState[ctx] = true;
+      canvasEl.classList.add('active');
+      legendEl?.classList.add('show');
+      if (iconEl) iconEl.textContent = '🟢';
+    } catch(e) {
+      console.warn('[falseColor]', e);
+      btnEl?.classList.remove('active');
+      if (iconEl) iconEl.textContent = '⬛';
+    }
+  }
+}
+
+/** Reset FC state when modal/lightbox closes */
+function resetFalseColor(ctx) {
+  _fcState[ctx] = false;
+  const canvasEl = document.getElementById(ctx === 'modal' ? 'modalFcCanvas' : 'lsFcCanvas');
+  const btnEl    = document.getElementById(ctx === 'modal' ? 'modalFcBtn'    : 'lsFcBtn');
+  const iconEl   = document.getElementById(ctx === 'modal' ? 'modalFcBtnIcon': 'lsFcBtnIcon');
+  const legendEl = document.getElementById(ctx === 'modal' ? 'modalFcLegend' : 'lsFcLegend');
+  if (canvasEl) { canvasEl.classList.remove('active'); }
+  if (btnEl)    { btnEl.classList.remove('active'); }
+  if (iconEl)   { iconEl.textContent = '⬛'; }
+  if (legendEl) { legendEl.classList.remove('show'); }
+}
+</script>
+</body>
+</html>
