@@ -241,6 +241,55 @@
   .new-modal-title { font-size:17px; font-weight:700; margin-bottom:16px; }
 
   .hidden { display:none !important; }
+
+  /* ══ MOBILE RESPONSIVE ══ */
+  @media (max-width: 768px) {
+    .topbar { padding:0 14px; }
+    .topbar-title { font-size:13px; }
+    .topbar-badge { display:none; }
+    .topbar-right { gap:6px; }
+    .topbar-right button { font-size:11px; padding:5px 8px; }
+
+    .admin-layout { flex-direction:column; height:auto; min-height:calc(100vh - 52px); }
+
+    .sidebar {
+      width:100% !important; min-width:unset;
+      border-right:none; border-bottom:1px solid var(--border);
+      overflow-y:visible; max-height:none;
+    }
+    .sidebar-header { padding:10px 12px 8px; }
+    /* tabs in sidebar — horizontal scroll */
+    .sidebar > div:first-child { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .sidebar > div:first-child > div { display:flex; flex-wrap:nowrap; min-width:max-content; }
+
+    .editor-area { flex:1; min-height:60vh; }
+    .editor-topbar { padding:12px 14px; gap:8px; }
+
+    /* scene list items smaller on mobile */
+    .scene-list-item { padding:10px 12px; }
+    .sli-thumb { width:40px; height:25px; }
+
+    /* form grids — single column */
+    .form-row { grid-template-columns:1fr !important; }
+    .form-row-1 { grid-template-columns:1fr !important; }
+
+    /* collection editor modal */
+    #collectionEditorOverlay > div { padding:18px 16px; }
+    #collectionEditorOverlay .form-input { font-size:14px; }
+
+    /* export bar */
+    #exportBar { padding:8px 12px; flex-wrap:wrap; gap:6px; }
+    #exportBar button { font-size:11px; padding:5px 10px; }
+  }
+
+  @media (max-width: 480px) {
+    .topbar-user { display:none; }
+    .admin-layout { height:auto; }
+    .editor-form-body { padding:14px !important; }
+    .form-section-title { font-size:11px; }
+    .form-input { font-size:14px; }
+    .btn-save, .btn-secondary, .btn-delete { font-size:12px; padding:8px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -1410,23 +1459,27 @@ function buildEditorHTML(s) {
           </div>
         </div>
         <!-- Presenter image upload (Tier 2) -->
-        <div style="margin-top:12px;padding:12px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
-          <div class="form-label" style="margin-bottom:6px;color:#065F46">🧑 ภาพฉากมีพิธีกร (Presenter Tier) <span style="font-weight:400;color:var(--muted);font-size:10px">— สำหรับ Presenter Toggle feature</span></div>
+        <div style="margin-top:12px;padding:14px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
+          <div class="form-label" style="margin-bottom:4px;color:#065F46;font-size:13px">🧑 ภาพฉากมีพิธีกร (Presenter Toggle)</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">อัพโหลดภาพที่มีคนยืนอยู่ — ปุ่ม 🧑 จะขึ้นบนการ์ดให้ switch ได้ทันที หลังกด Save</div>
+          ${s.presenter_image_url ? `<div style="margin-bottom:10px;border-radius:8px;overflow:hidden;max-height:120px;display:flex;align-items:center;justify-content:center;background:#000"><img src="${escHtml(s.presenter_image_url)}" style="max-width:100%;max-height:120px;object-fit:cover" onerror="this.parentElement.style.display='none'"><span style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">✅ มีภาพแล้ว</span></div>` : ''}
           <div class="upload-zone" id="uploadZonePresenter_${s.id}"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
-            ondrop="handleEditorFileDrop(event,'presenter','${s.id}')" style="min-height:80px">
-            <input type="file" id="uploadPresenter_${s.id}" accept="image/*" onchange="handleEditorFileSelect(this.files,'presenter','${s.id}')">
+            ondrop="handleEditorFileDrop(event,'presenter','${s.id}')"
+            onclick="document.getElementById('uploadPresenter_${s.id}').click()"
+            style="min-height:70px;cursor:pointer">
+            <input type="file" id="uploadPresenter_${s.id}" accept="image/*" style="display:none" onchange="handleEditorFileSelect(this.files,'presenter','${s.id}')">
             <div id="uploadPresenterContent_${s.id}">
-              <div class="upload-zone-icon">🧑</div>
-              <div class="upload-zone-label">ภาพฉาก + พิธีกร</div>
-              <div class="upload-zone-sub">อัพโหลดภาพที่มีพิธีกรยืนอยู่</div>
+              <div class="upload-zone-icon" style="font-size:20px">🧑</div>
+              <div class="upload-zone-label" style="font-size:12px">${s.presenter_image_url ? 'คลิกเพื่อเปลี่ยนภาพ' : 'คลิกหรือลากวางภาพที่นี่'}</div>
             </div>
           </div>
           <div class="form-group" style="margin-top:8px">
-            <label class="form-label">Presenter image URL <span style="font-weight:400;font-size:10px">(กรอก manual หรืออัพโหลดไฟล์ด้านบน)</span></label>
-            <input class="form-input" id="f_presenter_image_url" value="${s.presenter_image_url||''}" placeholder="https://... หรือ path/to/presenter.webp" style="font-family:monospace;font-size:12px">
+            <label class="form-label">Presenter image URL <span style="font-weight:400;font-size:10px">หรือวาง URL ตรงนี้แทน</span></label>
+            <input class="form-input" id="f_presenter_image_url" value="${s.presenter_image_url||''}" placeholder="https://..." oninput="updatePresenterPreview()" style="font-family:monospace;font-size:12px">
           </div>
+          <div style="font-size:11px;color:#065F46;margin-top:6px;font-weight:600">⚠️ อย่าลืมกด 💾 Save ด้านล่างหลังอัพโหลดเสร็จ</div>
         </div>
 
         <!-- Path fields (read-only display + manual override) -->
@@ -1450,19 +1503,18 @@ function buildEditorHTML(s) {
 
       <!-- Video Preview -->
       <div class="editor-section">
-        <div class="editor-section-title">▶️ Video Preview <span style="font-weight:400;font-size:10px;color:var(--muted);margin-left:4px">(YouTube / Vimeo link)</span></div>
-        <div class="video-preview-wrap" id="adminVideoWrap">
-          <div class="video-preview-empty"><div class="icon">🎬</div><div>ยังไม่มี video link</div></div>
-        </div>
-        <div class="path-input-wrap" style="margin-top:10px">
+        <div class="editor-section-title">▶️ YouTube / Vimeo Link</div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">วาง YouTube link ตรงนี้ได้เลย</label>
           <input class="form-input" id="f_video_url" value="${escHtml(s.video_url||'')}"
-            placeholder="https://youtube.com/watch?v=... หรือ https://youtu.be/..."
-            oninput="updateAdminVideo()">
-          <button class="btn-secondary" onclick="document.getElementById('f_video_url').focus()">✏️ แก้ link</button>
+            placeholder="https://youtube.com/watch?v=XXXXXXXXXXX"
+            oninput="updateAdminVideo()" style="font-size:13px">
         </div>
-        <div class="video-yt-hint">
-          💡 แนะนำ: Upload ขึ้น YouTube (unlisted) แล้วแปะ link — ระบบจะแปลงเป็น embed อัตโนมัติ<br>
-          รองรับ: <code>youtube.com/watch?v=ID</code> · <code>youtu.be/ID</code> · <code>vimeo.com/ID</code>
+        <div class="video-preview-wrap" id="adminVideoWrap">
+          <div class="video-preview-empty"><div class="icon">🎬</div><div>วาง link ด้านบนแล้วจะ preview ที่นี่</div></div>
+        </div>
+        <div class="video-yt-hint" style="margin-top:6px">
+          รองรับ: <code>youtube.com/watch?v=ID</code> · <code>youtu.be/ID</code> · <code>youtube.com/shorts/ID</code> · <code>vimeo.com/ID</code>
         </div>
       </div>
 
@@ -2118,8 +2170,12 @@ function updateAdminVideo() {
   } else if (url) {
     wrap.innerHTML = `<div class="video-preview-empty"><div class="icon">⚠️</div><div>URL ไม่รองรับ — ใช้ YouTube หรือ Vimeo</div></div>`;
   } else {
-    wrap.innerHTML = `<div class="video-preview-empty"><div class="icon">🎬</div><div>ยังไม่มี video link</div></div>`;
+    wrap.innerHTML = `<div class="video-preview-empty"><div class="icon">🎬</div><div>วาง link ด้านบนแล้วจะ preview ที่นี่</div></div>`;
   }
+}
+
+function updatePresenterPreview() {
+  // No-op: URL is typed directly; preview is shown at edit-open time via template
 }
 
 const OPT_LABELS = {
@@ -2366,10 +2422,13 @@ let ADMIN_COLLECTIONS = [];
 async function _loadAdminCollections() {
   if (!window._supaClient) return [];
   try {
-    const { data, error } = await window._supaClient
-      .from('collections')
-      .select('*')
-      .order('sort_order', { ascending: true });
+    let { data, error } = await window._supaClient
+      .from('collections').select('*').order('sort_order', { ascending: true });
+    if (error) {
+      // sort_order column may not exist — retry without ordering
+      const res = await window._supaClient.from('collections').select('*');
+      data = res.data; error = res.error;
+    }
     if (error) throw error;
     ADMIN_COLLECTIONS = data || [];
   } catch(e) {
@@ -2430,7 +2489,24 @@ async function renderAdminCollections() {
 let _colSelectedIds = new Set();
 
 // Emoji set for picker
-const COL_EMOJI_LIST = ['🗂','🎬','📺','🌟','🎯','🔥','💡','🎨','🎪','🏆','📡','🌐','🎭','🚀','💎','🌙','☀️','🌊','🏔','🌆','🎙','📻','🎧','📽','🎞','📸','🖼','✨','⚡','🎶','🎵','🎤','🏅','🥇','🎗','📌','🗺','🌈','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪'];
+const COL_EMOJI_LIST = [
+  // Media & Content
+  '🎬','📺','🎞','📽','🎥','📹','📸','🎙','📻','🎧','🎤','🎵','🎶','🎼',
+  // UI & Nav
+  '🗂','📁','📂','📌','📍','🗺','📋','📝','📄','📑','🗒','📊','📈','📉',
+  // Brand / Style
+  '🌟','⭐','✨','💫','🌙','☀️','🌈','🔥','⚡','💥','🎯','🏆','🥇','🏅',
+  // Nature / Scene type
+  '🌊','🏔','🌆','🌇','🌃','🌉','🌁','🏙','🌿','🌲','🌸','🌺','🍂',
+  // Tech / Industry
+  '🤖','🚀','💡','🔭','⚙️','🔬','💻','📡','🛸','🌐','🛰','🔋','💎',
+  // People / Events
+  '🎭','🎪','🎨','🖌','🎉','🎊','🎗','🎁','🏟','🎠','🎡','🎢',
+  // Colors / Swatches
+  '🔴','🟠','🟡','🟢','🔵','🟣','🟤','⚫','⚪','🔶','🔷','🔸','🔹',
+  // Thai / Standard vibes
+  '🇹🇭','⚜️','🏵','🌏','🎖','📰','🗞','📡','🏛','🕌','⛩',
+];
 
 function _initEmojiPanel() {
   const panel = document.getElementById('colEmojiPanel');

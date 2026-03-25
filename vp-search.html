@@ -715,9 +715,18 @@
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
       <span id="themeIcon">☀️</span>
     </button>
-    <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="promptLogin()" title="คลิกเพื่อเปลี่ยน User">
-      <span style="font-size:14px">👤</span>
-      <span id="userLabel">ไม่ได้ login</span>
+    <div style="position:relative" id="userPillWrap">
+      <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="toggleUserMenu()" title="คลิกเพื่อดูเมนู">
+        <span style="font-size:14px">👤</span>
+        <span id="userLabel">ไม่ได้ login</span>
+        <span style="font-size:10px;opacity:.7">▾</span>
+      </div>
+      <div id="userMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:160px;z-index:999;overflow:hidden">
+        <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
+        <a id="userMenuAdmin" href="vp-admin.html" target="_blank" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:#B91C1C;text-decoration:none;gap:8px;align-items:center;border-bottom:1px solid var(--border)" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">⚙️ เข้าหลังบ้าน Admin</a>
+        <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">🔑 เข้าสู่ระบบ</div>
+        <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">↩ ออกจากระบบ / เปลี่ยน User</div>
+      </div>
     </div>
   </div>
 </div>
@@ -729,9 +738,7 @@
     <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">✨ แนะนำฉาก</button>
     <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">🗂 Collection</button>
   </div>
-  <div class="nav-right">
-    <a class="nav-ext-link admin" href="vp-admin.html" target="_blank">⚙️ Admin</a>
-  </div>
+  <div class="nav-right"></div>
 </div>
 
 <!-- ══════════════ SEARCH MODE ══════════════ -->
@@ -1370,12 +1377,25 @@ function renderPagination(total) {
 
 // ══════════ COLLECTIONS ══════════
 let COLLECTIONS = [], _collectionFilter = null, _collectionName = '';
+function _getSupaClient() {
+  if (typeof supabase === 'undefined') return null;
+  return supabase.createClient(
+    'https://pgaqdqbjyewwckpslyvx.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+  );
+}
 async function loadCollections() {
-  if (!window._supaClient) return;
+  const sc = _getSupaClient();
+  if (!sc) return;
   try {
-    const { data, error } = await window._supaClient.from('collections').select('*').order('sort_order',{ascending:true});
-    if (!error) COLLECTIONS = data||[];
-  } catch(e) { COLLECTIONS = []; }
+    let { data, error } = await sc.from('collections').select('*').order('sort_order',{ascending:true});
+    if (error) {
+      // sort_order column may not exist — retry without ordering
+      const res = await sc.from('collections').select('*');
+      data = res.data; error = res.error;
+    }
+    if (!error && data) COLLECTIONS = data;
+  } catch(e) { console.warn('[collections]',e); COLLECTIONS = []; }
 }
 async function renderCollections() {
   await loadCollections();
@@ -2442,7 +2462,7 @@ function renderLightingBlueprint(sceneId) {
           <span class="lb-saved-flash" id="lb-saved-${sceneId}">✓ Saved!</span>
           <button class="lb-btn lb-btn-export" onclick="lbExportAll()">↗ Export All JSON</button>
         ` : `
-          <span class="lb-readonly-badge">🔒 Editor/Admin เท่านั้นที่ edit ได้</span>
+          <button class="lb-btn" style="background:#1E293B;color:#94A3B8" onclick="promptLogin();document.getElementById('authOverlay').addEventListener('transitionend',function h(){document.getElementById('authOverlay').removeEventListener('transitionend',h);if(!document.getElementById('authOverlay').classList.contains('open')){var mid=currentModalId;closeModal();setTimeout(()=>openModal(mid),100)}},false)">🔓 Login เพื่อแก้ไข Blueprint</button>
           ${hasData ? `<button class="lb-btn lb-btn-export" style="margin-left:0" onclick="lbExportAll()">↗ Export</button>` : ''}
         `}
       </div>
@@ -3391,16 +3411,43 @@ function isViewer() {
   return (localStorage.getItem(USER_ROLE_KEY) || '') === 'viewer';
 }
 
+function toggleUserMenu() {
+  const m = document.getElementById('userMenu');
+  if (!m) return;
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeUserMenu() {
+  const m = document.getElementById('userMenu');
+  if (m) m.style.display = 'none';
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('userPillWrap');
+  if (wrap && !wrap.contains(e.target)) closeUserMenu();
+});
+
 function initUser() {
   const saved = localStorage.getItem(USER_KEY);
   const el = document.getElementById('userLabel');
+  const menuName = document.getElementById('userMenuName');
+  const menuAdmin = document.getElementById('userMenuAdmin');
+  const menuLogin = document.getElementById('userMenuLogin');
+  const menuLogout = document.getElementById('userMenuLogout');
   if (!saved) {
     el.textContent = 'ไม่ได้ login';
+    if (menuName) menuName.textContent = 'ไม่ได้ login';
+    if (menuAdmin) menuAdmin.style.display = 'none';
+    if (menuLogin) menuLogin.style.display = '';
+    if (menuLogout) menuLogout.style.display = 'none';
     showAuthOverlay();
   } else {
     const role = localStorage.getItem(USER_ROLE_KEY) || '';
     const icon = role === 'admin' ? '👑 ' : role === 'viewer' ? '👁 ' : '';
     el.textContent = icon + saved;
+    if (menuName) menuName.textContent = icon + saved + ' (' + role + ')';
+    const isAdminOrEd = role === 'admin' || role === 'editor';
+    if (menuAdmin) { menuAdmin.style.display = isAdminOrEd ? 'flex' : 'none'; }
+    if (menuLogin) menuLogin.style.display = 'none';
+    if (menuLogout) menuLogout.style.display = '';
   }
 }
 
