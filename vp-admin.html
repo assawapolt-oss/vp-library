@@ -39,10 +39,17 @@
   .logout-btn:hover { background:rgba(255,255,255,.25); }
 
   /* ══ LAYOUT ══ */
-  .admin-layout { display:flex; height:calc(100vh - 52px); }
+  .admin-layout { display:flex; height:calc(100vh - 52px); position:relative; }
 
   /* ── Sidebar ── */
-  .sidebar { width:340px; min-width:320px; background:#fff; border-right:1px solid var(--border); overflow-y:auto; }
+  .sidebar { width:var(--sidebar-w,340px); min-width:220px; max-width:600px; background:#fff; border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; transition:width .15s; position:relative; }
+  .sidebar.collapsed { width:0 !important; min-width:0; overflow:hidden; border-right:none; }
+  /* resize handle */
+  .sidebar-resize-handle { position:absolute; top:0; right:-4px; width:8px; height:100%; cursor:col-resize; z-index:50; background:transparent; }
+  .sidebar-resize-handle:hover, .sidebar-resize-handle.dragging { background:rgba(217,35,46,.2); }
+  /* collapse toggle */
+  .sidebar-toggle-btn { position:absolute; top:50%; right:-14px; transform:translateY(-50%); z-index:60; width:14px; height:48px; background:var(--border); border:none; cursor:pointer; border-radius:0 6px 6px 0; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--muted); padding:0; transition:background .12s; }
+  .sidebar-toggle-btn:hover { background:var(--red); color:#fff; }
   .sidebar-header { padding:16px 16px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
   .sidebar-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
   .add-scene-btn { padding:5px 12px; background:var(--dark); color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .12s; }
@@ -253,14 +260,22 @@
     .admin-layout { flex-direction:column; height:auto; min-height:calc(100vh - 52px); }
 
     .sidebar {
-      width:100% !important; min-width:unset;
+      width:100% !important; min-width:unset; max-width:none;
       border-right:none; border-bottom:1px solid var(--border);
-      overflow-y:visible; max-height:none;
+      overflow-y:visible; max-height:none; transition:none;
+    }
+    .sidebar.collapsed { width:100% !important; height:0; max-height:0; border-bottom:none; overflow:hidden; }
+    .sidebar-resize-handle { display:none; }
+    /* collapse toggle on mobile — bottom-right fab */
+    .sidebar-toggle-btn {
+      position:fixed; bottom:16px; right:16px; top:auto; transform:none;
+      width:44px; height:44px; border-radius:50%; background:var(--red);
+      color:#fff; font-size:14px; z-index:200; box-shadow:0 4px 12px rgba(0,0,0,.2);
     }
     .sidebar-header { padding:10px 12px 8px; }
     /* tabs in sidebar — horizontal scroll */
-    .sidebar > div:first-child { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    .sidebar > div:first-child > div { display:flex; flex-wrap:nowrap; min-width:max-content; }
+    .sidebar > div:nth-child(3) { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .sidebar > div:nth-child(3) > div { display:flex; flex-wrap:nowrap; min-width:max-content; }
 
     .editor-area { flex:1; min-height:60vh; }
     .editor-topbar { padding:12px 14px; gap:8px; }
@@ -330,7 +345,9 @@
   <div class="admin-layout">
 
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="adminSidebar">
+      <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
+      <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="ซ่อน/แสดง Sidebar">◀</button>
       <!-- Sidebar mode tabs -->
       <div style="display:flex;border-bottom:2px solid var(--border);">
         <button id="tabScenes" onclick="switchAdminTab('scenes')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--red);border-bottom:2px solid var(--red);margin-bottom:-2px;font-family:inherit;">🎬 ฉาก</button>
@@ -1150,6 +1167,7 @@ async function setImgSrc(el, path) {
 // context_tags, show_ids, video_url, etc.) are backfilled from DEFAULT_SCENES.
 function migrateScenes(loadedScenes) {
   const NEW_FIELDS = ['world','energy','context_tags','show_ids','video_url',
+    'presenter_image_url','motion_bg_url',
     // canvas & lighting fields (v2.1)
     'key_light_dir','key_light_type','fill_light','back_light','lighting_ratio',
     'presenter_zone','camera_setup','canvas_notes'
@@ -1230,7 +1248,10 @@ function _supaRowToScene(r) {
     world: def.world||'', energy: def.energy||'',
     context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
     show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
-    video_url: def.video_url||'', notes: r.description||def.notes||'',
+    video_url: r.video_url||def.video_url||'',
+    presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
+    motion_bg_url: r.motion_bg_url||def.motion_bg_url||'',
+    notes: r.description||def.notes||'',
   };
 }
 
@@ -1246,6 +1267,7 @@ async function _supaUpsertAll() {
     description: s.notes||'', sort_order: (i + 1) * 10,
     video_url: s.video_url||'',
     presenter_image_url: s.presenter_image_url||'',
+    motion_bg_url: s.motion_bg_url||'',
     world: s.world||'', energy: s.energy||'',
     context_tags: s.context_tags||[],
     show_ids: s.show_ids||[],
@@ -1518,6 +1540,18 @@ function buildEditorHTML(s) {
         </div>
       </div>
 
+      <!-- Motion Background File (Production Only) -->
+      <div class="editor-section">
+        <div class="editor-section-title">📁 Motion Virtual Background File <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">(ไม่แสดงหน้า Frontend)</span></div>
+        <div class="form-group">
+          <label class="form-label">Link ไฟล์ Motion Background ต้นฉบับ <span style="font-weight:400;color:var(--muted)">— Frame.io, Drive, NAS, etc.</span></label>
+          <input class="form-input" id="f_motion_bg_url" value="${escHtml(s.motion_bg_url||'')}"
+            placeholder="https://app.frame.io/... หรือ https://drive.google.com/..."
+            style="font-size:13px">
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">ใช้เก็บ link ไฟล์วิดีโอจริงที่ใช้ถ่ายทำ (ProRes, H.264, etc.) สำหรับทีม Production</div>
+      </div>
+
       <!-- Basic Info -->
       <div class="editor-section">
         <div class="editor-section-title">📋 ข้อมูลพื้นฐาน</div>
@@ -1705,6 +1739,7 @@ function collectFormData(origId) {
     added_date:   document.getElementById('f_added_date').value,
     video_url:    document.getElementById('f_video_url')?.value.trim() || '',
     presenter_image_url: document.getElementById('f_presenter_image_url')?.value.trim() || '',
+    motion_bg_url: document.getElementById('f_motion_bg_url')?.value.trim() || '',
     notes:        document.getElementById('f_notes').value.trim(),
     status:       newStatus,
     world:        document.getElementById('f_world')?.value || '',
@@ -4408,6 +4443,51 @@ async function toggleAdminFalseColor(sceneId) {
       if (iconEl) iconEl.textContent = '⬛';
     }
   }
+}
+
+// ══════════ SIDEBAR RESIZE + COLLAPSE ══════════
+(function initSidebarResize() {
+  const sidebar = document.getElementById('adminSidebar');
+  const handle  = document.getElementById('sidebarResizeHandle');
+  const toggleBtn = document.getElementById('sidebarToggleBtn');
+  if (!sidebar || !handle) return;
+
+  // Restore saved width
+  const saved = localStorage.getItem('vp_admin_sidebar_w');
+  if (saved) { sidebar.style.setProperty('--sidebar-w', saved + 'px'); sidebar.style.width = saved + 'px'; }
+
+  // Restore collapsed state
+  const collapsed = localStorage.getItem('vp_admin_sidebar_collapsed') === '1';
+  if (collapsed) { sidebar.classList.add('collapsed'); if (toggleBtn) toggleBtn.textContent = '▶'; }
+
+  let startX, startW, dragging = false;
+  handle.addEventListener('mousedown', e => {
+    if (sidebar.classList.contains('collapsed')) return;
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.userSelect = 'none'; document.body.style.cursor = 'col-resize';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(220, Math.min(600, startW + e.clientX - startX));
+    sidebar.style.width = w + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false; handle.classList.remove('dragging');
+    document.body.style.userSelect = ''; document.body.style.cursor = '';
+    localStorage.setItem('vp_admin_sidebar_w', sidebar.offsetWidth);
+  });
+})();
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (!sidebar) return;
+  const now = sidebar.classList.toggle('collapsed');
+  if (btn) btn.textContent = now ? '▶' : '◀';
+  localStorage.setItem('vp_admin_sidebar_collapsed', now ? '1' : '0');
 }
 
 </script>
