@@ -286,6 +286,7 @@
       <div style="display:flex;border-bottom:2px solid var(--border);">
         <button id="tabScenes" onclick="switchAdminTab('scenes')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--red);border-bottom:2px solid var(--red);margin-bottom:-2px;font-family:inherit;">🎬 ฉาก</button>
         <button id="tabShows" onclick="switchAdminTab('shows')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📺 รายการ</button>
+        <button id="tabCollections" onclick="switchAdminTab('collections')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">🗂 Collections</button>
         <button id="tabUsers" onclick="switchAdminTab('users')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">👥 ผู้ใช้</button>
         <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📊 Log</button>
       </div>
@@ -328,6 +329,15 @@
         </div>
         <div id="activitySummary" style="padding:12px 14px;"></div>
       </div>
+
+      <!-- Collections sidebar -->
+      <div id="sidebarCollections" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Collections</div>
+          <button class="add-scene-btn" onclick="openCollectionEditor(null)">+ สร้าง</button>
+        </div>
+        <div id="sidebarCollectionsList" style="padding:8px 14px;font-size:12px;color:var(--muted);">กำลังโหลด…</div>
+      </div>
     </div>
 
     <!-- Editor area (scenes) -->
@@ -354,6 +364,54 @@
           </div>
         </div>
         <div id="showsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+      </div>
+    </div>
+
+    <!-- Collections Panel -->
+    <div id="collectionsPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:960px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">🗂 Collections</div>
+            <div style="font-size:13px;color:var(--muted);">จัดกลุ่มฉากตาม Season / Theme — แสดงใน Tab Collection ของหน้า Search</div>
+          </div>
+          <button class="btn-save" style="font-size:13px" onclick="openCollectionEditor(null)">＋ สร้าง Collection ใหม่</button>
+        </div>
+        <div id="adminCollectionsList" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Collections Editor Modal -->
+    <div id="collectionEditorOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">📝 แก้ไข Collection</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">ชื่อ Collection *</label>
+          <input id="col_name" class="form-input" placeholder="เช่น THE SECRET SAUCE 2026 VP"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Emoji</label>
+          <input id="col_emoji" class="form-input" placeholder="🎬" style="max-width:80px"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Season / Category</label>
+          <input id="col_season" class="form-input" placeholder="เช่น Q1 · SEASONAL · SIGNATURE"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">ปี</label>
+          <input id="col_year" class="form-input" placeholder="2026" style="max-width:100px"></div>
+        </div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">คำอธิบาย</label>
+        <textarea id="col_description" class="form-input" style="min-height:60px;resize:vertical" placeholder="อธิบายสั้นๆ ว่า Collection นี้คืออะไร ใช้งานยังไง"></textarea></div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">สีหลัก (hex)</label>
+        <input id="col_color" class="form-input" placeholder="#CC2229" style="max-width:140px"></div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Cover Image URL (ถ้ามี)</label>
+        <input id="col_cover_url" class="form-input" placeholder="https://..."></div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">เลือกฉากใน Collection <span id="colSceneCount" style="color:var(--red);margin-left:6px;font-weight:800"></span></label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">คลิกชื่อฉากเพื่อเพิ่ม/ลบ</div>
+          <div id="colScenePicker" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;"></div>
+        </div>
+        <input type="hidden" id="col_editing_id">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-save" onclick="saveCollection()" style="flex:1">💾 บันทึก Collection</button>
+          <button class="btn-secondary" onclick="closeCollectionEditor()" style="flex-shrink:0">ยกเลิก</button>
+          <button id="colDeleteBtn" class="btn-delete" onclick="deleteCollection(document.getElementById('col_editing_id').value)" style="flex-shrink:0;display:none">🗑 ลบ</button>
+        </div>
       </div>
     </div>
 
@@ -1089,6 +1147,11 @@ async function _supaUpsertAll() {
     tags: [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
     image_url: s.filepath||'', thumb_url: s.thumb||'',
     description: s.notes||'', sort_order: (i + 1) * 10,
+    video_url: s.video_url||'',
+    presenter_image_url: s.presenter_image_url||'',
+    world: s.world||'', energy: s.energy||'',
+    context_tags: s.context_tags||[],
+    show_ids: s.show_ids||[],
   }));
   await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
 
@@ -1265,11 +1328,11 @@ function buildEditorHTML(s) {
           </div>
         </div>
 
-        <!-- Upload row: Full + Thumb -->
+        <!-- Upload row: Full + Thumb + Presenter -->
         <div class="form-row" style="margin-top:12px;">
           <!-- Full image upload -->
           <div>
-            <div class="form-label" style="margin-bottom:6px">📷 Full Image (WebP)</div>
+            <div class="form-label" style="margin-bottom:6px">📷 ภาพฉาก — ไม่มีพิธีกร</div>
             <div class="upload-zone" id="uploadZoneFull_${s.id}"
               ondragover="event.preventDefault();this.classList.add('drag-over')"
               ondragleave="this.classList.remove('drag-over')"
@@ -1296,6 +1359,25 @@ function buildEditorHTML(s) {
                 <div class="upload-zone-sub">PNG/JPG → WebP q55 · รองรับ AVIF ด้วย</div>
               </div>
             </div>
+          </div>
+        </div>
+        <!-- Presenter image upload (Tier 2) -->
+        <div style="margin-top:12px;padding:12px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
+          <div class="form-label" style="margin-bottom:6px;color:#065F46">🧑 ภาพฉากมีพิธีกร (Presenter Tier) <span style="font-weight:400;color:var(--muted);font-size:10px">— สำหรับ Presenter Toggle feature</span></div>
+          <div class="upload-zone" id="uploadZonePresenter_${s.id}"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="handleEditorFileDrop(event,'presenter','${s.id}')" style="min-height:80px">
+            <input type="file" id="uploadPresenter_${s.id}" accept="image/*" onchange="handleEditorFileSelect(this.files,'presenter','${s.id}')">
+            <div id="uploadPresenterContent_${s.id}">
+              <div class="upload-zone-icon">🧑</div>
+              <div class="upload-zone-label">ภาพฉาก + พิธีกร</div>
+              <div class="upload-zone-sub">อัพโหลดภาพที่มีพิธีกรยืนอยู่</div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:8px">
+            <label class="form-label">Presenter image URL <span style="font-weight:400;font-size:10px">(กรอก manual หรืออัพโหลดไฟล์ด้านบน)</span></label>
+            <input class="form-input" id="f_presenter_image_url" value="${s.presenter_image_url||''}" placeholder="https://... หรือ path/to/presenter.webp" style="font-family:monospace;font-size:12px">
           </div>
         </div>
 
@@ -1522,6 +1604,7 @@ function collectFormData(origId) {
     thumb:        document.getElementById('f_thumb').value.trim(),
     added_date:   document.getElementById('f_added_date').value,
     video_url:    document.getElementById('f_video_url')?.value.trim() || '',
+    presenter_image_url: document.getElementById('f_presenter_image_url')?.value.trim() || '',
     notes:        document.getElementById('f_notes').value.trim(),
     status:       newStatus,
     world:        document.getElementById('f_world')?.value || '',
@@ -2206,18 +2289,14 @@ let adminTab = 'scenes';
 function switchAdminTab(tab) {
   adminTab = tab;
   // sidebar panels
-  document.getElementById('sidebarScenes').classList.toggle('hidden', tab !== 'scenes');
-  document.getElementById('sidebarShows').classList.toggle('hidden', tab !== 'shows');
-  document.getElementById('sidebarUsers').classList.toggle('hidden', tab !== 'users');
-  document.getElementById('sidebarActivity').classList.toggle('hidden', tab !== 'activity');
+  const sidebarMap = { scenes:'sidebarScenes', shows:'sidebarShows', users:'sidebarUsers', activity:'sidebarActivity', collections:'sidebarCollections' };
+  Object.entries(sidebarMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
   // main panels
-  document.getElementById('editorArea').classList.toggle('hidden', tab !== 'scenes');
-  document.getElementById('showsPanel').classList.toggle('hidden', tab !== 'shows');
-  document.getElementById('usersPanel').classList.toggle('hidden', tab !== 'users');
-  document.getElementById('activityPanel').classList.toggle('hidden', tab !== 'activity');
+  const mainMap = { scenes:'editorArea', shows:'showsPanel', users:'usersPanel', activity:'activityPanel', collections:'collectionsPanel' };
+  Object.entries(mainMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
 
   // Tab button styles
-  ['scenes','shows','users','activity'].forEach(t => {
+  ['scenes','shows','collections','users','activity'].forEach(t => {
     const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (!el) return;
     const active = t === tab;
@@ -2225,9 +2304,221 @@ function switchAdminTab(tab) {
     el.style.borderBottomColor = active ? 'var(--red)' : 'transparent';
   });
 
-  if (tab === 'users')    renderUserCards();
-  if (tab === 'activity') renderActivityPanel();
-  if (tab === 'shows')    renderShowsPanel();
+  if (tab === 'users')       renderUserCards();
+  if (tab === 'activity')    renderActivityPanel();
+  if (tab === 'shows')       renderShowsPanel();
+  if (tab === 'collections') renderAdminCollections();
+}
+
+// ══════════════════════════════════════════════
+// COLLECTIONS MANAGEMENT
+// ══════════════════════════════════════════════
+let ADMIN_COLLECTIONS = [];
+
+async function _loadAdminCollections() {
+  if (!window._supaClient) return [];
+  try {
+    const { data, error } = await window._supaClient
+      .from('collections')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    ADMIN_COLLECTIONS = data || [];
+  } catch(e) {
+    console.warn('[Collections] load error', e);
+    ADMIN_COLLECTIONS = [];
+  }
+  return ADMIN_COLLECTIONS;
+}
+
+async function renderAdminCollections() {
+  await _loadAdminCollections();
+  // Sidebar list
+  const sbl = document.getElementById('sidebarCollectionsList');
+  if (sbl) {
+    if (!ADMIN_COLLECTIONS.length) {
+      sbl.innerHTML = '<div style="padding:8px 0;color:var(--muted);font-size:12px;">ยังไม่มี Collection</div>';
+    } else {
+      sbl.innerHTML = ADMIN_COLLECTIONS.map(c => `
+        <div onclick="openCollectionEditor('${c.id}')" style="padding:8px 10px;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;transition:background .1s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <span style="font-size:16px">${c.emoji||'🗂'}</span>
+          <div style="min-width:0">
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name||'(ไม่มีชื่อ)'}</div>
+            <div style="font-size:11px;color:var(--muted)">${(c.scene_ids||[]).length} ฉาก</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+  // Main panel list
+  const listEl = document.getElementById('adminCollectionsList');
+  if (!listEl) return;
+  if (!ADMIN_COLLECTIONS.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--muted);">
+      <div style="font-size:40px;margin-bottom:10px">🗂</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">ยังไม่มี Collection</div>
+      <div style="font-size:13px">กด "+ สร้าง Collection ใหม่" เพื่อเริ่มต้น</div>
+    </div>`;
+    return;
+  }
+  const scenes = typeof SCENES !== 'undefined' ? SCENES : [];
+  listEl.innerHTML = ADMIN_COLLECTIONS.map(c => {
+    const ids = Array.isArray(c.scene_ids) ? c.scene_ids : [];
+    const sceneNames = ids.slice(0, 3).map(id => {
+      const sc = scenes.find(s => s.id === id);
+      return sc ? (sc.title || sc.id) : id;
+    }).join(' · ') + (ids.length > 3 ? ` + ${ids.length-3} more` : '');
+    const accent = c.color || 'var(--red)';
+    return `<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:box-shadow .12s" onclick="openCollectionEditor('${c.id}')" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+      <div style="width:48px;height:48px;border-radius:10px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${c.emoji||'🗂'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700;margin-bottom:2px">${c.name||'(ไม่มีชื่อ)'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.season||''} ${c.year||''}</div>
+        <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ids.length} ฉาก${sceneNames ? ': ' + sceneNames : ''}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);flex-shrink:0">แก้ไข ›</div>
+    </div>`;
+  }).join('');
+}
+
+let _colSelectedIds = new Set();
+
+function openCollectionEditor(colId) {
+  const overlay = document.getElementById('collectionEditorOverlay');
+  if (!overlay) return;
+  const isNew = !colId;
+  const col = isNew ? null : ADMIN_COLLECTIONS.find(c => c.id === colId);
+
+  // Reset fields
+  document.getElementById('col_editing_id').value = colId || '';
+  document.getElementById('col_name').value = col?.name || '';
+  document.getElementById('col_emoji').value = col?.emoji || '🗂';
+  document.getElementById('col_season').value = col?.season || '';
+  document.getElementById('col_year').value = col?.year || '';
+  document.getElementById('col_description').value = col?.description || '';
+  document.getElementById('col_color').value = col?.color || '#CC2229';
+  document.getElementById('col_cover_url').value = col?.cover_url || '';
+  document.getElementById('colDeleteBtn').style.display = isNew ? 'none' : '';
+
+  _colSelectedIds = new Set(Array.isArray(col?.scene_ids) ? col.scene_ids : []);
+
+  // Render scene picker
+  const scenes = typeof SCENES !== 'undefined' ? SCENES : [];
+  const picker = document.getElementById('colScenePicker');
+  if (picker) {
+    picker.innerHTML = scenes.map(s => {
+      const on = _colSelectedIds.has(s.id);
+      return `<div id="csp_${s.id}" onclick="_colToggleScene('${s.id}')" style="padding:7px 10px;border-radius:7px;border:1.5px solid ${on?'var(--red)':'var(--border)'};background:${on?'#FFF0F0':'var(--card)'};cursor:pointer;font-size:12px;font-weight:${on?'700':'400'};transition:all .12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.id}">${on?'✓ ':''} ${s.title||s.id}</div>`;
+    }).join('');
+  }
+  _updateColCount();
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function _colToggleScene(id) {
+  if (_colSelectedIds.has(id)) {
+    _colSelectedIds.delete(id);
+  } else {
+    _colSelectedIds.add(id);
+  }
+  const el = document.getElementById('csp_' + id);
+  if (el) {
+    const on = _colSelectedIds.has(id);
+    el.style.border = `1.5px solid ${on?'var(--red)':'var(--border)'}`;
+    el.style.background = on ? '#FFF0F0' : 'var(--card)';
+    el.style.fontWeight = on ? '700' : '400';
+    el.textContent = (on ? '✓  ' : '  ') + ((typeof SCENES !== 'undefined' ? SCENES : []).find(s=>s.id===id)?.title || id);
+  }
+  _updateColCount();
+}
+
+function _updateColCount() {
+  const el = document.getElementById('colSceneCount');
+  if (el) el.textContent = _colSelectedIds.size ? `(${_colSelectedIds.size} ฉาก)` : '';
+}
+
+function closeCollectionEditor() {
+  const overlay = document.getElementById('collectionEditorOverlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function saveCollection() {
+  const name = document.getElementById('col_name').value.trim();
+  if (!name) { showToast('⚠️ กรุณาใส่ชื่อ Collection', true); return; }
+
+  const editingId = document.getElementById('col_editing_id').value;
+  const isNew = !editingId;
+
+  const payload = {
+    name,
+    emoji: document.getElementById('col_emoji').value.trim() || '🗂',
+    season: document.getElementById('col_season').value.trim(),
+    year: document.getElementById('col_year').value.trim(),
+    description: document.getElementById('col_description').value.trim(),
+    color: document.getElementById('col_color').value.trim() || '#CC2229',
+    cover_url: document.getElementById('col_cover_url').value.trim(),
+    scene_ids: Array.from(_colSelectedIds),
+    sort_order: isNew ? (ADMIN_COLLECTIONS.length + 1) : (ADMIN_COLLECTIONS.find(c=>c.id===editingId)?.sort_order ?? 99),
+  };
+
+  if (!isNew) payload.id = editingId;
+
+  showToast('💾 กำลังบันทึก…');
+
+  if (window._supaClient) {
+    try {
+      const { error } = await window._supaClient
+        .from('collections')
+        .upsert([payload], { onConflict: 'id' });
+      if (error) throw error;
+      showToast('✅ บันทึก Collection สำเร็จ');
+    } catch(e) {
+      console.error('[saveCollection]', e);
+      showToast('❌ บันทึกไม่สำเร็จ: ' + (e.message || 'unknown error'), true);
+      return;
+    }
+  } else {
+    showToast('⚠️ ไม่ได้เชื่อม Supabase — บันทึกเฉพาะในหน่วยความจำ');
+    if (isNew) {
+      payload.id = 'COL-' + Date.now();
+      ADMIN_COLLECTIONS.push(payload);
+    } else {
+      const idx = ADMIN_COLLECTIONS.findIndex(c => c.id === editingId);
+      if (idx >= 0) ADMIN_COLLECTIONS[idx] = { ...ADMIN_COLLECTIONS[idx], ...payload };
+    }
+  }
+
+  closeCollectionEditor();
+  renderAdminCollections();
+}
+
+async function deleteCollection(colId) {
+  if (!colId) return;
+  const col = ADMIN_COLLECTIONS.find(c => c.id === colId);
+  const name = col?.name || colId;
+  if (!confirm(`ลบ Collection "${name}" ใช่ไหม?\nการลบจะไม่ลบฉากที่อยู่ใน Collection`)) return;
+
+  if (window._supaClient) {
+    try {
+      const { error } = await window._supaClient
+        .from('collections')
+        .delete()
+        .eq('id', colId);
+      if (error) throw error;
+      showToast(`🗑 ลบ "${name}" แล้ว`);
+    } catch(e) {
+      showToast('❌ ลบไม่สำเร็จ: ' + (e.message || 'error'), true);
+      return;
+    }
+  } else {
+    ADMIN_COLLECTIONS = ADMIN_COLLECTIONS.filter(c => c.id !== colId);
+    showToast(`🗑 ลบ "${name}" แล้ว (local)`);
+  }
+
+  closeCollectionEditor();
+  renderAdminCollections();
 }
 
 // ══════════════════════════════════════════════
@@ -2919,7 +3210,8 @@ function showToast(msg, type='', duration=2600) {
 // ══════════════════════════════════════════════
 function handleEditorFileDrop(e, role, sceneId) {
   e.preventDefault();
-  const zoneId = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
+  const roleKey = role === 'full' ? 'Full' : role === 'presenter' ? 'Presenter' : 'Thumb';
+  const zoneId = `uploadZone${roleKey}_${sceneId}`;
   document.getElementById(zoneId)?.classList.remove('drag-over');
   handleEditorFileSelect(e.dataTransfer.files, role, sceneId);
 }
@@ -2929,12 +3221,14 @@ async function handleEditorFileSelect(files, role, sceneId) {
   let file = files[0];
   if (!file.type.startsWith('image/')) { showToast('รองรับเฉพาะไฟล์ภาพ','red'); return; }
 
-  const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
-  const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${sceneId}`;
+  const roleKey   = role === 'full' ? 'Full' : role === 'presenter' ? 'Presenter' : 'Thumb';
+  const zoneId    = `uploadZone${roleKey}_${sceneId}`;
+  const contentId = `upload${roleKey}Content_${sceneId}`;
   const zone      = document.getElementById(zoneId);
   if (zone) { zone.classList.remove('has-file'); zone.classList.add('uploading'); }
 
-  showToast(`⏳ กำลัง convert ${role === 'full' ? 'Full Image' : 'Thumbnail'}…`);
+  const roleLabel = role === 'full' ? 'Full Image' : role === 'presenter' ? 'Presenter Image' : 'Thumbnail';
+  showToast(`⏳ กำลัง convert ${roleLabel}…`);
 
   try {
     // Convert PNG/JPG → WebP; use custom quality for thumb
@@ -2966,6 +3260,10 @@ async function handleEditorFileSelect(files, role, sceneId) {
     if (role === 'full') {
       document.getElementById('f_filepath').value = finalPath;
       updatePreview();
+    } else if (role === 'presenter') {
+      const presEl = document.getElementById('f_presenter_image_url');
+      if (presEl) presEl.value = finalPath;
+      showToast('✅ Presenter image อัปโหลดแล้ว — อย่าลืมกด Save!', 'green');
     } else {
       document.getElementById('f_thumb').value = finalPath;
     }
@@ -3015,12 +3313,13 @@ async function handleEditorFileSelect(files, role, sceneId) {
         showToast('⚠️ Upload สำเร็จ แต่ thumbnail สร้างไม่ได้: ' + e.message);
         if (thumbZone) thumbZone.classList.remove('uploading');
       }
-    } else {
+    } else if (role === 'thumb') {
       // Thumb uploaded manually → update sidebar
       const sliThumb = document.getElementById(`sli-thumb-${sceneId}`);
       if (sliThumb) { sliThumb.src = objUrl; sliThumb.style.display = ''; }
       showToast('✅ อัปโหลด Thumbnail สำเร็จ');
     }
+    // role === 'presenter': already handled above
 
   } catch(err) {
     console.error('[handleEditorFileSelect]', err);
@@ -3787,95 +4086,4 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ══════════════════════════════════════════════════════════════
-// FALSE COLOR ENGINE — IRE luminance map (DaVinci Resolve style)
-// ══════════════════════════════════════════════════════════════
-const _ADMIN_FC_ZONES = [
-  { min:0,   max:2,   r:255, g:0,   b:255 },  // Clipped Black — Magenta
-  { min:2,   max:15,  r:26,  g:26,  b:255 },  // Underexposed  — Blue
-  { min:15,  max:30,  r:0,   g:112, b:255 },  // Low mid       — Light Blue
-  { min:30,  max:42,  r:0,   g:180, b:180 },  // Shadow mid    — Cyan
-  { min:42,  max:56,  r:0,   g:200, b:0   },  // Correct       — Green
-  { min:56,  max:70,  r:200, g:200, b:0   },  // Upper mid     — Yellow
-  { min:70,  max:87,  r:255, g:140, b:0   },  // Near clip     — Orange
-  { min:87,  max:98,  r:255, g:40,  b:0   },  // Overexposed   — Red
-  { min:98,  max:101, r:255, g:255, b:255 },  // Clipped White
-];
-
-function _adminIre2Color(lum) {
-  const ire = (lum / 255) * 100;
-  for (const z of _ADMIN_FC_ZONES) {
-    if (ire >= z.min && ire < z.max) return [z.r, z.g, z.b];
-  }
-  return [255, 255, 255];
-}
-
-async function _adminRenderFalseColor(imgEl, canvasEl) {
-  return new Promise((resolve, reject) => {
-    const draw = () => {
-      const W = imgEl.naturalWidth  || imgEl.offsetWidth;
-      const H = imgEl.naturalHeight || imgEl.offsetHeight;
-      if (!W || !H) { reject('img not ready'); return; }
-      const off = document.createElement('canvas');
-      off.width = W; off.height = H;
-      const ctx = off.getContext('2d');
-      ctx.drawImage(imgEl, 0, 0, W, H);
-      const data = ctx.getImageData(0, 0, W, H);
-      const px   = data.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
-        const [r, g, b] = _adminIre2Color(lum);
-        px[i] = r; px[i+1] = g; px[i+2] = b;
-      }
-      ctx.putImageData(data, 0, 0);
-      canvasEl.width  = imgEl.offsetWidth  || W;
-      canvasEl.height = imgEl.offsetHeight || H;
-      canvasEl.getContext('2d').drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
-      resolve();
-    };
-    if (imgEl.complete && imgEl.naturalWidth) draw();
-    else {
-      imgEl.addEventListener('load', draw, { once:true });
-      imgEl.addEventListener('error', () => reject('img error'), { once:true });
-    }
-  });
-}
-
-let _adminFcActive = false;
-
-async function toggleAdminFalseColor(sceneId) {
-  const imgEl    = document.getElementById('previewImg');
-  const canvasEl = document.getElementById('editorFcCanvas');
-  const btnEl    = document.getElementById('editorFcBtn');
-  const iconEl   = document.getElementById('editorFcBtnIcon');
-  const legendEl = document.getElementById('editorFcLegend');
-  if (!imgEl || !canvasEl) return;
-
-  if (_adminFcActive) {
-    _adminFcActive = false;
-    canvasEl.classList.remove('active');
-    btnEl?.classList.remove('active');
-    legendEl?.classList.remove('show');
-    if (iconEl) iconEl.textContent = '⬛';
-  } else {
-    if (iconEl) iconEl.innerHTML = '<span class="fc-spin">⏳</span>';
-    btnEl?.classList.add('active');
-    try {
-      canvasEl.style.width  = imgEl.offsetWidth  + 'px';
-      canvasEl.style.height = imgEl.offsetHeight + 'px';
-      await _adminRenderFalseColor(imgEl, canvasEl);
-      _adminFcActive = true;
-      canvasEl.classList.add('active');
-      legendEl?.classList.add('show');
-      if (iconEl) iconEl.textContent = '🟢';
-    } catch(e) {
-      console.warn('[adminFalseColor]', e);
-      btnEl?.classList.remove('active');
-      if (iconEl) iconEl.textContent = '⬛';
-    }
-  }
-}
-
-</script>
-</body>
-</html>
+// ═════════════
