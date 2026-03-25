@@ -1282,23 +1282,22 @@ async function resolveImgOrDisk(path) {
   });
 }
 
-/** After rendering cards, async-resolve images (uses data-vp-path attribute) */
+/** After rendering cards, async-resolve images (uses data-vp-path + data-vp-fallback attributes) */
 async function resolveCardImages() {
   const imgs = document.querySelectorAll('img[data-vp-path]');
   for (const img of imgs) {
-    const path = img.dataset.vpPath;
-    if (!path) continue;
-    const url = await resolveImgOrDisk(path);
-    if (url) {
-      img.style.display = 'block';
-      img.src = url;
-      // Hide the 🎬 placeholder once we have a real image
-      const ph = img.nextElementSibling;
-      if (ph && ph.classList.contains('scene-thumb-placeholder')) {
-        ph.style.display = 'none';
-      }
+    const paths = [img.dataset.vpPath, img.dataset.vpFallback, img.dataset.vpFallback2].filter(Boolean);
+    let resolved = '';
+    for (const p of paths) {
+      const u = await resolveImgOrDisk(p);
+      if (u) { resolved = u; break; }
     }
-    // If url is empty: placeholder stays visible (correct behavior)
+    if (resolved) {
+      img.style.display = 'block';
+      img.src = resolved;
+      const ph = img.nextElementSibling;
+      if (ph && ph.classList.contains('scene-thumb-placeholder')) ph.style.display = 'none';
+    }
   }
 }
 
@@ -1446,19 +1445,24 @@ function openCollection(colId) {
 
 // ══════════ PRESENTER TOGGLE ══════════
 let _presenterState = {};
+// _presenterState: undefined/true = showing presenter (default), false = showing bare scene
 function togglePresenter(sceneId, event) {
   if (event) event.stopPropagation();
   const s = SCENES.find(sc=>sc.id===sceneId);
   if (!s||!s.presenter_image_url) return;
-  const isOn = !(_presenterState[sceneId]);
-  _presenterState[sceneId] = isOn;
-  // update card images
+  // showingPresenter starts true (default), toggle flips it
+  const wasShowingPresenter = (_presenterState[sceneId] !== false);
+  const nowShowingPresenter = !wasShowingPresenter;
+  _presenterState[sceneId] = nowShowingPresenter;
   document.querySelectorAll(`[data-presenter-id="${sceneId}"]`).forEach(btn=>{
-    btn.classList.toggle('active', isOn);
+    btn.classList.toggle('active', nowShowingPresenter);
+    // label: 🎬 = currently showing presenter (click to see bare), 🧑 = currently showing bare (click to see presenter)
+    btn.textContent = nowShowingPresenter ? '🎬' : '🧑';
+    btn.title = nowShowingPresenter ? 'สลับ: ฉากเปล่า' : 'สลับ: มีพิธีกร';
     const card = btn.closest('.scene-card');
     if (card) {
       const img = card.querySelector('.thumb-img,.scene-thumb');
-      if (img) img.src = isOn ? s.presenter_image_url : (s.thumb||s.filepath);
+      if (img) img.src = nowShowingPresenter ? s.presenter_image_url : (s.thumb||s.filepath);
     }
   });
 }
@@ -1466,12 +1470,16 @@ function toggleModalPresenterImg() {
   if (!currentModalId) return;
   const s = SCENES.find(sc=>sc.id===currentModalId);
   if (!s||!s.presenter_image_url) return;
-  const isOn = !(_presenterState[currentModalId]);
-  _presenterState[currentModalId] = isOn;
+  const wasShowingPresenter = (_presenterState[currentModalId] !== false);
+  const nowShowingPresenter = !wasShowingPresenter;
+  _presenterState[currentModalId] = nowShowingPresenter;
   const img = document.getElementById('modalImg');
-  if (img) img.src = isOn ? s.presenter_image_url : (s.filepath||s.thumb);
+  if (img) img.src = nowShowingPresenter ? s.presenter_image_url : (s.filepath||s.thumb);
   const btn = document.getElementById('modalPresenterBtn');
-  if (btn) btn.classList.toggle('active', isOn);
+  if (btn) {
+    btn.classList.toggle('active', nowShowingPresenter);
+    btn.textContent = nowShowingPresenter ? '🎬 ฉากเปล่า' : '🧑 Presenter';
+  }
 }
 
 function matchesFilters(s) {
@@ -1586,11 +1594,13 @@ function renderCards() {
       const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
       const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
       const hasPresenter = !!s.presenter_image_url;
-      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="top:7px;right:7px">🧑</button>` : '';
+      // Default image: presenter first, fallback to thumb/filepath
+      const defaultImgPath = s.presenter_image_url || s.thumb || s.filepath;
+      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="สลับ: ฉากเปล่า" style="top:7px;right:7px">🎬</button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div class="scene-thumb-wrap" style="position:relative">
-          <img class="thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
+          <img class="thumb-img" src="" data-vp-path="${defaultImgPath}" data-vp-fallback="${s.thumb||''}" data-vp-fallback2="${s.filepath||''}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
           <div class="thumb-overlay">
             <div class="thumb-overlay-id">${s.id}</div>
@@ -1610,11 +1620,12 @@ function renderCards() {
       const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
       const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
       const hasPresenter = !!s.presenter_image_url;
-      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;right:7px;padding:3px 7px;font-size:13px">🧑</button>` : '';
+      const defaultImgPathInfo = s.presenter_image_url || s.thumb || s.filepath;
+      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="สลับ: ฉากเปล่า" style="position:absolute;top:7px;right:7px;padding:3px 7px;font-size:13px">🎬</button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
-          <img class="scene-thumb thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
+          <img class="scene-thumb thumb-img" src="" data-vp-path="${defaultImgPathInfo}" data-vp-fallback="${s.thumb||''}" data-vp-fallback2="${s.filepath||''}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
           ${logoHtml}
         </div>
@@ -2049,14 +2060,16 @@ function openModal(id) {
   img.style.display = 'none';
   img.crossOrigin = 'anonymous';  // Required for false color canvas readback
   img.src = '';
-  // Resolve image URL (Supabase http URL or relative disk path)
-  const tryPaths = [s.filepath, s.thumb].filter(Boolean);
+  // Default to presenter image if available; fallback to filepath/thumb
+  const showingPresenter = (_presenterState[id] !== false);
+  const tryPaths = showingPresenter
+    ? [s.presenter_image_url, s.filepath, s.thumb].filter(Boolean)
+    : [s.filepath, s.thumb].filter(Boolean);
   (async () => {
     for (const p of tryPaths) {
       const url = await resolveImgOrDisk(p);
       if (url) { img.src = url; img.style.display = 'block'; return; }
     }
-    // Nothing found — keep hidden
   })();
 
   const usedEntries = getUsedIn(id);
@@ -2080,7 +2093,7 @@ function openModal(id) {
   document.getElementById('modalBody').innerHTML = `
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:2px">
       <div class="modal-id">${s.id}</div>
-      ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal" onclick="toggleModalPresenterImg()" title="แสดงพิธีกร">🧑 Presenter</button>` : ''}
+      ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal active" onclick="toggleModalPresenterImg()" title="สลับ: ฉากเปล่า">🎬 ฉากเปล่า</button>` : ''}
     </div>
     <div class="modal-title">${s.title}</div>
     <div class="modal-title-th">${s.title_th}</div>
