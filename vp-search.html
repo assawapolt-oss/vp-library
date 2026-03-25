@@ -51,7 +51,7 @@
   .theme-opt.active { color:var(--red); }
 
   /* ── Topbar ── */
-  .topbar { background:var(--red); box-shadow:0 2px 6px rgba(0,0,0,0.20); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
+  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
   .topbar-logo { height:28px; width:auto; display:block; object-fit:contain; filter:brightness(0) invert(1); }
   .topbar-title { font-size:15px; font-weight:700; }
   .topbar-count { font-size:12px; opacity:.7; }
@@ -264,57 +264,6 @@
   .no-rec { text-align:center; padding:48px 0; color:var(--muted); }
   .no-rec-icon { font-size:44px; margin-bottom:10px; }
 
-  /* ══════════════ PAGINATION ══════════════ */
-  #paginationBar { padding:16px 24px 28px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
-  .pg-btn { min-width:34px; height:34px; padding:0 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--card); color:var(--dark); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .12s; }
-  .pg-btn:hover { border-color:var(--red); color:var(--red); }
-  .pg-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
-  .pg-btn:disabled { opacity:.4; cursor:default; }
-
-  /* ══════════════ SHOW LOGO ON CARD ══════════════ */
-  .card-show-logo { position:absolute; top:7px; right:7px; z-index:5; width:28px; height:28px; border-radius:5px; overflow:hidden; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(3px); }
-  .card-show-logo img { width:22px; height:22px; object-fit:contain; }
-  .card-show-dot-stack { position:absolute; top:7px; right:7px; z-index:5; display:flex; flex-direction:column; gap:3px; }
-  .card-show-dot-item { width:8px; height:8px; border-radius:50%; border:1.5px solid rgba(255,255,255,.6); }
-
-  /* ══════════════ PRESENTER TOGGLE ══════════════ */
-  .presenter-toggle-btn {
-    position:absolute; z-index:8;
-    background:rgba(0,0,0,.62); color:#fff; border:1.5px solid rgba(255,255,255,.25);
-    border-radius:6px; padding:3px 7px; font-size:10px; font-weight:700;
-    cursor:pointer; font-family:inherit; letter-spacing:.03em;
-    backdrop-filter:blur(4px); transition:background .15s, border-color .15s;
-    display:flex; align-items:center; gap:4px; line-height:1.2;
-  }
-  .presenter-toggle-btn:hover { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.5); }
-  .presenter-toggle-btn.active { background:rgba(37,99,235,.85); border-color:#60A5FA; }
-  /* position variants */
-  .ptbtn-card { top:7px; right:7px; }
-  .ptbtn-modal { top:10px; right:52px; }
-
-  /* ══════════════ COLLECTION ══════════════ */
-  .col-header { margin-bottom:24px; }
-  .col-header h2 { font-size:20px; font-weight:700; margin-bottom:4px; }
-  .col-header p { font-size:13px; color:var(--muted); }
-  .col-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; margin-bottom:32px; }
-  .col-card { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; cursor:pointer; transition:transform .18s, box-shadow .18s, border-color .18s; }
-  .col-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.12); border-color:var(--red); }
-  .col-card-cover { width:100%; aspect-ratio:16/6; object-fit:cover; background:linear-gradient(135deg,#1A1A2E,#2D2D4E); display:block; }
-  .col-card-body { padding:16px; }
-  .col-card-meta { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
-  .col-card-title { font-size:16px; font-weight:700; margin-bottom:4px; }
-  .col-card-sub { font-size:12px; color:var(--muted); margin-bottom:10px; }
-  .col-card-count { font-size:11px; font-weight:600; color:var(--red); }
-  .col-empty { text-align:center; padding:60px; color:var(--muted); }
-  .col-empty-icon { font-size:48px; margin-bottom:12px; }
-
-  /* ══════════════ VIDEO INLINE PREVIEW ══════════════ */
-  .video-inline-thumb { position:relative; width:100%; border-radius:8px; overflow:hidden; background:#000; margin-top:8px; cursor:pointer; }
-  .video-inline-thumb img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; }
-  .video-inline-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); transition:background .15s; }
-  .video-inline-thumb:hover .video-inline-play { background:rgba(0,0,0,.55); }
-  .video-inline-play-icon { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.92); display:flex; align-items:center; justify-content:center; font-size:16px; }
-
   /* ══════════════ FALSE COLOR ══════════════ */
   .fc-wrap { position:relative; display:inline-block; width:100%; }
   .fc-canvas { position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .2s; }
@@ -347,6 +296,31 @@
   .modal-overlay.open { display:flex; }
   .modal { background:var(--card); border-radius:16px; max-width:700px; width:100%; max-height:90vh; overflow-y:auto; }
   .modal-img { width:100%; max-height:420px; object-fit:contain; border-radius:16px 16px 0 0; background:#111; display:block; }
+  /* pagination */
+  #paginationBar { padding:16px 24px 28px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+  .pg-btn { min-width:34px; height:34px; padding:0 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--card); color:var(--dark); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .12s; }
+  .pg-btn:hover { border-color:var(--red); color:var(--red); }
+  .pg-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
+  .pg-btn:disabled { opacity:.4; cursor:default; }
+  /* show logo on card */
+  .card-show-logo { position:absolute; top:7px; right:7px; z-index:5; width:28px; height:28px; border-radius:5px; overflow:hidden; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(3px); }
+  .card-show-logo img { width:22px; height:22px; object-fit:contain; }
+  /* presenter toggle button */
+  .presenter-toggle-btn { position:absolute; z-index:6; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; border:1.5px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; cursor:pointer; backdrop-filter:blur(3px); transition:all .15s; }
+  .presenter-toggle-btn:hover { background:rgba(204,34,41,.85); border-color:var(--red); }
+  .presenter-toggle-btn.active { background:var(--red); border-color:var(--red); }
+  .ptbtn-card { bottom:40px; right:7px; }
+  .ptbtn-modal { margin-left:8px; position:static; font-size:12px; padding:4px 10px; border-radius:7px; border:1.5px solid var(--border); background:var(--card); color:var(--dark); }
+  /* video inline thumb */
+  .video-inline-thumb { position:relative; width:100%; border-radius:8px; overflow:hidden; background:#000; margin-top:8px; cursor:pointer; }
+  .video-inline-thumb img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; }
+  .video-inline-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); transition:background .15s; }
+  .video-inline-thumb:hover .video-inline-play { background:rgba(0,0,0,.55); }
+  .video-inline-play-icon { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.92); display:flex; align-items:center; justify-content:center; font-size:16px; }
+  /* collection cards */
+  .col-card { background:var(--card); border-radius:14px; border:1px solid var(--border); overflow:hidden; cursor:pointer; transition:box-shadow .15s,transform .12s; }
+  .col-card:hover { box-shadow:0 8px 28px rgba(0,0,0,.13); transform:translateY(-2px); }
+  .col-card-cover { width:100%; aspect-ratio:16/9; object-fit:cover; background:var(--tag-bg); display:block; }
   .modal-body { padding:24px; }
   .modal-id { font-size:11px; font-weight:700; color:var(--red); letter-spacing:.08em; }
   .modal-title { font-size:20px; font-weight:700; margin:6px 0 4px; }
@@ -817,38 +791,30 @@
       <button class="clear-btn" id="shuffleBtn" onclick="shuffleScenes()" title="สุ่มดูฉาก" style="display:flex;align-items:center;gap:4px">🔀 Shuffle</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <!-- Per-page selector -->
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
-        <span>แสดง</span>
-        <select id="perPageSelect" onchange="setPerPage(+this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--card);color:var(--dark);cursor:pointer;outline:none;">
-          <option value="20" selected>20</option>
-          <option value="10">10</option>
-          <option value="40">40</option>
-          <option value="0">ทั้งหมด</option>
-        </select>
-        <span>ฉาก/หน้า</span>
-      </div>
-      <div class="view-toggle">
-        <button class="vtbtn active" id="vtInfo" onclick="setView('info')">📋 Info Mode</button>
-        <button class="vtbtn" id="vtThumb" onclick="setView('thumb')">🖼 Visual Mode</button>
-      </div>
+      <span style="font-size:12px;color:var(--muted)">แสดง</span>
+      <select id="perPageSelect" onchange="setPerPage(+this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--card);color:var(--dark);cursor:pointer;outline:none;">
+        <option value="20" selected>20</option>
+        <option value="10">10</option>
+        <option value="40">40</option>
+        <option value="0">ทั้งหมด</option>
+      </select>
+      <span style="font-size:12px;color:var(--muted)">ฉาก/หน้า</span>
+      <button class="vtbtn active" id="vtInfo" onclick="setView('info')">📋 Info Mode</button>
+      <button class="vtbtn" id="vtThumb" onclick="setView('thumb')">🖼 Visual Mode</button>
     </div>
   </div>
   <div class="grid" id="sceneGrid"></div>
-  <!-- Pagination bar -->
-  <div id="paginationBar" style="display:none;padding:16px 24px 28px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"></div>
+  <div id="paginationBar" style="display:none"></div>
 </div>
 
 <!-- ══════════════ SERVICE REQUEST MODE ══════════════ -->
 <div id="modeService" class="hidden">
-  <div style="height:calc(100vh - 108px);position:relative;">
-    <iframe src="vp-service-request.html" style="width:100%;height:100%;border:none;display:block;" title="VP Service Request"></iframe>
-  </div>
+  <iframe src="vp-service-request.html" style="width:100%;height:calc(100vh - 130px);border:none;display:block;"></iframe>
 </div>
 
 <!-- ══════════════ COLLECTION MODE ══════════════ -->
 <div id="modeCollection" class="hidden">
-  <div id="collectionView" style="padding:24px 24px 48px;max-width:1100px;margin:0 auto;"></div>
+  <div id="collectionView" style="padding:28px;max-width:1200px;margin:0 auto;"></div>
 </div>
 
 <!-- ══════════════ RECOMMEND MODE ══════════════ -->
@@ -949,10 +915,6 @@
       <div class="modal-img-wrap fc-wrap" id="modalImgWrap" onclick="openLs(currentModalId)" style="cursor:zoom-in">
         <img id="modalImg" class="modal-img" src="" alt="" crossorigin="anonymous">
         <canvas id="modalFcCanvas" class="fc-canvas" style="border-radius:16px 16px 0 0"></canvas>
-        <!-- Presenter toggle button (shown only when scene has presenter_image_url) -->
-        <button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal" style="display:none" onclick="togglePresenter(currentModalId, event);toggleModalPresenterImg()" title="แสดงพิธีกร">
-          🧑 Presenter
-        </button>
         <button id="modalFcBtn" class="fc-btn" onclick="toggleFalseColor('modal');event.stopPropagation()" title="False Color — IRE luminance map">
           <span id="modalFcBtnIcon">⬛</span> FALSE COLOR
         </button>
@@ -1272,9 +1234,9 @@ async function _loadScenes() {
             world: def.world||'', energy: def.energy||'',
             context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
             show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
-            video_url: r.video_url||def.video_url||'', notes: r.description||def.notes||'',
+            video_url: r.video_url||def.video_url||'',
             presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
-            lighting_blueprint: r.lighting_blueprint||null,
+            notes: r.description||def.notes||'',
           });
         });
 
@@ -1371,8 +1333,102 @@ function clearAll() {
   _collectionFilter = null; _collectionName = '';
   currentPage = 1;
   const btn = document.getElementById('shuffleBtn');
-  if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+  if (btn) { btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
   renderCards();
+}
+
+// ══════════ SHUFFLE ══════════
+let _shuffleActive = false, _shuffleOrder = [];
+function shuffleScenes() {
+  _shuffleActive = true;
+  _shuffleOrder = [...SCENES].sort(()=>Math.random()-.5).map(s=>s.id);
+  currentPage = 1;
+  const btn = document.getElementById('shuffleBtn');
+  if (btn) { btn.style.background='var(--red)'; btn.style.color='#fff'; btn.style.borderColor='var(--red)'; }
+  renderCards();
+}
+
+// ══════════ PAGINATION ══════════
+let currentPage = 1, perPage = 20;
+function setPerPage(n) { perPage = n; currentPage = 1; renderCards(); }
+function goPage(p) { currentPage = p; renderCards(); document.getElementById('modeSearch')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+function renderPagination(total) {
+  const bar = document.getElementById('paginationBar');
+  if (!bar) return;
+  if (!perPage || total <= perPage) { bar.style.display='none'; return; }
+  bar.style.display='flex';
+  const totalPages = Math.ceil(total / perPage);
+  let html = `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  const range = 2;
+  for (let i=1; i<=totalPages; i++) {
+    if (i===1||i===totalPages||Math.abs(i-currentPage)<=range) html+=`<button class="pg-btn${i===currentPage?' active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if (Math.abs(i-currentPage)===range+1) html+=`<span style="padding:0 4px;color:var(--muted)">…</span>`;
+  }
+  html += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
+  bar.innerHTML = html;
+}
+
+// ══════════ COLLECTIONS ══════════
+let COLLECTIONS = [], _collectionFilter = null, _collectionName = '';
+async function loadCollections() {
+  if (!window._supaClient) return;
+  try {
+    const { data, error } = await window._supaClient.from('collections').select('*').order('sort_order',{ascending:true});
+    if (!error) COLLECTIONS = data||[];
+  } catch(e) { COLLECTIONS = []; }
+}
+async function renderCollections() {
+  await loadCollections();
+  const el = document.getElementById('collectionView');
+  if (!el) return;
+  if (!COLLECTIONS.length) {
+    el.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:48px;margin-bottom:12px">🗂</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">ยังไม่มี Collection</div><div style="font-size:13px">Admin สามารถสร้าง Collection ได้ในหน้า Admin</div></div>`;
+    return;
+  }
+  el.innerHTML=`<div style="margin-bottom:20px"><div style="font-size:18px;font-weight:700;margin-bottom:4px">🗂 Collections</div><div style="font-size:13px;color:var(--muted)">เลือก Collection เพื่อดูฉากในกลุ่มนั้น</div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">`+COLLECTIONS.map(c=>{
+    const accent=c.color||'var(--red)';
+    return `<div class="col-card" onclick="openCollection('${c.id}')"><div style="padding:20px;display:flex;align-items:center;gap:14px"><div style="width:44px;height:44px;border-radius:10px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${c.emoji||'🗂'}</div><div><div style="font-size:14px;font-weight:700">${c.name}</div><div style="font-size:12px;color:var(--muted)">${c.season||''} ${c.year||''} · ${(c.scene_ids||[]).length} ฉาก</div></div></div></div>`;
+  }).join('')+`</div>`;
+}
+function openCollection(colId) {
+  const col = COLLECTIONS.find(c=>c.id===colId);
+  if (!col) return;
+  const ids = Array.isArray(col.scene_ids) ? col.scene_ids : [];
+  _collectionFilter = new Set(ids);
+  _collectionName = col.name||'Collection';
+  currentPage = 1;
+  switchMode('search');
+  renderCards();
+}
+
+// ══════════ PRESENTER TOGGLE ══════════
+let _presenterState = {};
+function togglePresenter(sceneId, event) {
+  if (event) event.stopPropagation();
+  const s = SCENES.find(sc=>sc.id===sceneId);
+  if (!s||!s.presenter_image_url) return;
+  const isOn = !(_presenterState[sceneId]);
+  _presenterState[sceneId] = isOn;
+  // update card images
+  document.querySelectorAll(`[data-presenter-id="${sceneId}"]`).forEach(btn=>{
+    btn.classList.toggle('active', isOn);
+    const card = btn.closest('.scene-card');
+    if (card) {
+      const img = card.querySelector('.thumb-img,.scene-thumb');
+      if (img) img.src = isOn ? s.presenter_image_url : (s.thumb||s.filepath);
+    }
+  });
+}
+function toggleModalPresenterImg() {
+  if (!currentModalId) return;
+  const s = SCENES.find(sc=>sc.id===currentModalId);
+  if (!s||!s.presenter_image_url) return;
+  const isOn = !(_presenterState[currentModalId]);
+  _presenterState[currentModalId] = isOn;
+  const img = document.getElementById('modalImg');
+  if (img) img.src = isOn ? s.presenter_image_url : (s.filepath||s.thumb);
+  const btn = document.getElementById('modalPresenterBtn');
+  if (btn) btn.classList.toggle('active', isOn);
 }
 
 function matchesFilters(s) {
@@ -1426,127 +1482,98 @@ function showSkeletons(n) {
 }
 
 function renderCards() {
-  // Reset shuffle style if filter/search changed
   const q = document.getElementById('searchInput').value.trim();
-  if (q || Object.values(filters).some(v => v !== 'all') || _collectionFilter) {
-    if (_shuffleActive && !q && !_collectionFilter) {
-      // keep shuffle
-    } else {
-      _shuffleActive = false;
-      _shuffleOrder = [];
+  // If search/filter active, disable shuffle
+  if (q || Object.values(filters).some(v=>v!=='all')) {
+    if (_shuffleActive) {
+      _shuffleActive = false; _shuffleOrder = [];
       const btn = document.getElementById('shuffleBtn');
-      if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+      if (btn) { btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
     }
   }
 
-  // Base list — shuffle or collection or normal
-  let baseList = SCENES;
+  // Base list
+  let baseList;
   if (_collectionFilter) {
-    baseList = SCENES.filter(s => _collectionFilter.has(s.id));
+    baseList = SCENES.filter(s=>_collectionFilter.has(s.id));
   } else if (_shuffleActive && _shuffleOrder.length) {
-    baseList = _shuffleOrder;
+    baseList = _shuffleOrder.map(id=>SCENES.find(s=>s.id===id)).filter(Boolean);
+  } else {
+    baseList = SCENES;
   }
 
   const filtered = baseList.filter(matchesFilters);
 
-  // Show count
-  let countLabel = `แสดง ${filtered.length} จาก ${SCENES.length} ฉาก`;
-  if (_collectionFilter && _collectionName) countLabel = `🗂 ${_collectionName} — ${filtered.length} ฉาก <button onclick="_collectionFilter=null;_collectionName='';renderCards()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--card);font-family:inherit;">✕ ปิด Collection</button>`;
+  // Count label
+  let countLabel = `แสดง ${filtered.length} จาก ${SCENES.length} scenes`;
+  if (_collectionFilter && _collectionName) countLabel = `🗂 ${_collectionName} — ${filtered.length} ฉาก <button onclick="_collectionFilter=null;_collectionName='';renderCards()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--card);font-family:inherit;">✕ ปิด</button>`;
   document.getElementById('resultCount').innerHTML = countLabel;
 
   // Debounced search log
   if (q) {
     clearTimeout(_searchLogTimer);
-    _searchLogTimer = setTimeout(() => {
-      logActivity('search', { query: q, results: filtered.length });
-    }, 1500);
-  }
-
-  const grid = document.getElementById('sceneGrid');
-  grid.classList.toggle('thumb-mode', viewMode === 'thumb');
-
-  if (!filtered.length) {
-    grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><div class="nr-text">ไม่พบ scene ที่ตรงกับ filter</div><div class="nr-sub">ลองเปลี่ยน keyword หรือล้าง filter</div></div>`;
-    renderPagination(0);
-    return;
+    _searchLogTimer = setTimeout(() => { logActivity('search', { query: q, results: filtered.length }); }, 1500);
   }
 
   // Pagination slice
   const total = filtered.length;
-  const pageList = perPage ? filtered.slice((currentPage-1)*perPage, currentPage*perPage) : filtered;
+  const start = perPage ? (currentPage-1)*perPage : 0;
+  const paged = perPage ? filtered.slice(start, start+perPage) : filtered;
 
   renderPagination(total);
 
-  // Show skeletons briefly then render real cards
-  showSkeletons(Math.min(pageList.length, 10));
+  const grid = document.getElementById('sceneGrid');
+  grid.classList.toggle('thumb-mode', viewMode === 'thumb');
+
+  if (!paged.length) {
+    grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><div class="nr-text">ไม่พบ scene ที่ตรงกับ filter</div><div class="nr-sub">ลองเปลี่ยน keyword หรือล้าง filter</div></div>`;
+    return;
+  }
+
+  showSkeletons(Math.min(paged.length, 10));
   setTimeout(() => {
     grid.classList.toggle('thumb-mode', viewMode === 'thumb');
-
     let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
+    const WORLD_LBL  = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
+    const ENERGY_LBL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
+    const CTX_LBL    = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
 
   if (viewMode === 'thumb') {
-    // ── Thumbnail mode ──
-    grid.innerHTML = pageList.map(s => {
-      // Show logo overlay (top-right)
-      const sceneShows = _shows.filter(sh => (s.show_ids||[]).includes(sh.id));
-      const logoShow = sceneShows.find(sh => sh.logo_url);
-      const showLogoHtml = logoShow
-        ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>`
-        : (sceneShows.length ? `<div class="card-show-dot-stack" style="top:7px;right:7px;position:absolute;z-index:5">${sceneShows.map(sh=>`<div class="card-show-dot-item" style="background:${sh.color||'#9ca3af'}" title="${sh.name}"></div>`).join('')}</div>` : '');
-      // Presenter toggle (if has presenter_image_url)
-      const hasPresenter = !!(s.presenter_image_url);
-      const presenterBtn = hasPresenter
-        ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร">🧑 Presenter</button>`
-        : '';
+    grid.innerHTML = paged.map(s => {
+      const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
+      const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
+      const hasPresenter = !!s.presenter_image_url;
+      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="top:7px;right:7px">🧑</button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div class="scene-thumb-wrap" style="position:relative">
-          <img class="thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" data-presenter-img="${s.id}" alt="${s.title}" style="display:none">
+          <img class="thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
-          ${showLogoHtml}
-          ${presenterBtn}
           <div class="thumb-overlay">
             <div class="thumb-overlay-id">${s.id}</div>
             <div class="thumb-overlay-title">${s.title}</div>
             <div class="thumb-overlay-title-th">${s.title_th}</div>
           </div>
+          ${logoHtml}${presenterBtn}
         </div>
-      </div>`}).join('');
+      </div>`;
+    }).join('');
   } else {
-    // ── Info mode ──
-    const WORLD_LBL  = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
-    const ENERGY_LBL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
-    const CTX_LBL    = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
-
-    grid.innerHTML = pageList.map(s => {
+    grid.innerHTML = paged.map(s => {
       const worldTag  = s.world  ? `<span class="stag stag-env">${WORLD_LBL[s.world]||s.world}</span>` : '';
       const energyTag = s.energy ? `<span class="stag stag-mood">${ENERGY_LBL[s.energy]||s.energy}</span>` : '';
       const ctxTags   = (s.context_tags||[]).slice(0,2).map(c=>`<span class="stag stag-editorial">${CTX_LBL[c]||c}</span>`).join('');
-
-      // Show logo (top-right of thumb) — prefer logo_url, fallback to color dot
-      const sceneShows = _shows.filter(sh => (s.show_ids||[]).includes(sh.id));
-      const logoShow = sceneShows.find(sh => sh.logo_url);
-      const showLogoHtml = logoShow
-        ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>`
-        : '';
-      // Show dots in scene-id row (no logo)
-      const showDots = !logoShow
-        ? sceneShows.map(sh=>`<span title="${sh.name}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color||'#9ca3af'};flex-shrink:0"></span>`).join('')
-        : '';
-
-      // Presenter toggle button
-      const hasPresenter = !!(s.presenter_image_url);
-      const presenterBtn = hasPresenter
-        ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="top:7px;right:7px">🧑</button>`
-        : '';
-
+      const showDots  = _shows.filter(sh=>(s.show_ids||[]).includes(sh.id)).map(sh=>`<span title="${sh.name}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color||'#9ca3af'};flex-shrink:0"></span>`).join('');
+      const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
+      const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
+      const hasPresenter = !!s.presenter_image_url;
+      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร">🧑 Presenter</button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
-          <img class="scene-thumb thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" data-presenter-img="${s.id}" alt="${s.title}" style="display:none">
+          <img class="scene-thumb thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
-          ${showLogoHtml}
-          ${presenterBtn}
+          ${logoHtml}${presenterBtn}
         </div>
         <div class="scene-body">
           <div class="scene-id" style="display:flex;align-items:center;gap:5px">
@@ -1556,15 +1583,14 @@ function renderCards() {
           <div class="scene-title">${s.title}</div>
           <div class="scene-title-th">${s.title_th}</div>
           <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
+          ${s.notes ? `<div class="notes-box">${s.notes}</div>` : ''}
         </div>
       </div>`;
     }).join('');
   }
 
-  // Async: resolve image URLs
   resolveCardImages();
-
-  }, 180); // skeleton duration
+  }, 180);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1990,19 +2016,6 @@ function openModal(id) {
     // Nothing found — keep hidden
   })();
 
-  // ── Presenter toggle button setup in modal ──
-  const modalPresenterBtn = document.getElementById('modalPresenterBtn');
-  if (modalPresenterBtn) {
-    if (s.presenter_image_url) {
-      modalPresenterBtn.style.display = 'flex';
-      const isOn = !!_presenterState[id];
-      modalPresenterBtn.classList.toggle('active', isOn);
-      modalPresenterBtn.setAttribute('data-presenter-id', id);
-    } else {
-      modalPresenterBtn.style.display = 'none';
-    }
-  }
-
   const usedEntries = getUsedIn(id);
   const uiBadge = usedEntries.length ? `<span class="ui-count-badge">${usedEntries.length}</span>` : '';
 
@@ -2022,7 +2035,10 @@ function openModal(id) {
   const CTX_LABEL    = {'news-report':'📰 News & Report','talk-interview':'🎙 Talk & Interview','analysis-data':'📊 Analysis & Data','field-onsite':'🌍 Field & On-Site','opener-drama':'🎬 Opener & Drama','social-short':'📱 Social & Short','event-special':'🏆 Event & Special'}
 
   document.getElementById('modalBody').innerHTML = `
-    <div class="modal-id">${s.id}</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:2px">
+      <div class="modal-id">${s.id}</div>
+      ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal" onclick="toggleModalPresenterImg()" title="แสดงพิธีกร">🧑 Presenter</button>` : ''}
+    </div>
     <div class="modal-title">${s.title}</div>
     <div class="modal-title-th">${s.title_th}</div>
 
@@ -2045,25 +2061,23 @@ function openModal(id) {
       </div>
     </div>
 
+    <div class="modal-section"><div class="modal-section-title">📁 File Path</div><div class="path-box">${s.filepath}</div></div>
 
     ${s.notes?`<div class="modal-section"><div class="modal-section-title">📝 Production Notes</div><div class="modal-notes">${s.notes}</div></div>`:''}
 
     <!-- ── Video Preview ── -->
     <div class="modal-section">
-      ${s.video_url ? (() => {
-        // ── Inline small preview (thumbnail + play icon) ──
-        const ytM = s.video_url.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
-        const thumbUrl = ytM ? \`https://img.youtube.com/vi/\${ytM[1]}/mqdefault.jpg\` : '';
-        return \`<div class="modal-section-title" style="margin-bottom:6px">▶️ Video Preview <span style="color:var(--green);font-size:9px;font-weight:700;margin-left:6px">● มีวิดีโอ</span></div>
-        <div class="video-inline-thumb" onclick="document.getElementById('vid-body-\${id}').classList.add('open');document.getElementById('vid-chev-\${id}').classList.add('open');event.stopPropagation()">
-          \${thumbUrl ? \`<img src="\${thumbUrl}" alt="video preview" onerror="this.parentElement.style.display='none'">\` : \`<div style="aspect-ratio:16/9;background:#111;display:flex;align-items:center;justify-content:center;font-size:32px">🎬</div>\`}
-          <div class="video-inline-play"><div class="video-inline-play-icon">▶</div></div>
-        </div>\`;
-      })() : ''}
-      <div class="video-collapse-header" onclick="toggleVideoCollapse('${id}')" style="${s.video_url ? 'margin-top:8px' : ''}">
-        <div class="modal-section-title" style="margin-bottom:0">${s.video_url ? '🔽 ขยาย Player เต็มขนาด' : '▶️ Video Preview'}</div>
+      <div class="video-collapse-header" onclick="toggleVideoCollapse('${id}')">
+        <div class="modal-section-title" style="margin-bottom:0">▶️ Video Preview${s.video_url ? ' <span style="color:var(--green);font-size:9px;font-weight:700;margin-left:6px">● มีวิดีโอ</span>' : ''}</div>
         <span class="video-collapse-chevron" id="vid-chev-${id}">▼</span>
       </div>
+      ${(()=>{
+        if (!s.video_url) return '';
+        const ytMatch = s.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?]+)/);
+        if (!ytMatch) return '';
+        const ytId = ytMatch[1];
+        return `<div class="video-inline-thumb" onclick="document.getElementById('vid-body-${id}').classList.add('open');document.getElementById('vid-chev-${id}').classList.add('open');event.stopPropagation()"><img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="video preview"><div class="video-inline-play"><div class="video-inline-play-icon">▶</div></div></div>`;
+      })()}
       <div class="video-collapse-body" id="vid-body-${id}">
         ${s.video_url ? `<div class="video-embed-wrap"><iframe src="${videoEmbedUrlJs(s.video_url)}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe></div>` : `<div class="video-no-link">🎬 ยังไม่มี video preview<br><span style="font-size:11px">Admin สามารถเพิ่ม YouTube/Vimeo link ได้ในหน้า Admin</span></div>`}
       </div>
@@ -2113,21 +2127,6 @@ function openModal(id) {
     }
     lbInitCanvasForScene(id);
   });
-}
-
-// Toggle modal main image between base + presenter
-function toggleModalPresenterImg() {
-  const s = SCENES.find(x => x.id === currentModalId);
-  if (!s || !s.presenter_image_url) return;
-  const img = document.getElementById('modalImg');
-  if (!img) return;
-  const isOn = _presenterState[currentModalId];
-  if (isOn && s.presenter_image_url) {
-    img.src = s.presenter_image_url;
-  } else {
-    const base = s.filepath || s.thumb;
-    (async () => { const url = await resolveImgOrDisk(base); if (url) img.src = url; })();
-  }
 }
 
 function closeModal(e) {
@@ -2189,20 +2188,6 @@ document.addEventListener('keydown',e=>{
 // ══════════ LIGHTING BLUEPRINT ══════════
 const LB_KEY = 'vp_lighting_v1';
 
-// ── Supabase LB helpers ──────────────────────────────────────
-const _LB_SUPA_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
-const _LB_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
-async function _saveLBToSupabase(sceneId, data) {
-  try {
-    if (typeof supabase === 'undefined') return;
-    const _sc = window._lbSupaClient || (() => {
-      window._lbSupaClient = supabase.createClient(_LB_SUPA_URL, _LB_SUPA_KEY);
-      return window._lbSupaClient;
-    })();
-    await _sc.from('scenes').update({ lighting_blueprint: data }).eq('id', sceneId);
-  } catch(e) { console.warn('LB Supabase save failed:', e); }
-}
-
 // Default blueprint — includes positions (0-1 of canvas), diffuser, blackflag
 function lbDefault() {
   return {
@@ -2256,34 +2241,16 @@ const LB_FX_OPTIONS = [
 ];
 
 function getAllLB() {
-  // Merge Supabase data (from SCENES) with localStorage cache
-  const lsData = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
-  const merged = { ...lsData };
-  // Supabase data wins over localStorage
-  if (window.SCENES) {
-    for (const s of SCENES) {
-      if (s.lighting_blueprint) merged[s.id] = s.lighting_blueprint;
-    }
-  }
-  return merged;
+  try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; }
 }
 function getLB(id) {
-  // First check SCENES (Supabase data)
-  const scene = window.SCENES && SCENES.find(x => x.id === id);
-  if (scene && scene.lighting_blueprint) return JSON.parse(JSON.stringify(scene.lighting_blueprint));
-  // Fallback to localStorage
-  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
+  const all = getAllLB();
   return all[id] ? JSON.parse(JSON.stringify(all[id])) : lbDefault();
 }
 function saveLB(id, data) {
-  // Save to localStorage immediately (fast)
-  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
+  const all = getAllLB();
   all[id] = data;
   localStorage.setItem(LB_KEY, JSON.stringify(all));
-  // Update SCENES cache so same session reflects change
-  if (window.SCENES) { const s = SCENES.find(x=>x.id===id); if(s) s.lighting_blueprint = data; }
-  // Save to Supabase async (durable)
-  _saveLBToSupabase(id, data);
 }
 
 function isAdmin() {
@@ -2478,7 +2445,7 @@ function renderLightingBlueprint(sceneId) {
           <span class="lb-saved-flash" id="lb-saved-${sceneId}">✓ Saved!</span>
           <button class="lb-btn lb-btn-export" onclick="lbExportAll()">↗ Export All JSON</button>
         ` : `
-          <span class="lb-readonly-badge">🔒 Edit ได้เฉพาะ Admin / Editor</span>
+          <span class="lb-readonly-badge">🔒 Editor/Admin เท่านั้นที่ edit ได้</span>
           ${hasData ? `<button class="lb-btn lb-btn-export" style="margin-left:0" onclick="lbExportAll()">↗ Export</button>` : ''}
         `}
       </div>
@@ -2686,14 +2653,8 @@ function lbSave(sceneId) {
 function lbReset(sceneId) {
   if (!confirm('Reset Lighting Blueprint เป็นค่า default?')) return;
   delete _lbDraft[sceneId];
-  // Clear from localStorage
-  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
-  delete all[sceneId];
+  const all = getAllLB(); delete all[sceneId];
   localStorage.setItem(LB_KEY, JSON.stringify(all));
-  // Clear from SCENES cache
-  if (window.SCENES) { const s = SCENES.find(x=>x.id===sceneId); if(s) s.lighting_blueprint = null; }
-  // Clear from Supabase
-  _saveLBToSupabase(sceneId, null);
   openModal(sceneId);
 }
 function lbExportAll() {
@@ -3523,174 +3484,6 @@ async function doLogin() {
 }
 
 // Load users DB, then init user session
-// ══════════════════════════════════════════════════════════════
-// SHUFFLE
-// ══════════════════════════════════════════════════════════════
-let _shuffleActive = false;
-let _shuffleOrder = [];
-
-function shuffleScenes() {
-  _shuffleActive = true;
-  _shuffleOrder = [...SCENES].sort(() => Math.random() - 0.5);
-  currentPage = 1;
-  renderCards();
-  const btn = document.getElementById('shuffleBtn');
-  if (btn) { btn.style.background = 'var(--red)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--red)'; }
-  // reset shuffle on any filter change (handled in renderCards)
-}
-
-// ══════════════════════════════════════════════════════════════
-// PAGINATION
-// ══════════════════════════════════════════════════════════════
-let currentPage = 1;
-let perPage = 20; // 0 = all
-
-function setPerPage(n) {
-  perPage = n;
-  currentPage = 1;
-  renderCards();
-}
-
-function renderPagination(total) {
-  const bar = document.getElementById('paginationBar');
-  if (!bar) return;
-  if (!perPage || total <= perPage) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
-  const totalPages = Math.ceil(total / perPage);
-  if (totalPages <= 1) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
-  bar.style.display = 'flex';
-  let html = `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
-  for (let i = 1; i <= totalPages; i++) {
-    if (totalPages > 7 && Math.abs(i - currentPage) > 2 && i !== 1 && i !== totalPages) {
-      if (i === 2 && currentPage > 4) { html += `<span style="padding:0 4px;color:var(--muted)">…</span>`; continue; }
-      if (i === totalPages - 1 && currentPage < totalPages - 3) { html += `<span style="padding:0 4px;color:var(--muted)">…</span>`; continue; }
-      if (Math.abs(i - currentPage) > 2) continue;
-    }
-    html += `<button class="pg-btn${i===currentPage?' active':''}" onclick="goPage(${i})">${i}</button>`;
-  }
-  html += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
-  bar.innerHTML = html;
-}
-
-function goPage(p) {
-  const filtered = SCENES.filter(matchesFilters);
-  const totalPages = perPage ? Math.ceil(filtered.length / perPage) : 1;
-  currentPage = Math.max(1, Math.min(p, totalPages));
-  renderCards();
-  document.getElementById('modeSearch')?.scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-// ══════════════════════════════════════════════════════════════
-// COLLECTION (frontend display — data from Supabase collections table)
-// ══════════════════════════════════════════════════════════════
-let COLLECTIONS = [];
-let _collectionsLoaded = false;
-
-async function loadCollections() {
-  if (_collectionsLoaded) return;
-  try {
-    if (typeof supabase !== 'undefined') {
-      const _sc = supabase.createClient(
-        'https://pgaqdqbjyewwckpslyvx.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
-      );
-      const { data, error } = await _sc.from('collections')
-        .select('*')
-        .order('sort_order', { ascending: true });
-      if (!error && data) {
-        COLLECTIONS = data;
-        _collectionsLoaded = true;
-        return;
-      }
-    }
-  } catch(e) {}
-  COLLECTIONS = [];
-  _collectionsLoaded = true;
-}
-
-async function renderCollections() {
-  const view = document.getElementById('collectionView');
-  if (!view) return;
-  view.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:8px">⏳</div><div style="font-size:13px;font-weight:600">กำลังโหลด Collections…</div></div>`;
-  await loadCollections();
-
-  if (!COLLECTIONS.length) {
-    view.innerHTML = `
-      <div class="col-header">
-        <h2>🗂 Collections</h2>
-        <p>กลุ่มฉากที่คัดเลือกตาม Season หรือ Theme พิเศษ</p>
-      </div>
-      <div class="col-empty"><div class="col-empty-icon">📭</div><div style="font-size:15px;font-weight:600">ยังไม่มี Collection</div><div style="font-size:13px;margin-top:4px">Admin สามารถสร้าง Collection ได้ในหน้า Admin → Collections</div></div>`;
-    return;
-  }
-
-  let html = `<div class="col-header"><h2>🗂 Collections</h2><p>กลุ่มฉากที่คัดเลือกตาม Season หรือ Theme พิเศษ — คลิกเพื่อดูฉากทั้งหมดในกลุ่ม</p></div><div class="col-grid">`;
-  COLLECTIONS.forEach(col => {
-    const sceneCount = (col.scene_ids || []).length;
-    const coverImg = col.cover_url || '';
-    html += `
-      <div class="col-card" onclick="openCollection('${col.id}')">
-        ${coverImg
-          ? `<img class="col-card-cover" src="${coverImg}" alt="${col.name}" onerror="this.style.display='none'">`
-          : `<div class="col-card-cover" style="background:linear-gradient(135deg,${col.color||'#CC2229'}33,${col.color||'#1A1A2E'});display:flex;align-items:center;justify-content:center;font-size:40px">${col.emoji||'🎬'}</div>`
-        }
-        <div class="col-card-body">
-          <div class="col-card-meta">${col.season||''} ${col.year||''}</div>
-          <div class="col-card-title">${col.name}</div>
-          <div class="col-card-sub">${col.description||''}</div>
-          <div class="col-card-count">▶ ${sceneCount} ฉาก</div>
-        </div>
-      </div>`;
-  });
-  html += '</div>';
-  view.innerHTML = html;
-}
-
-function openCollection(colId) {
-  const col = COLLECTIONS.find(c => c.id === colId);
-  if (!col) return;
-  const ids = col.scene_ids || [];
-  if (!ids.length) { alert('Collection นี้ยังไม่มีฉาก'); return; }
-  // Switch to search mode and filter to these scene IDs
-  switchMode('search');
-  // Apply collection filter: override SCENES render temporarily
-  _collectionFilter = new Set(ids);
-  _collectionName = col.name;
-  renderCards();
-}
-let _collectionFilter = null;
-let _collectionName = '';
-
-// ══════════════════════════════════════════════════════════════
-// PRESENTER TOGGLE (per-scene, uses presenter_image_url field)
-// ══════════════════════════════════════════════════════════════
-const _presenterState = {}; // { sceneId: bool }
-
-function togglePresenter(sceneId, event) {
-  if (event) event.stopPropagation();
-  _presenterState[sceneId] = !_presenterState[sceneId];
-  // Update all presenter toggle buttons for this scene
-  document.querySelectorAll(`[data-presenter-id="${sceneId}"]`).forEach(btn => {
-    const on = _presenterState[sceneId];
-    btn.classList.toggle('active', on);
-    btn.title = on ? 'ซ่อนพิธีกร (คลิกเพื่อ toggle)' : 'แสดงพิธีกร (คลิกเพื่อ toggle)';
-  });
-  // Update images
-  document.querySelectorAll(`[data-presenter-img="${sceneId}"]`).forEach(imgEl => {
-    const s = SCENES.find(x => x.id === sceneId);
-    if (!s) return;
-    const on = _presenterState[sceneId];
-    if (on && s.presenter_image_url) {
-      imgEl.src = s.presenter_image_url;
-    } else {
-      const base = s.filepath || s.thumb;
-      (async () => {
-        const url = await resolveImgOrDisk(base);
-        if (url) imgEl.src = url;
-      })();
-    }
-  });
-}
-
 loadUsers().then(() => initUser());
 
 // ── Viewer-mode UI restrictions ──
@@ -3846,4 +3639,96 @@ function renderFalseColor(imgEl, canvasEl) {
       const H = imgEl.naturalHeight || imgEl.height || imgEl.offsetHeight;
       if (!W || !H) { reject('img not loaded'); return; }
 
-      // Use offscreen canvas for pixel work the
+      // Use offscreen canvas for pixel work then copy to display canvas
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const ctx = off.getContext('2d');
+
+      // Draw source image
+      ctx.drawImage(imgEl, 0, 0, W, H);
+      const data = ctx.getImageData(0, 0, W, H);
+      const px   = data.data;
+
+      // Process each pixel
+      for (let i = 0; i < px.length; i += 4) {
+        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+        const [r, g, b] = _ire2color(lum);
+        px[i]   = r;
+        px[i+1] = g;
+        px[i+2] = b;
+        // px[i+3] alpha unchanged (keep 255)
+      }
+      ctx.putImageData(data, 0, 0);
+
+      // Size display canvas to match the rendered img element (CSS size)
+      canvasEl.width  = imgEl.offsetWidth  || W;
+      canvasEl.height = imgEl.offsetHeight || H;
+      const dispCtx = canvasEl.getContext('2d');
+      dispCtx.drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
+      resolve();
+    };
+
+    if (imgEl.complete && imgEl.naturalWidth) {
+      draw();
+    } else {
+      imgEl.addEventListener('load', draw, { once: true });
+      imgEl.addEventListener('error', () => reject('img load error'), { once: true });
+    }
+  });
+}
+
+// State: which contexts have FC active
+const _fcState = { modal: false, ls: false };
+
+async function toggleFalseColor(ctx) {
+  const isActive = _fcState[ctx];
+  const imgEl    = document.getElementById(ctx === 'modal' ? 'modalImg'    : 'lsImg');
+  const canvasEl = document.getElementById(ctx === 'modal' ? 'modalFcCanvas' : 'lsFcCanvas');
+  const btnEl    = document.getElementById(ctx === 'modal' ? 'modalFcBtn'  : 'lsFcBtn');
+  const iconEl   = document.getElementById(ctx === 'modal' ? 'modalFcBtnIcon' : 'lsFcBtnIcon');
+  const legendEl = document.getElementById(ctx === 'modal' ? 'modalFcLegend' : 'lsFcLegend');
+  if (!imgEl || !canvasEl) return;
+
+  if (isActive) {
+    // Turn OFF
+    _fcState[ctx] = false;
+    canvasEl.classList.remove('active');
+    btnEl?.classList.remove('active');
+    legendEl?.classList.remove('show');
+    if (iconEl) iconEl.textContent = '⬛';
+  } else {
+    // Turn ON — render then show
+    if (iconEl) iconEl.innerHTML = '<span class="fc-spin">⏳</span>';
+    btnEl?.classList.add('active');
+    try {
+      // Size canvas to match display element
+      canvasEl.style.width  = imgEl.offsetWidth  + 'px';
+      canvasEl.style.height = imgEl.offsetHeight + 'px';
+      await renderFalseColor(imgEl, canvasEl);
+      _fcState[ctx] = true;
+      canvasEl.classList.add('active');
+      legendEl?.classList.add('show');
+      if (iconEl) iconEl.textContent = '🟢';
+    } catch(e) {
+      console.warn('[falseColor]', e);
+      btnEl?.classList.remove('active');
+      if (iconEl) iconEl.textContent = '⬛';
+    }
+  }
+}
+
+/** Reset FC state when modal/lightbox closes */
+function resetFalseColor(ctx) {
+  _fcState[ctx] = false;
+  const canvasEl = document.getElementById(ctx === 'modal' ? 'modalFcCanvas' : 'lsFcCanvas');
+  const btnEl    = document.getElementById(ctx === 'modal' ? 'modalFcBtn'    : 'lsFcBtn');
+  const iconEl   = document.getElementById(ctx === 'modal' ? 'modalFcBtnIcon': 'lsFcBtnIcon');
+  const legendEl = document.getElementById(ctx === 'modal' ? 'modalFcLegend' : 'lsFcLegend');
+  if (canvasEl) { canvasEl.classList.remove('active'); }
+  if (btnEl)    { btnEl.classList.remove('active'); }
+  if (iconEl)   { iconEl.textContent = '⬛'; }
+  if (legendEl) { legendEl.classList.remove('show'); }
+}
+</script>
+</body>
+</html>
