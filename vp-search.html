@@ -724,9 +724,9 @@
 <!-- Unified Nav Bar -->
 <div class="nav-bar">
   <div class="nav-left">
+    <button class="mode-tab service-tab" id="tabService" onclick="switchMode('service')" style="background:var(--red);color:#fff;border-radius:8px 8px 0 0;margin-right:6px;border-bottom:3px solid var(--red)">📋 Service Request</button>
     <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">🔍 ค้นหาฉาก</button>
     <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">✨ แนะนำฉาก</button>
-    <button class="mode-tab" id="tabService" onclick="switchMode('service')">📋 Service Request</button>
     <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">🗂 Collection</button>
   </div>
   <div class="nav-right">
@@ -1567,15 +1567,16 @@ function renderCards() {
       const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
       const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
       const hasPresenter = !!s.presenter_image_url;
-      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร">🧑 Presenter</button>` : '';
+      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;right:7px;padding:3px 7px;font-size:13px">🧑</button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
           <img class="scene-thumb thumb-img" src="" data-vp-path="${s.thumb||s.filepath}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
-          ${logoHtml}${presenterBtn}
+          ${logoHtml}
         </div>
-        <div class="scene-body">
+        <div class="scene-body" style="position:relative">
+          ${presenterIconInfo}
           <div class="scene-id" style="display:flex;align-items:center;gap:5px">
             ${s.id}
             ${showDots ? `<span style="display:flex;gap:3px;align-items:center;margin-left:2px">${showDots}</span>` : ''}
@@ -1583,7 +1584,6 @@ function renderCards() {
           <div class="scene-title">${s.title}</div>
           <div class="scene-title-th">${s.title_th}</div>
           <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
-          ${s.notes ? `<div class="notes-box">${s.notes}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -2061,9 +2061,6 @@ function openModal(id) {
       </div>
     </div>
 
-    <div class="modal-section"><div class="modal-section-title">📁 File Path</div><div class="path-box">${s.filepath}</div></div>
-
-    ${s.notes?`<div class="modal-section"><div class="modal-section-title">📝 Production Notes</div><div class="modal-notes">${s.notes}</div></div>`:''}
 
     <!-- ── Video Preview ── -->
     <div class="modal-section">
@@ -3123,8 +3120,8 @@ function lbAttachDragListeners(canvas, sceneId, redraw) {
     const isTouch=!!e.touches;
     const hit=getHit(x,y,isTouch);
     if (!hit) return;
-    // non-admin can only move presenters
-    if (!isAdmin() && hit.type!=='presenter') return;
+    // only editor/admin can drag; viewer = read-only
+    if (!isEditor()) return;
     e.preventDefault(); downPos={x,y,isTouch};
     const d=lbGetDraft(sceneId);
     if (hit.type==='fixture') {
@@ -3196,7 +3193,7 @@ function lbAttachDragListeners(canvas, sceneId, redraw) {
   }
 
   function onUp(e) {
-    if (downPos && isAdmin()) {
+    if (downPos && isEditor()) {
       const {x,y}=pos(e);
       // touch events jitter more — use larger threshold for touch
       const isTouch = downPos.isTouch || !!e.changedTouches;
@@ -3216,7 +3213,7 @@ function lbAttachDragListeners(canvas, sceneId, redraw) {
 
   function onHover(e) {
     if (dragging) return;
-    const {x,y}=pos(e), hit=(isAdmin()||true)?getHit(x,y):null;
+    const {x,y}=pos(e), hit=isEditor()?getHit(x,y):null;
     if (!hit) { canvas.style.cursor='default'; return; }
     const del=['flag-del','diff-del','fur-del'];
     const rsz=['flag-resize','diff-resize','fur-resize','stage-resize'];
