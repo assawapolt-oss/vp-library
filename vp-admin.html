@@ -2408,7 +2408,6 @@ async function renderAdminCollections() {
     </div>`;
     return;
   }
-  const scenes = typeof SCENES !== 'undefined' ? SCENES : [];
   listEl.innerHTML = ADMIN_COLLECTIONS.map(c => {
     const ids = Array.isArray(c.scene_ids) ? c.scene_ids : [];
     const sceneNames = ids.slice(0, 3).map(id => {
@@ -2510,17 +2509,34 @@ function openCollectionEditor(colId) {
 
   _initEmojiPanel();
   _colSelectedIds = new Set(Array.isArray(col?.scene_ids) ? col.scene_ids : []);
-  _colRenderScenePicker('');
-  _updateColCount();
 
+  // Show overlay first so user sees the modal immediately
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // If scenes not loaded yet, show loading state then render when ready
+  if (!scenes || scenes.length === 0) {
+    const picker = document.getElementById('colScenePicker');
+    if (picker) picker.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted)"><div style="font-size:24px;margin-bottom:8px">⏳</div><div>กำลังโหลดฉาก...</div></div>`;
+    // poll until scenes array is populated (loaded by initAdmin)
+    const wait = setInterval(() => {
+      if (scenes && scenes.length > 0) {
+        clearInterval(wait);
+        _colRenderScenePicker(document.getElementById('colSceneSearch')?.value || '');
+        _updateColCount();
+      }
+    }, 300);
+    setTimeout(() => clearInterval(wait), 10000); // safety timeout
+  } else {
+    _colRenderScenePicker('');
+    _updateColCount();
+  }
 }
 
 function _colRenderScenePicker(query) {
   const picker = document.getElementById('colScenePicker');
   if (!picker) return;
-  const sceneList = typeof SCENES !== 'undefined' ? SCENES : [];
+  const sceneList = scenes || [];
   const q = (query || '').toLowerCase();
   const filtered = q ? sceneList.filter(s => (s.title||'').toLowerCase().includes(q) || (s.title_th||'').toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : sceneList;
   if (!filtered.length) {
@@ -2598,7 +2614,6 @@ async function saveCollection() {
     cover_url: document.getElementById('col_cover_url').value.trim(),
     scene_ids: [..._colSelectedIds],
     sort_order: isNew ? (ADMIN_COLLECTIONS.length + 1) * 10 : (ADMIN_COLLECTIONS.find(c=>c.id===editingId)?.sort_order || 999),
-    updated_at: new Date().toISOString(),
   };
 
   if (window._supaClient) {
