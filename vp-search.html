@@ -51,7 +51,7 @@
   .theme-opt.active { color:var(--red); }
 
   /* ── Topbar ── */
-  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
+  .topbar { background:linear-gradient(135deg, #c0392b 0%, var(--red) 45%, #e8453c 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.18); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
   .topbar-logo { height:28px; width:auto; display:block; object-fit:contain; filter:brightness(0) invert(1); }
   .topbar-title { font-size:15px; font-weight:700; }
   .topbar-count { font-size:12px; opacity:.7; }
@@ -1188,6 +1188,7 @@ async function _loadScenes() {
             context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
             show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
             video_url: def.video_url||'', notes: r.description||def.notes||'',
+            lighting_blueprint: r.lighting_blueprint||null,
           });
         });
 
@@ -1397,7 +1398,6 @@ function renderCards() {
           <div class="scene-title">${s.title}</div>
           <div class="scene-title-th">${s.title_th}</div>
           <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
-          ${s.notes ? `<div class="notes-box">${s.notes}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -1874,7 +1874,6 @@ function openModal(id) {
       </div>
     </div>
 
-    <div class="modal-section"><div class="modal-section-title">📁 File Path</div><div class="path-box">${s.filepath}</div></div>
 
     ${s.notes?`<div class="modal-section"><div class="modal-section-title">📝 Production Notes</div><div class="modal-notes">${s.notes}</div></div>`:''}
 
@@ -1994,6 +1993,20 @@ document.addEventListener('keydown',e=>{
 // ══════════ LIGHTING BLUEPRINT ══════════
 const LB_KEY = 'vp_lighting_v1';
 
+// ── Supabase LB helpers ──────────────────────────────────────
+const _LB_SUPA_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const _LB_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+async function _saveLBToSupabase(sceneId, data) {
+  try {
+    if (typeof supabase === 'undefined') return;
+    const _sc = window._lbSupaClient || (() => {
+      window._lbSupaClient = supabase.createClient(_LB_SUPA_URL, _LB_SUPA_KEY);
+      return window._lbSupaClient;
+    })();
+    await _sc.from('scenes').update({ lighting_blueprint: data }).eq('id', sceneId);
+  } catch(e) { console.warn('LB Supabase save failed:', e); }
+}
+
 // Default blueprint — includes positions (0-1 of canvas), diffuser, blackflag
 function lbDefault() {
   return {
@@ -2047,16 +2060,34 @@ const LB_FX_OPTIONS = [
 ];
 
 function getAllLB() {
-  try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; }
+  // Merge Supabase data (from SCENES) with localStorage cache
+  const lsData = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
+  const merged = { ...lsData };
+  // Supabase data wins over localStorage
+  if (window.SCENES) {
+    for (const s of SCENES) {
+      if (s.lighting_blueprint) merged[s.id] = s.lighting_blueprint;
+    }
+  }
+  return merged;
 }
 function getLB(id) {
-  const all = getAllLB();
+  // First check SCENES (Supabase data)
+  const scene = window.SCENES && SCENES.find(x => x.id === id);
+  if (scene && scene.lighting_blueprint) return JSON.parse(JSON.stringify(scene.lighting_blueprint));
+  // Fallback to localStorage
+  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
   return all[id] ? JSON.parse(JSON.stringify(all[id])) : lbDefault();
 }
 function saveLB(id, data) {
-  const all = getAllLB();
+  // Save to localStorage immediately (fast)
+  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
   all[id] = data;
   localStorage.setItem(LB_KEY, JSON.stringify(all));
+  // Update SCENES cache so same session reflects change
+  if (window.SCENES) { const s = SCENES.find(x=>x.id===id); if(s) s.lighting_blueprint = data; }
+  // Save to Supabase async (durable)
+  _saveLBToSupabase(id, data);
 }
 
 function isAdmin() {
@@ -2459,8 +2490,14 @@ function lbSave(sceneId) {
 function lbReset(sceneId) {
   if (!confirm('Reset Lighting Blueprint เป็นค่า default?')) return;
   delete _lbDraft[sceneId];
-  const all = getAllLB(); delete all[sceneId];
+  // Clear from localStorage
+  const all = (() => { try { return JSON.parse(localStorage.getItem(LB_KEY)||'{}'); } catch(e) { return {}; } })();
+  delete all[sceneId];
   localStorage.setItem(LB_KEY, JSON.stringify(all));
+  // Clear from SCENES cache
+  if (window.SCENES) { const s = SCENES.find(x=>x.id===sceneId); if(s) s.lighting_blueprint = null; }
+  // Clear from Supabase
+  _saveLBToSupabase(sceneId, null);
   openModal(sceneId);
 }
 function lbExportAll() {

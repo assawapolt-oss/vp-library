@@ -29,7 +29,7 @@
   .login-error.show { display:block; }
 
   /* ══ TOPBAR ══ */
-  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:50; }
+  .topbar { background:linear-gradient(135deg, #c0392b 0%, var(--red) 45%, #e8453c 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.18); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:50; }
   .topbar-left { display:flex; align-items:center; gap:16px; }
   .topbar-title { font-size:15px; font-weight:700; }
   .topbar-badge { font-size:10px; font-weight:700; background:rgba(255,255,255,.2); padding:2px 9px; border-radius:10px; letter-spacing:.04em; }
@@ -42,7 +42,7 @@
   .admin-layout { display:flex; height:calc(100vh - 52px); }
 
   /* ── Sidebar ── */
-  .sidebar { width:280px; min-width:280px; background:#fff; border-right:1px solid var(--border); overflow-y:auto; }
+  .sidebar { width:340px; min-width:320px; background:#fff; border-right:1px solid var(--border); overflow-y:auto; }
   .sidebar-header { padding:16px 16px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
   .sidebar-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
   .add-scene-btn { padding:5px 12px; background:var(--dark); color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .12s; }
@@ -719,7 +719,7 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
 
   if (ok) {
-    sessionStorage.setItem(SESSION_KEY, u);
+    localStorage.setItem(SESSION_KEY, u);
     err.classList.remove('show');
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('adminUI').classList.remove('hidden');
@@ -736,7 +736,7 @@ async function doLogin() {
 }
 
 function doLogout() {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
   document.getElementById('adminUI').classList.add('hidden');
   document.getElementById('exportBar').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -1082,13 +1082,13 @@ function _supaRowToScene(r) {
 /** Upsert scenes + shows ทั้งหมดขึ้น Supabase */
 async function _supaUpsertAll() {
   if (!window._supaClient) return;
-  const rows = scenes.map(s => ({
+  const rows = scenes.map((s, i) => ({
     id: s.id,
     show_id: (Array.isArray(s.show_ids)&&s.show_ids.length>0) ? s.show_ids[0] : null,
     title: s.title||'', category: s.location_type||'',
     tags: [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
     image_url: s.filepath||'', thumb_url: s.thumb||'',
-    description: s.notes||'', sort_order: 0,
+    description: s.notes||'', sort_order: (i + 1) * 10,
   }));
   await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
 
@@ -1591,7 +1591,12 @@ function openNewSceneModal() {
   document.getElementById('newSceneFilepathRow').style.display = 'none';
   document.getElementById('newFilepath').value = '';
   document.getElementById('importFileInput').value = '';
-  setTimeout(() => document.getElementById('newId').focus(), 100);
+  setTimeout(() => {
+    const ni = document.getElementById('newId');
+    if (!ni.value || ni.value === 'VP-') ni.value = 'VP-';
+    ni.focus();
+    ni.setSelectionRange(ni.value.length, ni.value.length);
+  }, 100);
 }
 function closeNewModal() {
   document.getElementById('newSceneOverlay').classList.remove('open');
@@ -1899,7 +1904,7 @@ async function createNewScene() {
   saveScenes();
   closeNewModal();
   // Reset modal state
-  document.getElementById('newId').value='';
+  document.getElementById('newId').value='VP-';
   document.getElementById('newTitle').value='';
   document.getElementById('newTitleTh').value='';
   if (document.getElementById('importFileInput')) {
@@ -2556,12 +2561,14 @@ function renderUserCards() {
         </div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;font-family:'IBM Plex Sans',monospace;">${uname}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${info.name || '(ไม่มีชื่อ)'} · Role: <strong style="color:${info.role==='admin'?'var(--red)':'var(--dark)'}">${info.role}</strong></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${info.name || '(ไมมีชื่อ)'} · Role: <strong style="color:${info.role==='admin'?'var(--red)':'var(--dark)'}">${info.role}</strong></div>
           <div style="font-size:11px;color:var(--muted);margin-top:1px;">สร้างเมื่อ: ${info.created || 'ไม่ระบุ'}</div>
+          <div id="pw-display-${uname}" style="display:none;margin-top:4px;font-size:10px;font-family:monospace;color:#888;word-break:break-all;background:#F3F4F6;border-radius:4px;padding:2px 5px;">${info.hash ? info.hash.slice(0,16)+'…' : '—'} <span style="color:#bbb;font-size:9px">(SHA-256, ดูได้แค่นี้)</span></div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0;">
+        <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;">
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" title="แสดง/ซ่อน password hash" onclick="(()=>{const d=document.getElementById('pw-display-${uname}');d.style.display=d.style.display==='none'?'block':'none';this.textContent=d.style.display==='none'?'🔑':'🔒'})()">🔑</button>
           <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="openEditUserModal('${uname}')">✏️ แก้ไข</button>
-          ${uname !== sessionStorage.getItem(SESSION_KEY) ? `<button class="btn-delete" style="padding:6px 12px;font-size:12px;" onclick="deleteUser('${uname}')">🗑</button>` : '<span style="font-size:11px;color:var(--muted);padding:6px 8px;">(ตัวเอง)</span>'}
+          ${uname !== localStorage.getItem(SESSION_KEY) ? `<button class="btn-delete" style="padding:6px 12px;font-size:12px;" onclick="deleteUser('${uname}')">🗑</button>` : '<span style="font-size:11px;color:var(--muted);padding:6px 8px;">(ตัวเอง)</span>'}
         </div>
       </div>
     `).join('');
@@ -3756,7 +3763,7 @@ async function loadImageAsBase64ForOllama(imgPath) {
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
   await loadUsersDB(false);
-  const sess = sessionStorage.getItem(SESSION_KEY);
+  const sess = localStorage.getItem(SESSION_KEY);
   const isValidAdmin = ADMIN_USERS_DB && ADMIN_USERS_DB[sess] && ADMIN_USERS_DB[sess].role === 'admin';
   if (sess && isValidAdmin) {
     document.getElementById('loginScreen').classList.add('hidden');

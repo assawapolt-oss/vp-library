@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VP Service Request — THE STANDARD</title>
+<link rel="icon" href="tsd_logo.webp">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #D9232E;
+    --dark: #1A1A2E;
+    --border: #E5E7EB;
+    --muted: #9CA3AF;
+    --bg: #F8F9FA;
+    --white: #FFFFFF;
+    --green: #10B981;
+    --yellow: #F59E0B;
+    --blue: #3B82F6;
+  }
+  body { font-family: 'Segoe UI', 'Inter', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; }
+
+  /* ── Topbar ── */
+  .topbar {
+    background: linear-gradient(135deg, #c0392b 0%, var(--red) 45%, #e8453c 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.18);
+    color: #fff; padding: 0 24px; display: flex; align-items: center;
+    justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-logo { height: 28px; filter: brightness(0) invert(1); }
+  .topbar-title { font-size: 15px; font-weight: 700; }
+  .topbar-badge { font-size: 10px; font-weight: 700; background: rgba(255,255,255,.2); padding: 2px 9px; border-radius: 10px; }
+  .topbar-right a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 13px; }
+  .topbar-right a:hover { color: #fff; }
+
+  /* ── Workflow banner ── */
+  .workflow-bar {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; overflow-x: auto;
+  }
+  .workflow-steps {
+    display: flex; align-items: center; gap: 0; min-width: max-content;
+  }
+  .wf-step {
+    display: flex; align-items: center; gap: 8px;
+    background: #F3F4F6; border-radius: 8px; padding: 6px 14px;
+    font-size: 12px; font-weight: 600; color: var(--dark);
+    white-space: nowrap;
+  }
+  .wf-step.active { background: var(--red); color: #fff; }
+  .wf-step .wf-dur { font-size: 10px; opacity: .7; font-weight: 400; margin-left: 4px; }
+  .wf-arrow { font-size: 14px; color: var(--muted); margin: 0 6px; }
+
+  /* ── Main layout ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 800; color: var(--dark); }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+  .tab { padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: color .15s, border-color .15s; }
+  .tab.active { color: var(--red); border-bottom-color: var(--red); }
+  .tab:hover:not(.active) { color: var(--dark); }
+
+  /* ── Form card ── */
+  .form-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 32px; margin-bottom: 20px;
+  }
+  .form-card-title {
+    font-size: 14px; font-weight: 700; color: var(--dark);
+    margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 600; color: #374151; }
+  .form-label span { font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .form-input, .form-select, .form-textarea {
+    padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 13px; font-family: inherit; outline: none; background: #fff;
+    transition: border-color .15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--red); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .char-count { font-size: 10px; color: var(--muted); text-align: right; margin-top: 2px; }
+
+  /* ── Platform checkboxes ── */
+  .checkbox-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .checkbox-pill {
+    display: flex; align-items: center; gap: 6px;
+    border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 13px;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+    user-select: none;
+  }
+  .checkbox-pill input { display: none; }
+  .checkbox-pill.checked { border-color: var(--red); background: #FFF0F0; color: var(--red); }
+
+  /* ── Stage selector ── */
+  .stage-selector { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .stage-btn {
+    padding: 7px 16px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+    background: #fff; color: var(--muted);
+  }
+  .stage-btn.selected { border-color: var(--red); background: var(--red); color: #fff; }
+
+  /* ── Status badge ── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  }
+  .status-brief      { background: #EFF6FF; color: #2563EB; }
+  .status-visual     { background: #FFF7ED; color: #C2410C; }
+  .status-virtual    { background: #F5F3FF; color: #7C3AED; }
+  .status-shooting   { background: #ECFDF5; color: #065F46; }
+  .status-done       { background: #F0FDF4; color: #15803D; }
+  .status-fixer      { background: #FEF2F2; color: var(--red); }
+
+  /* ── Request list ── */
+  .request-table { width: 100%; border-collapse: collapse; }
+  .request-table th {
+    text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); padding: 10px 14px;
+    border-bottom: 2px solid var(--border); background: #FAFAFA;
+  }
+  .request-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .request-table tr:last-child td { border-bottom: none; }
+  .request-table tr:hover td { background: #FAFAFA; }
+  .rt-id { font-family: monospace; font-weight: 700; font-size: 12px; color: var(--red); }
+  .rt-prog { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; }
+  .rt-prog-bar { flex: 1; height: 4px; background: #E5E7EB; border-radius: 4px; overflow: hidden; min-width: 80px; }
+  .rt-prog-fill { height: 100%; background: var(--red); border-radius: 4px; transition: width .4s; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: var(--red); color: #fff; border: none; border-radius: 10px;
+    padding: 11px 26px; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary {
+    background: #fff; color: var(--dark); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 9px 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: border-color .15s;
+  }
+  .btn-secondary:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 24px; background: var(--dark); color: #fff;
+    padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,.25); z-index: 999;
+    transform: translateY(80px); opacity: 0; transition: all .25s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.green { background: var(--green); }
+  .toast.red { background: var(--red); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 640px;
+    max-height: 90vh; overflow-y: auto; padding: 28px 32px;
+    transform: translateY(20px); transition: transform .2s;
+  }
+  .modal-overlay.open .modal-box { transform: translateY(0); }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state .empty-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+
+  /* ── Loading ── */
+  .loading-row td { text-align: center; padding: 40px; color: var(--muted); }
+
+  @media (max-width: 680px) {
+    .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+    .main { padding: 16px 14px 40px; }
+    .form-card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo" onerror="this.style.display='none'">
+    <span class="topbar-title">VP Service Request</span>
+    <span class="topbar-badge">VIRTUAL PRODUCTION</span>
+  </div>
+  <div class="topbar-right">
+    <a href="vp-search.html">← VP Library</a>
+  </div>
+</div>
+
+<!-- Workflow pipeline banner -->
+<div class="workflow-bar">
+  <div class="workflow-steps">
+    <div class="wf-step" id="wf-brief">📋 Brief &amp; Consultant<span class="wf-dur">1 วัน</span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step" id="wf-visual">🎨 Visual Producing<span class="wf-dur">2 วัน</span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step" id="wf-virtual">💻 Virtual Producing<span class="wf-dur">2 วัน</span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step" id="wf-shooting">🎬 Shooting<span class="wf-dur">2 ชม. ก่อนถ่าย</span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step" id="wf-done">✅ Done<span class="wf-dur">วันเดียวกัน</span></div>
+    <span style="font-size:13px;color:var(--muted);margin:0 6px;">/ หรือ</span>
+    <div class="wf-step" id="wf-fixer">🔧 Fixer<span class="wf-dur">2 วัน</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div class="page-title">📝 VP Service Request</div>
+    <div class="page-sub">ยื่น Request สำหรับงาน Virtual Production — ทีม VP จะติดต่อกลับภายใน 1 วัน</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-new" onclick="switchTab('new')">➕ ยื่น Request ใหม่</div>
+    <div class="tab" id="tab-list" onclick="switchTab('list')">📋 รายการ Requests (<span id="listCount">…</span>)</div>
+  </div>
+
+  <!-- === NEW REQUEST FORM === -->
+  <div id="pane-new">
+
+    <!-- Project Info -->
+    <div class="form-card">
+      <div class="form-card-title">📁 ข้อมูลโปรเจกต์</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">ชื่อโปรแกรม / Show <span>*</span></label>
+          <input class="form-input" id="f_show" placeholder="เช่น THE STANDARD SHOW">
+        </div>
+        <div class="form-group">
+          <label class="form-label">วันที่ถ่ายทำ <span>*</span></label>
+          <input class="form-input" id="f_shoot_date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ผู้ยื่น Request <span>*</span></label>
+          <input class="form-input" id="f_requester" placeholder="ชื่อ-นามสกุล">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ทีม / ฝ่าย</label>
+          <input class="form-input" id="f_team" placeholder="เช่น Editorial, Content, News">
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Brief -->
+    <div class="form-card">
+      <div class="form-card-title">💡 Key Messages &amp; Concept</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Key Messages <span>* — อยากสื่อสารอะไร?</span></label>
+          <textarea class="form-textarea" id="f_key_messages" placeholder="เช่น: ต้องการพื้นหลังที่ดูเทคโนโลยีล้ำ แสดงความก้าวหน้าในยุค AI..." oninput="updateCharCount(this,'kmc')"></textarea>
+          <div class="char-count" id="kmc">0 / 500 chars</div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Mood &amp; Tone <span>— บรรยากาศและสไตล์ที่ต้องการ</span></label>
+          <textarea class="form-textarea" id="f_mood_tone" placeholder="เช่น: ดูดิจิทัล สะอาด เป็นมืออาชีพ ไม่เป็นทางการมากเกินไป มีพลัง..." oninput="updateCharCount(this,'mtc')" style="min-height:60px"></textarea>
+          <div class="char-count" id="mtc">0 / 300 chars</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VP Requirements -->
+    <div class="form-card">
+      <div class="form-card-title">🎬 รายละเอียด Virtual Production</div>
+      <div class="form-grid cols-3">
+        <div class="form-group">
+          <label class="form-label">จำนวนฉาก <span>*</span></label>
+          <input class="form-input" id="f_scene_count" type="number" min="1" max="20" placeholder="เช่น 3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ความยาว Clip <span>ต่อฉาก</span></label>
+          <input class="form-input" id="f_clip_length" placeholder="เช่น 30 วิ / 1 นาที">
+        </div>
+        <div class="form-group">
+          <label class="form-label">จำนวนผู้ดำเนินรายการ</label>
+          <input class="form-input" id="f_host_count" type="number" min="1" max="10" placeholder="1">
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label class="form-label">Platform / Format <span>*</span></label>
+          <div class="checkbox-group" id="platformGroup">
+            <label class="checkbox-pill" onclick="togglePill(this)">
+              <input type="checkbox" value="16:9"> 📺 16:9 Landscape
+            </label>
+            <label class="checkbox-pill" onclick="togglePill(this)">
+              <input type="checkbox" value="9:16"> 📱 9:16 Portrait
+            </label>
+            <label class="checkbox-pill" onclick="togglePill(this)">
+              <input type="checkbox" value="both"> 🔲 Both
+            </label>
+            <label class="checkbox-pill" onclick="togglePill(this)">
+              <input type="checkbox" value="1:1"> ⬛ 1:1 Square
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ฉากที่ต้องการ <span>เลือกจาก VP Library ได้</span></label>
+          <input class="form-input" id="f_scene_ids" placeholder="เช่น VP-001, VP-005, VP-012">
+        </div>
+      </div>
+    </div>
+
+    <!-- References -->
+    <div class="form-card">
+      <div class="form-card-title">🔗 References &amp; หมายเหตุ</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">ลิงก์ References <span>YouTube, Vimeo, Drive, etc.</span></label>
+          <textarea class="form-textarea" id="f_references" placeholder="วาง URL ได้เลย หลาย link ใส่ทีละบรรทัด" style="min-height:60px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">หมายเหตุเพิ่มเติม</label>
+          <textarea class="form-textarea" id="f_notes" placeholder="ข้อมูลที่อยากให้ทีม VP รู้เพิ่มเติม..." style="min-height:60px" oninput="updateCharCount(this,'nc')"></textarea>
+          <div class="char-count" id="nc">0 / 400 chars</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:8px">
+      <button class="btn-secondary" onclick="resetForm()">🗑 ล้างฟอร์ม</button>
+      <button class="btn-primary" id="submitBtn" onclick="submitRequest()">📤 ส่ง Service Request</button>
+    </div>
+  </div>
+
+  <!-- === REQUESTS LIST === -->
+  <div id="pane-list" style="display:none">
+    <div class="form-card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+        <input class="form-input" id="listSearch" placeholder="🔍 ค้นหา show หรือ ผู้ยื่น..." style="max-width:300px;" oninput="filterList()">
+        <select class="form-select" id="listFilter" style="max-width:180px;" onchange="filterList()">
+          <option value="">ทุก Status</option>
+          <option value="brief">Brief & Consultant</option>
+          <option value="visual">Visual Producing</option>
+          <option value="virtual">Virtual Producing</option>
+          <option value="shooting">Shooting</option>
+          <option value="done">Done</option>
+          <option value="fixer">Fixer</option>
+        </select>
+        <button class="btn-secondary" style="margin-left:auto;padding:7px 14px;font-size:12px;" onclick="loadRequests()">🔄 รีเฟรช</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="request-table">
+          <thead>
+            <tr>
+              <th>REQ ID</th>
+              <th>Show / Program</th>
+              <th>ผู้ยื่น</th>
+              <th>วันถ่าย</th>
+              <th>ฉาก</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="requestsTbody">
+            <tr class="loading-row"><td colspan="8">⏳ กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="modal-title" id="detailTitle">Request Detail</div>
+      <button onclick="closeDetail()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="detailBody"></div>
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--muted)">อัพเดต Stage (Admin)</div>
+      <div class="stage-selector" id="stageSelector"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn-secondary" onclick="closeDetail()">ปิด</button>
+        <button class="btn-primary" onclick="saveStageUpdate()">💾 บันทึก Stage</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase ────────────────────────────────────────────────
+const SUPA_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _sc = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── State ──────────────────────────────────────────────────
+let allRequests = [];
+let currentDetailId = null;
+
+const STAGES = [
+  { key: 'brief',    label: '📋 Brief & Consultant', dur: '1 วัน' },
+  { key: 'visual',   label: '🎨 Visual Producing',   dur: '2 วัน' },
+  { key: 'virtual',  label: '💻 Virtual Producing',  dur: '2 วัน' },
+  { key: 'shooting', label: '🎬 Shooting',            dur: '2 ชม. ก่อนถ่าย' },
+  { key: 'done',     label: '✅ Done',               dur: 'วันเดียวกัน' },
+  { key: 'fixer',    label: '🔧 Fixer',              dur: '2 วัน' },
+];
+const STAGE_PROG = { brief:10, visual:30, virtual:55, shooting:80, done:100, fixer:90 };
+
+// ── Tab switch ─────────────────────────────────────────────
+function switchTab(t) {
+  document.getElementById('tab-new').classList.toggle('active', t === 'new');
+  document.getElementById('tab-list').classList.toggle('active', t === 'list');
+  document.getElementById('pane-new').style.display  = t === 'new'  ? '' : 'none';
+  document.getElementById('pane-list').style.display = t === 'list' ? '' : 'none';
+  if (t === 'list') loadRequests();
+}
+
+// ── Char counter ───────────────────────────────────────────
+function updateCharCount(el, cid) {
+  const maxes = { kmc:500, mtc:300, nc:400 };
+  const max = maxes[cid] || 500;
+  const n = el.value.length;
+  document.getElementById(cid).textContent = `${n} / ${max} chars`;
+  if (n > max) el.value = el.value.slice(0, max);
+}
+
+// ── Pill toggle ─────────────────────────────────────────────
+function togglePill(label) {
+  const cb = label.querySelector('input');
+  cb.checked = !cb.checked;
+  label.classList.toggle('checked', cb.checked);
+}
+
+// ── Reset form ─────────────────────────────────────────────
+function resetForm() {
+  ['f_show','f_shoot_date','f_requester','f_team','f_key_messages','f_mood_tone',
+   'f_scene_count','f_clip_length','f_host_count','f_scene_ids','f_references','f_notes']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.querySelectorAll('.checkbox-pill').forEach(p => {
+    p.classList.remove('checked');
+    p.querySelector('input').checked = false;
+  });
+  ['kmc','mtc','nc'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = '0 / ' + (id==='kmc'?500:id==='mtc'?300:400) + ' chars';
+  });
+}
+
+// ── Submit request ─────────────────────────────────────────
+async function submitRequest() {
+  const show      = document.getElementById('f_show').value.trim();
+  const requester = document.getElementById('f_requester').value.trim();
+  const shootDate = document.getElementById('f_shoot_date').value;
+  const keyMsg    = document.getElementById('f_key_messages').value.trim();
+  const sceneCount= parseInt(document.getElementById('f_scene_count').value) || 1;
+
+  if (!show)      { showToast('กรุณากรอกชื่อ Show', 'red'); return; }
+  if (!requester) { showToast('กรุณากรอกชื่อผู้ยื่น', 'red'); return; }
+  if (!shootDate) { showToast('กรุณาเลือกวันที่ถ่ายทำ', 'red'); return; }
+  if (!keyMsg)    { showToast('กรุณากรอก Key Messages', 'red'); return; }
+
+  const platforms = [...document.querySelectorAll('#platformGroup input:checked')].map(i => i.value);
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+
+  const row = {
+    show_name:     show,
+    requester:     requester,
+    team:          document.getElementById('f_team').value.trim(),
+    shoot_date:    shootDate,
+    key_messages:  keyMsg,
+    mood_tone:     document.getElementById('f_mood_tone').value.trim(),
+    scene_count:   sceneCount,
+    clip_length:   document.getElementById('f_clip_length').value.trim(),
+    host_count:    parseInt(document.getElementById('f_host_count').value) || 1,
+    platforms:     platforms,
+    scene_ids:     document.getElementById('f_scene_ids').value.trim(),
+    ref_links:     document.getElementById('f_references').value.trim(),
+    notes:         document.getElementById('f_notes').value.trim(),
+    status:        'brief',
+    created_at:    new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await _sc.from('service_requests').insert([row]);
+    if (error) throw error;
+    showToast('✅ ส่ง Request สำเร็จ! ทีม VP จะติดต่อกลับใน 1 วัน', 'green');
+    resetForm();
+    switchTab('list');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ เกิดข้อผิดพลาด: ' + (e.message||'ลองอีกครั้ง'), 'red');
+  } finally {
+    btn.disabled = false; btn.textContent = '📤 ส่ง Service Request';
+  }
+}
+
+// ── Load requests ──────────────────────────────────────────
+async function loadRequests() {
+  document.getElementById('requestsTbody').innerHTML =
+    '<tr class="loading-row"><td colspan="8">⏳ กำลังโหลด...</td></tr>';
+  try {
+    const { data, error } = await _sc
+      .from('service_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    allRequests = data || [];
+    document.getElementById('listCount').textContent = allRequests.length;
+    renderList(allRequests);
+  } catch(e) {
+    document.getElementById('requestsTbody').innerHTML =
+      `<tr class="loading-row"><td colspan="8">❌ โหลดไม่ได้: ${e.message}</td></tr>`;
+  }
+}
+
+// ── Filter list ────────────────────────────────────────────
+function filterList() {
+  const q = document.getElementById('listSearch').value.toLowerCase();
+  const f = document.getElementById('listFilter').value;
+  const filtered = allRequests.filter(r => {
+    const matchQ = !q || (r.show_name||'').toLowerCase().includes(q) || (r.requester||'').toLowerCase().includes(q);
+    const matchF = !f || r.status === f;
+    return matchQ && matchF;
+  });
+  renderList(filtered);
+}
+
+// ── Render list ────────────────────────────────────────────
+function renderList(rows) {
+  if (!rows.length) {
+    document.getElementById('requestsTbody').innerHTML =
+      '<tr class="loading-row"><td colspan="8">ไม่มี Request</td></tr>';
+    return;
+  }
+  document.getElementById('requestsTbody').innerHTML = rows.map(r => {
+    const stage = STAGES.find(s => s.key === r.status) || STAGES[0];
+    const prog  = STAGE_PROG[r.status] || 10;
+    const date  = r.shoot_date ? new Date(r.shoot_date).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+    const created = r.created_at ? r.created_at.slice(0,10) : '—';
+    return `
+      <tr>
+        <td><span class="rt-id">#${String(r.id||'').slice(-6).toUpperCase() || '——'}</span><br><span style="font-size:10px;color:var(--muted)">${created}</span></td>
+        <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.show_name||''}">${r.show_name||'—'}</td>
+        <td style="font-size:12px">${r.requester||'—'}<br><span style="color:var(--muted);font-size:11px">${r.team||''}</span></td>
+        <td style="font-size:12px;white-space:nowrap">${date}</td>
+        <td style="font-size:12px;text-align:center;">${r.scene_count||'—'}</td>
+        <td><span class="status-badge status-${r.status||'brief'}">${stage.label}</span></td>
+        <td>
+          <div class="rt-prog">
+            <div class="rt-prog-bar"><div class="rt-prog-fill" style="width:${prog}%"></div></div>
+            <span>${prog}%</span>
+          </div>
+        </td>
+        <td><button class="btn-secondary" style="padding:5px 12px;font-size:11px;" onclick="openDetail('${r.id}')">ดู →</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Detail modal ───────────────────────────────────────────
+function openDetail(id) {
+  const r = allRequests.find(x => x.id === id);
+  if (!r) return;
+  currentDetailId = id;
+  document.getElementById('detailTitle').textContent = `📋 ${r.show_name || 'Request'} — #${String(r.id||'').slice(-6).toUpperCase()}`;
+  document.getElementById('detailBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      ${field('ผู้ยื่น',r.requester)} ${field('ทีม',r.team)}
+      ${field('วันถ่าย',r.shoot_date)} ${field('จำนวนฉาก',r.scene_count)}
+      ${field('Clip Length',r.clip_length)} ${field('Platform',(r.platforms||[]).join(', '))}
+    </div>
+    ${r.key_messages ? `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">KEY MESSAGES</div><div style="font-size:13px;line-height:1.5">${r.key_messages}</div></div>` : ''}
+    ${r.mood_tone ? `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">MOOD & TONE</div><div style="font-size:13px;line-height:1.5">${r.mood_tone}</div></div>` : ''}
+    ${r.scene_ids ? `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">VP SCENES</div><div style="font-family:monospace;font-size:13px">${r.scene_ids}</div></div>` : ''}
+    ${r.ref_links ? `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">REFERENCES</div><div style="font-size:12px;word-break:break-all">${r.ref_links.split('\n').map(l=>`<div><a href="${l}" target="_blank" style="color:var(--red)">${l}</a></div>`).join('')}</div></div>` : ''}
+    ${r.notes ? `<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">หมายเหตุ</div><div style="font-size:13px;line-height:1.5">${r.notes}</div></div>` : ''}
+  `;
+  // Stage selector
+  document.getElementById('stageSelector').innerHTML = STAGES.map(s => `
+    <button class="stage-btn ${r.status===s.key?'selected':''}" data-stage="${s.key}" onclick="selectStage('${s.key}')">
+      ${s.label}
+    </button>
+  `).join('');
+  document.getElementById('detailModal').classList.add('open');
+}
+function field(label, val) {
+  return `<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px">${label}</div><div style="font-size:13px;font-weight:600">${val||'—'}</div></div>`;
+}
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('open');
+  currentDetailId = null;
+}
+function selectStage(key) {
+  document.querySelectorAll('.stage-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.stage === key);
+  });
+}
+async function saveStageUpdate() {
+  if (!currentDetailId) return;
+  const selected = document.querySelector('.stage-btn.selected');
+  if (!selected) return;
+  const newStage = selected.dataset.stage;
+  try {
+    const { error } = await _sc.from('service_requests').update({ status: newStage }).eq('id', currentDetailId);
+    if (error) throw error;
+    const r = allRequests.find(x => x.id === currentDetailId);
+    if (r) r.status = newStage;
+    showToast(`✅ อัพเดต Stage เป็น "${newStage}" แล้ว`, 'green');
+    closeDetail();
+    renderList(allRequests);
+  } catch(e) {
+    showToast('❌ ' + e.message, 'red');
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────
+let _toastT;
+function showToast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ── Close modal on overlay click ───────────────────────────
+document.getElementById('detailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDetail();
+});
+
+// ── Set default shoot date to tomorrow ────────────────────
+(function() {
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  document.getElementById('f_shoot_date').value = d.toISOString().slice(0,10);
+})();
+</script>
+</body>
+</html>
