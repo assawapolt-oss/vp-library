@@ -16,6 +16,9 @@
   --muted:#6B7280;--bg:#F3F4F6;--card:#FFFFFF;--green:#10B981;
   --font:'IBM Plex Sans Thai','Segoe UI',sans-serif;
 }
+body.dark{
+  --dark:#F1F5F9;--border:#334155;--muted:#94A3B8;--bg:#0F172A;--card:#1E293B;
+}
 body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:100vh}
 .topbar{background:var(--red);color:#fff;padding:0 20px;display:flex;align-items:center;
   justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;
@@ -181,10 +184,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 
 <!-- Main app -->
 <div id="appMain" style="display:none">
-  <div class="tab-bar">
+  <div class="tab-bar" id="mainTabBar">
     <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📝 ยื่น Request ใหม่</button>
-    <button class="tab-btn" id="tab-list" onclick="switchTab('list')">📋 Request ของฉัน</button>
-    <button class="tab-btn" id="tab-all" style="display:none" onclick="switchTab('all')">📊 ทั้งหมด (Admin)</button>
+    <button class="tab-btn" id="tab-all" style="display:none" onclick="switchTab('all')">📊 ทั้งหมด (Admin/Editor)</button>
   </div>
   <div class="main-content">
 
@@ -279,7 +281,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
             </div>
           </div>
           <div class="scene-opt-panel active" id="panel_library">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">คลิกเลือกฉากจาก VP Library (เลือกได้หลายฉาก)</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-size:12px;color:var(--muted)">คลิกเลือกฉากจาก VP Library (เลือกได้หลายฉาก)</span>
+              <input class="form-input" id="spSearch" placeholder="🔍 ค้นหาฉาก..." style="max-width:200px;padding:6px 10px;font-size:12px" oninput="filterPicker()">
+            </div>
             <div class="scene-picker-grid" id="spGrid"><div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted)">⏳ กำลังโหลด...</div></div>
             <div class="sel-row" id="selRow"><span style="font-size:12px;color:var(--muted)">ยังไม่ได้เลือกฉาก</span></div>
           </div>
@@ -312,25 +317,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
       </div>
     </div>
 
-    <!-- ── PANE MY LIST ── -->
-    <div id="pane-list" style="display:none">
-      <div class="form-card" style="padding:0;overflow:hidden">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <input class="form-input" id="listSearch" placeholder="🔍 ค้นหา show..." style="max-width:260px" oninput="filterList()">
-          <select class="form-select" id="listFilter" style="max-width:180px" onchange="filterList()">
-            <option value="">ทุก Status</option>
-            <option value="brief">Brief</option><option value="visual">Visual Producing</option>
-            <option value="virtual">Virtual Producing</option><option value="shooting">Shooting</option>
-            <option value="done">Done</option><option value="fixer">Fixer</option>
-          </select>
-          <button class="btn-secondary" style="margin-left:auto;padding:7px 14px;font-size:12px" onclick="loadMyRequests()">🔄</button>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="request-table">
-            <thead><tr><th>REQ ID</th><th>Show</th><th>วันถ่าย</th><th>ฉาก</th><th>Status</th><th>Progress</th><th></th></tr></thead>
-            <tbody id="myTbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">⏳ กำลังโหลด...</td></tr></tbody>
-          </table>
-        </div>
+    <!-- ── MY REQUESTS (inline, always visible under form) ── -->
+    <div id="pane-list" class="form-card" style="padding:0;overflow:hidden;margin-top:0">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:14px;font-weight:700">📋 Request ของฉัน</div>
+        <input class="form-input" id="listSearch" placeholder="🔍 ค้นหา..." style="max-width:200px;margin-left:8px" oninput="filterList()">
+        <select class="form-select" id="listFilter" style="max-width:160px" onchange="filterList()">
+          <option value="">ทุก Status</option>
+          <option value="brief">Brief</option><option value="visual">Visual Producing</option>
+          <option value="virtual">Virtual Producing</option><option value="shooting">Shooting</option>
+          <option value="done">Done</option><option value="fixer">Fixer</option>
+        </select>
+        <button class="btn-secondary" style="margin-left:auto;padding:7px 14px;font-size:12px" onclick="loadMyRequests()">🔄</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="request-table">
+          <thead><tr><th>REQ ID</th><th>Show</th><th>วันถ่าย</th><th>ฉาก</th><th>Status</th><th>Progress</th><th></th></tr></thead>
+          <tbody id="myTbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">⏳ กำลังโหลด...</td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -411,19 +415,33 @@ function _tryParentLogin(){try{const r=window.parent.localStorage.getItem('vp_us
 function _tryLocalLogin(){try{const r=localStorage.getItem('vp_user_role'),u=localStorage.getItem('vp_username'),n=localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
 
 window.addEventListener('load',async()=>{
+  applyTheme();
   await _loadUsersDB();
   const saved=_tryParentLogin()||_tryLocalLogin();
   if(saved){_user=saved;showApp();}else{showLoginGate();}
 });
+// Re-apply theme when parent changes it
+window.addEventListener('storage',()=>applyTheme());
+try{window.parent.addEventListener('storage',()=>applyTheme());}catch(e){}
 
 function showLoginGate(){document.getElementById('loginGate').style.display='';document.getElementById('appMain').style.display='none';}
+function applyTheme(){
+  try{
+    const t=window.parent.localStorage.getItem('vp_theme')||localStorage.getItem('vp_theme')||'light';
+    document.body.classList.toggle('dark',t==='dark');
+  }catch(e){
+    try{const t=localStorage.getItem('vp_theme')||'light';document.body.classList.toggle('dark',t==='dark');}catch(e2){}
+  }
+}
 function showApp(){
   document.getElementById('loginGate').style.display='none';
   document.getElementById('appMain').style.display='';
   document.getElementById('topbarUser').textContent=(_user.name||_user.username)+' ('+_user.role+')';
   document.getElementById('f_requester').value=_user.name||_user.username;
   if(_user.role==='admin'||_user.role==='editor')document.getElementById('tab-all').style.display='';
+  applyTheme();
   loadScenesForPicker();
+  loadMyRequests();
 }
 function handleLogout(){_user=null;localStorage.removeItem('vp_user_role');localStorage.removeItem('vp_username');localStorage.removeItem('vp_display_name');showLoginGate();}
 
@@ -443,11 +461,11 @@ async function loginSubmit(){
 }
 
 function switchTab(t){
-  ['new','list','all'].forEach(x=>{
+  ['new','all'].forEach(x=>{
     document.getElementById('tab-'+x)?.classList.toggle('active',x===t);
     const p=document.getElementById('pane-'+x);if(p)p.style.display=x===t?'':'none';
   });
-  if(t==='list')loadMyRequests();
+  // pane-list is always visible (inline below form, not a separate tab)
   if(t==='all')loadAllRequests();
 }
 
@@ -460,25 +478,33 @@ function setSceneOpt(opt){
 }
 
 async function loadScenesForPicker(){
-  try{const{data,error}=await _sc.from('scenes').select('id,title,title_th').order('id');
-    if(!error&&data)_allScenes=data;}catch(e){}
-  if(!_allScenes.length)_allScenes=[
-    {id:'VP-001',title:'Sci-Fi Lab Portal'},{id:'VP-002',title:'Sci-Fi Robot Display'},
-    {id:'VP-003',title:'Industrial Robot Arms'},{id:'VP-004',title:'Warehouse BTS'},
-    {id:'VP-005',title:'Tunnel Underground'},{id:'VP-006',title:'Outdoor Mine Quarry'},
-    {id:'VP-007',title:'Industrial Robot Factory'},{id:'VP-008',title:'Retro Music Studio'},
-    {id:'VP-009',title:'Library Study'},{id:'VP-010',title:'City Skyline Day'},
-  ];
+  try{
+    const{data,error}=await _sc.from('scenes').select('id,title,title_th,thumbnail_url,filepath').order('id');
+    if(!error&&data&&data.length)_allScenes=data;
+  }catch(e){}
   renderPicker();
 }
 
-function renderPicker(){
+let _pickerQ='';
+function filterPicker(){
+  const q=document.getElementById('spSearch')?.value.toLowerCase()||'';
+  _pickerQ=q;
+  const filtered=_allScenes.filter(s=>!q||(s.title||'').toLowerCase().includes(q)||(s.title_th||'').toLowerCase().includes(q)||(s.id||'').toLowerCase().includes(q));
   const g=document.getElementById('spGrid');if(!g)return;
-  g.innerHTML=_allScenes.map(s=>{
+  if(!filtered.length){g.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted);font-size:13px">ไม่พบฉาก</div>';return;}
+  g.innerHTML=filtered.map(s=>{
     const on=_picked.has(s.id);
-    return `<div class="spi${on?' selected':''}" id="spi_${s.id}" onclick="togglePick('${s.id}')"><div class="spi-check">✓</div><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.title||s.id}</div><div class="spi-id">${s.id}</div></div>`;
+    const thumb=s.thumbnail_url||'';
+    return `<div class="spi${on?' selected':''}" id="spi_${s.id}" onclick="togglePick('${s.id}')">
+      <div class="spi-check">✓</div>
+      ${thumb?`<img src="${thumb}" style="width:100%;height:55px;object-fit:cover;border-radius:4px;margin-bottom:4px;display:block" onerror="this.style.display='none'">`:'<div style="width:100%;height:55px;background:var(--bg);border-radius:4px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;font-size:20px">🎬</div>'}
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${s.title_th||s.title||s.id}</div>
+      <div class="spi-id">${s.id}</div>
+    </div>`;
   }).join('');
 }
+
+function renderPicker(){filterPicker();}
 
 function togglePick(id){
   if(_picked.has(id))_picked.delete(id);else _picked.add(id);
@@ -529,9 +555,11 @@ async function submitRequest(){
   const clipVal=document.getElementById('f_clip_val').value.trim();
   const clipUnit=document.getElementById('f_clip_unit').value;
   const clipLength=clipVal?clipVal+' '+clipUnit:'';
+  const notesRaw=document.getElementById('f_notes').value.trim();
+  const notesWithEmail=email?('[Email: '+email+']\n'+notesRaw).trim():notesRaw;
   const row={
     show_name:show,requester:_user.name||_user.username,username:_user.username,
-    team:document.getElementById('f_team').value.trim(),email:email,
+    team:document.getElementById('f_team').value.trim(),
     shoot_date:shootDate,key_messages:keyMsg,
     mood_tone:document.getElementById('f_mood_tone').value.trim(),
     scene_count:sceneCount,clip_length:clipLength,
@@ -540,7 +568,7 @@ async function submitRequest(){
     scene_ids:_sceneOpt==='library'?Array.from(_picked).join(', '):'',
     tailor_desc:_sceneOpt==='tailor'?document.getElementById('f_tailor_desc').value.trim():'',
     ref_links:document.getElementById('f_references').value.trim(),
-    notes:document.getElementById('f_notes').value.trim(),
+    notes:notesWithEmail,
     status:'brief',created_at:new Date().toISOString(),
   };
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='⏳ กำลังส่ง...';
@@ -548,7 +576,7 @@ async function submitRequest(){
     const{error}=await _sc.from('service_requests').insert([row]);
     if(error)throw error;
     toast('✅ ส่ง Request สำเร็จ! ทีม VP จะติดต่อกลับ','green');
-    resetForm();setTimeout(()=>switchTab('list'),800);
+    resetForm();setTimeout(()=>loadMyRequests(),800);
   }catch(e){toast('❌ '+(e.message||'ลองอีกครั้ง'),'red');}
   finally{btn.disabled=false;btn.textContent='📤 ส่ง Service Request';}
 }
@@ -585,8 +613,10 @@ function filterAll(){
 
 function renderTable(rows,tbodyId,showReq){
   const tb=document.getElementById(tbodyId);const cols=showReq?8:7;
+  const isAdminOrEd=_user&&(_user.role==='admin'||_user.role==='editor');
   if(!rows.length){tb.innerHTML='<tr><td colspan="'+cols+'" style="text-align:center;padding:32px;color:var(--muted)">ไม่มี Request</td></tr>';return;}
   tb.innerHTML=rows.map(r=>{
+    const canDel=isAdminOrEd||(_user&&r.username===_user.username);
     const stage=STAGES.find(s=>s.key===r.status)||STAGES[0];
     const prog=STAGE_PROG[r.status]||10;
     const date=r.shoot_date?new Date(r.shoot_date).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}):'—';
@@ -598,8 +628,21 @@ function renderTable(rows,tbodyId,showReq){
       <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${si}</td>
       <td><span class="status-badge status-${r.status||'brief'}">${stage.label}</span></td>
       <td><div class="rt-prog"><div class="rt-prog-bar"><div class="rt-prog-fill" style="width:${prog}%"></div></div><span style="font-size:11px">${prog}%</span></div></td>
-      <td><button class="btn-secondary" style="padding:5px 12px;font-size:11px" onclick="openDetail('${r.id}','${tbodyId}')">ดู →</button></td></tr>`;
+      <td style="white-space:nowrap"><button class="btn-secondary" style="padding:5px 12px;font-size:11px" onclick="openDetail('${r.id}','${tbodyId}')">ดู →</button>${(canDel)?` <button onclick="deleteRequest('${r.id}','${tbodyId}')" title="ลบ Request นี้" style="background:#FEE2E2;border:1.5px solid #FECACA;color:#991B1B;border-radius:8px;padding:5px 9px;font-size:11px;cursor:pointer;font-family:var(--font)">🗑</button>`:''}</td></tr>`;
   }).join('');
+}
+
+async function deleteRequest(id,src){
+  if(!confirm('ลบ Request นี้?'))return;
+  try{
+    const{error}=await _sc.from('service_requests').delete().eq('id',id);
+    if(error)throw error;
+    _myReqs=_myReqs.filter(x=>x.id!==id);
+    _allReqs=_allReqs.filter(x=>x.id!==id);
+    if(src==='myTbody')renderTable(_myReqs,'myTbody',false);
+    if(src==='allTbody')renderTable(_allReqs,'allTbody',true);
+    toast('🗑 ลบแล้ว','green');
+  }catch(e){toast('❌ '+e.message,'red');}
 }
 
 function openDetail(id,src){
@@ -660,7 +703,6 @@ function renderEdit(r){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ชื่อ Show *</div><input class="edit-input" id="ed_show" value="${esc(r.show_name||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">วันถ่ายทำ</div><input class="edit-input" type="date" id="ed_shoot" value="${r.shoot_date||''}"></div>
-      <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Email ติดต่อ</div><input class="edit-input" type="email" id="ed_email" value="${esc(r.email||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ทีม</div><input class="edit-input" id="ed_team" value="${esc(r.team||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Clip Length</div><input class="edit-input" id="ed_clip" value="${esc(r.clip_length||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">จำนวนฉาก</div><input class="edit-input" type="number" id="ed_sc" value="${r.scene_count||''}"></div>
@@ -683,7 +725,6 @@ async function saveModal(){
     upd={
       show_name:document.getElementById('ed_show')?.value.trim(),
       shoot_date:document.getElementById('ed_shoot')?.value,
-      email:document.getElementById('ed_email')?.value.trim(),
       team:document.getElementById('ed_team')?.value.trim(),
       clip_length:document.getElementById('ed_clip')?.value.trim(),
       scene_count:parseInt(document.getElementById('ed_sc')?.value)||undefined,
@@ -700,7 +741,7 @@ async function saveModal(){
     [_myReqs,_allReqs].forEach(pool=>{const i=pool.findIndex(x=>x.id===_detailId);if(i>=0)Object.assign(pool[i],upd);});
     toast('✅ บันทึกแล้ว','green');closeDetail();
     const at=document.querySelector('.tab-btn.active')?.id;
-    if(at==='tab-list')loadMyRequests();
+    loadMyRequests();
     if(at==='tab-all')loadAllRequests();
   }catch(e){toast('❌ '+e.message,'red');}
 }
