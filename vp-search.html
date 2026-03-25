@@ -711,6 +711,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
+    <button onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
       <span id="themeIcon">☀️</span>
     </button>
@@ -724,7 +725,6 @@
 <!-- Unified Nav Bar -->
 <div class="nav-bar">
   <div class="nav-left">
-    <button class="mode-tab service-tab" id="tabService" onclick="switchMode('service')" style="background:var(--red);color:#fff;border-radius:8px 8px 0 0;margin-right:6px;border-bottom:3px solid var(--red)">📋 Service Request</button>
     <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">🔍 ค้นหาฉาก</button>
     <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">✨ แนะนำฉาก</button>
     <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">🗂 Collection</button>
