@@ -367,6 +367,53 @@
       </div>
     </div>
 
+    <!-- Activity Log panel (sibling to editorArea) -->
+    <div id="activityPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:900px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📊 Activity Log</div>
+            <div style="font-size:13px;color:var(--muted);">ประวัติการใช้งาน VP Library ของทีม</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="actFilterUser" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
+              <option value="all">👥 ทุก User</option>
+            </select>
+            <select id="actFilterType" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
+              <option value="all">📋 ทุก Event</option>
+              <option value="view_scene">👁 ดูฉาก</option>
+              <option value="search">🔍 ค้นหา</option>
+              <option value="recommend">🎯 แนะนำ</option>
+              <option value="login">🔑 Login</option>
+              <option value="logout">🚪 Logout</option>
+            </select>
+            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="exportActivityCSV()">↗ Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div id="actStatsRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
+
+        <!-- Top Scenes heatmap -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">🔥 ฉากที่ถูกเปิดบ่อยสุด</div>
+          <div id="actTopScenes"></div>
+        </div>
+
+        <!-- Per-user stats -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">👤 สถิติรายคน</div>
+          <div id="actPerUser"></div>
+        </div>
+
+        <!-- Recent events table -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">⏱ เหตุการณ์ล่าสุด</div>
+          <div id="actRecentEvents" style="font-size:12px;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Collections Panel -->
     <div id="collectionsPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
       <div style="padding:28px;max-width:960px;">
@@ -411,53 +458,6 @@
           <button class="btn-save" onclick="saveCollection()" style="flex:1">💾 บันทึก Collection</button>
           <button class="btn-secondary" onclick="closeCollectionEditor()" style="flex-shrink:0">ยกเลิก</button>
           <button id="colDeleteBtn" class="btn-delete" onclick="deleteCollection(document.getElementById('col_editing_id').value)" style="flex-shrink:0;display:none">🗑 ลบ</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Activity Log panel (sibling to editorArea) -->
-    <div id="activityPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
-      <div style="padding:28px;max-width:900px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-          <div>
-            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📊 Activity Log</div>
-            <div style="font-size:13px;color:var(--muted);">ประวัติการใช้งาน VP Library ของทีม</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <select id="actFilterUser" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
-              <option value="all">👥 ทุก User</option>
-            </select>
-            <select id="actFilterType" onchange="renderActivityPanel()" class="form-select" style="min-width:130px;font-size:12px;padding:7px 10px;">
-              <option value="all">📋 ทุก Event</option>
-              <option value="view_scene">👁 ดูฉาก</option>
-              <option value="search">🔍 ค้นหา</option>
-              <option value="recommend">🎯 แนะนำ</option>
-              <option value="login">🔑 Login</option>
-              <option value="logout">🚪 Logout</option>
-            </select>
-            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="exportActivityCSV()">↗ Export CSV</button>
-          </div>
-        </div>
-
-        <!-- Stats row -->
-        <div id="actStatsRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
-
-        <!-- Top Scenes heatmap -->
-        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">🔥 ฉากที่ถูกเปิดบ่อยสุด</div>
-          <div id="actTopScenes"></div>
-        </div>
-
-        <!-- Per-user stats -->
-        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">👤 สถิติรายคน</div>
-          <div id="actPerUser"></div>
-        </div>
-
-        <!-- Recent events table -->
-        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">⏱ เหตุการณ์ล่าสุด</div>
-          <div id="actRecentEvents" style="font-size:12px;"></div>
         </div>
       </div>
     </div>
@@ -693,6 +693,7 @@ async function sha256(text) {
 }
 
 // Built-in fallback — ใช้เสมอถ้า fetch users.json ไม่ได้
+// admin password = "admin1234"
 // admin password = "tsd2024"
 const FALLBACK_ADMIN_DB = {
   "admin":   { "role":"admin",  "hash":"2ae005c51d2533d393f29bf695d9c7faafc8c56d625d47cffd8889a0f08603bc", "name":"Administrator", "created":"2026-03-20" },
@@ -767,11 +768,16 @@ async function doLogin() {
   }
 
   let ok = false;
+  let failReason = '';
   const stored = ADMIN_USERS_DB[u];
-  if (stored && stored.role === 'admin') {
+  if (!stored) {
+    failReason = `❌ ไม่พบ username "${u}" ในระบบ`;
+  } else if (stored.role !== 'admin') {
+    failReason = `❌ บัญชีนี้ไม่มีสิทธิ์ admin`;
+  } else {
     const hashed = await sha256(p);
-    console.log('login attempt:', u, 'hash:', hashed, 'expected:', stored.hash);
     ok = (hashed === stored.hash);
+    if (!ok) failReason = '❌ Password ไม่ถูกต้อง — กรุณาลองใหม่';
   }
 
   btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
@@ -786,7 +792,7 @@ async function doLogin() {
     document.getElementById('loginPass').value = '';
     initAdmin();
   } else {
-    err.textContent = 'Username หรือ Password ไม่ถูกต้อง';
+    err.textContent = failReason || '❌ Username หรือ Password ไม่ถูกต้อง';
     err.classList.add('show');
     document.getElementById('loginPass').value = '';
     document.getElementById('loginPass').focus();
@@ -2402,10 +2408,10 @@ function openCollectionEditor(colId) {
   _colSelectedIds = new Set(Array.isArray(col?.scene_ids) ? col.scene_ids : []);
 
   // Render scene picker
-  const scenes = typeof SCENES !== 'undefined' ? SCENES : [];
+  const sceneList = typeof SCENES !== 'undefined' ? SCENES : [];
   const picker = document.getElementById('colScenePicker');
   if (picker) {
-    picker.innerHTML = scenes.map(s => {
+    picker.innerHTML = sceneList.map(s => {
       const on = _colSelectedIds.has(s.id);
       return `<div id="csp_${s.id}" onclick="_colToggleScene('${s.id}')" style="padding:7px 10px;border-radius:7px;border:1.5px solid ${on?'var(--red)':'var(--border)'};background:${on?'#FFF0F0':'var(--card)'};cursor:pointer;font-size:12px;font-weight:${on?'700':'400'};transition:all .12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.id}">${on?'✓ ':''} ${s.title||s.id}</div>`;
     }).join('');
@@ -2428,14 +2434,15 @@ function _colToggleScene(id) {
     el.style.border = `1.5px solid ${on?'var(--red)':'var(--border)'}`;
     el.style.background = on ? '#FFF0F0' : 'var(--card)';
     el.style.fontWeight = on ? '700' : '400';
-    el.textContent = (on ? '✓  ' : '  ') + ((typeof SCENES !== 'undefined' ? SCENES : []).find(s=>s.id===id)?.title || id);
+    const sceneList = typeof SCENES !== 'undefined' ? SCENES : [];
+    el.textContent = (on ? '✓  ' : '  ') + (sceneList.find(s=>s.id===id)?.title || id);
   }
   _updateColCount();
 }
 
 function _updateColCount() {
   const el = document.getElementById('colSceneCount');
-  if (el) el.textContent = _colSelectedIds.size ? `(${_colSelectedIds.size} ฉาก)` : '';
+  if (el) el.textContent = _colSelectedIds.size > 0 ? `(${_colSelectedIds.size} ฉาก)` : '';
 }
 
 function closeCollectionEditor() {
@@ -2446,7 +2453,7 @@ function closeCollectionEditor() {
 
 async function saveCollection() {
   const name = document.getElementById('col_name').value.trim();
-  if (!name) { showToast('⚠️ กรุณาใส่ชื่อ Collection', true); return; }
+  if (!name) { showToast('⚠️ กรุณาใส่ชื่อ Collection', 'red'); return; }
 
   const editingId = document.getElementById('col_editing_id').value;
   const isNew = !editingId;
@@ -2459,21 +2466,22 @@ async function saveCollection() {
     description: document.getElementById('col_description').value.trim(),
     color: document.getElementById('col_color').value.trim() || '#CC2229',
     cover_url: document.getElementById('col_cover_url').value.trim(),
-    scene_ids: Array.from(_colSelectedIds),
-    sort_order: isNew ? (ADMIN_COLLECTIONS.length + 1) : (ADMIN_COLLECTIONS.find(c=>c.id===editingId)?.sort_order ?? 99),
+    scene_ids: [..._colSelectedIds],
+    sort_order: isNew ? (ADMIN_COLLECTIONS.length + 1) * 10 : (ADMIN_COLLECTIONS.find(c=>c.id===editingId)?.sort_order || 999),
+    updated_at: new Date().toISOString(),
   };
-
-  if (!isNew) payload.id = editingId;
-
-  showToast('💾 กำลังบันทึก…');
 
   if (window._supaClient) {
     try {
-      const { error } = await window._supaClient
-        .from('collections')
-        .upsert([payload], { onConflict: 'id' });
-      if (error) throw error;
-      showToast('✅ บันทึก Collection สำเร็จ');
+      if (isNew) {
+        const { error } = await window._supaClient.from('collections').insert([payload]);
+        if (error) throw error;
+        showToast('✅ สร้าง Collection แล้ว');
+      } else {
+        const { error } = await window._supaClient.from('collections').update(payload).eq('id', editingId);
+        if (error) throw error;
+        showToast('✅ บันทึก Collection แล้ว');
+      }
     } catch(e) {
       console.error('[saveCollection]', e);
       showToast('❌ บันทึกไม่สำเร็จ: ' + (e.message || 'unknown error'), true);
@@ -3313,13 +3321,12 @@ async function handleEditorFileSelect(files, role, sceneId) {
         showToast('⚠️ Upload สำเร็จ แต่ thumbnail สร้างไม่ได้: ' + e.message);
         if (thumbZone) thumbZone.classList.remove('uploading');
       }
-    } else if (role === 'thumb') {
+    } else {
       // Thumb uploaded manually → update sidebar
       const sliThumb = document.getElementById(`sli-thumb-${sceneId}`);
       if (sliThumb) { sliThumb.src = objUrl; sliThumb.style.display = ''; }
       showToast('✅ อัปโหลด Thumbnail สำเร็จ');
     }
-    // role === 'presenter': already handled above
 
   } catch(err) {
     console.error('[handleEditorFileSelect]', err);
@@ -3354,25 +3361,32 @@ function buildVirtualPath(sceneId, filename, role, scene) {
 
 function clearEditorUpload(role, sceneId, e) {
   e.stopPropagation();
-  const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${sceneId}`;
-  const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${sceneId}`;
+  const roleKey   = role === 'full' ? 'Full' : role === 'presenter' ? 'Presenter' : 'Thumb';
+  const contentId = `upload${roleKey}Content_${sceneId}`;
+  const zoneId    = `uploadZone${roleKey}_${sceneId}`;
   const s = scenes.find(x => x.id === sceneId);
-  document.getElementById(contentId).innerHTML = role === 'full'
-    ? '<div class="upload-zone-icon">🖼</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q82</div>'
-    : '<div class="upload-zone-icon">🔳</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q55</div>';
+  if (role === 'full') {
+    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🖼</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q82</div>';
+  } else if (role === 'presenter') {
+    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🧑</div><div class="upload-zone-label">ภาพฉาก + พิธีกร</div><div class="upload-zone-sub">อัพโหลดภาพที่มีพิธีกรยืนอยู่</div>';
+  } else {
+    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🔳</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q55</div>';
+  }
   document.getElementById(zoneId)?.classList.remove('has-file');
   // Restore path from current scene data
   if (role === 'full' && s) document.getElementById('f_filepath').value = s.filepath;
   if (role === 'thumb' && s) document.getElementById('f_thumb').value   = s.thumb;
+  if (role === 'presenter' && s) { const el = document.getElementById('f_presenter_image_url'); if (el) el.value = s.presenter_image_url||''; }
 }
 
 /** Restore upload zone state when opening editor */
 async function restoreUploadZones(s) {
-  for (const role of ['full','thumb']) {
-    const path = role === 'full' ? s.filepath : s.thumb;
+  for (const role of ['full','thumb','presenter']) {
+    const path = role === 'full' ? s.filepath : role === 'presenter' ? (s.presenter_image_url||'') : s.thumb;
     if (!path) continue;
-    const contentId = `upload${role === 'full' ? 'Full' : 'Thumb'}Content_${s.id}`;
-    const zoneId    = `uploadZone${role === 'full' ? 'Full' : 'Thumb'}_${s.id}`;
+    const roleKey   = role === 'full' ? 'Full' : role === 'presenter' ? 'Presenter' : 'Thumb';
+    const contentId = `upload${roleKey}Content_${s.id}`;
+    const zoneId    = `uploadZone${roleKey}_${s.id}`;
 
     const ext = path.split('/').pop().split('.').pop().toUpperCase();
     const contentEl = document.getElementById(contentId);
@@ -4086,4 +4100,95 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ═════════════
+// ══════════════════════════════════════════════════════════════
+// FALSE COLOR ENGINE — IRE luminance map (DaVinci Resolve style)
+// ══════════════════════════════════════════════════════════════
+const _ADMIN_FC_ZONES = [
+  { min:0,   max:2,   r:255, g:0,   b:255 },  // Clipped Black — Magenta
+  { min:2,   max:15,  r:26,  g:26,  b:255 },  // Underexposed  — Blue
+  { min:15,  max:30,  r:0,   g:112, b:255 },  // Low mid       — Light Blue
+  { min:30,  max:42,  r:0,   g:180, b:180 },  // Shadow mid    — Cyan
+  { min:42,  max:56,  r:0,   g:200, b:0   },  // Correct       — Green
+  { min:56,  max:70,  r:200, g:200, b:0   },  // Upper mid     — Yellow
+  { min:70,  max:87,  r:255, g:140, b:0   },  // Near clip     — Orange
+  { min:87,  max:98,  r:255, g:40,  b:0   },  // Overexposed   — Red
+  { min:98,  max:101, r:255, g:255, b:255 },  // Clipped White
+];
+
+function _adminIre2Color(lum) {
+  const ire = (lum / 255) * 100;
+  for (const z of _ADMIN_FC_ZONES) {
+    if (ire >= z.min && ire < z.max) return [z.r, z.g, z.b];
+  }
+  return [255, 255, 255];
+}
+
+async function _adminRenderFalseColor(imgEl, canvasEl) {
+  return new Promise((resolve, reject) => {
+    const draw = () => {
+      const W = imgEl.naturalWidth  || imgEl.offsetWidth;
+      const H = imgEl.naturalHeight || imgEl.offsetHeight;
+      if (!W || !H) { reject('img not ready'); return; }
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const ctx = off.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, W, H);
+      const data = ctx.getImageData(0, 0, W, H);
+      const px   = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+        const [r, g, b] = _adminIre2Color(lum);
+        px[i] = r; px[i+1] = g; px[i+2] = b;
+      }
+      ctx.putImageData(data, 0, 0);
+      canvasEl.width  = imgEl.offsetWidth  || W;
+      canvasEl.height = imgEl.offsetHeight || H;
+      canvasEl.getContext('2d').drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
+      resolve();
+    };
+    if (imgEl.complete && imgEl.naturalWidth) draw();
+    else {
+      imgEl.addEventListener('load', draw, { once:true });
+      imgEl.addEventListener('error', () => reject('img error'), { once:true });
+    }
+  });
+}
+
+let _adminFcActive = false;
+
+async function toggleAdminFalseColor(sceneId) {
+  const imgEl    = document.getElementById('previewImg');
+  const canvasEl = document.getElementById('editorFcCanvas');
+  const btnEl    = document.getElementById('editorFcBtn');
+  const iconEl   = document.getElementById('editorFcBtnIcon');
+  const legendEl = document.getElementById('editorFcLegend');
+  if (!imgEl || !canvasEl) return;
+
+  if (_adminFcActive) {
+    _adminFcActive = false;
+    canvasEl.classList.remove('active');
+    btnEl?.classList.remove('active');
+    legendEl?.classList.remove('show');
+    if (iconEl) iconEl.textContent = '⬛';
+  } else {
+    if (iconEl) iconEl.innerHTML = '<span class="fc-spin">⏳</span>';
+    btnEl?.classList.add('active');
+    try {
+      canvasEl.style.width  = imgEl.offsetWidth  + 'px';
+      canvasEl.style.height = imgEl.offsetHeight + 'px';
+      await _adminRenderFalseColor(imgEl, canvasEl);
+      _adminFcActive = true;
+      canvasEl.classList.add('active');
+      legendEl?.classList.add('show');
+      if (iconEl) iconEl.textContent = '🟢';
+    } catch(e) {
+      console.warn('[adminFalseColor]', e);
+      btnEl?.classList.remove('active');
+      if (iconEl) iconEl.textContent = '⬛';
+    }
+  }
+}
+
+</script>
+</body>
+</html>
