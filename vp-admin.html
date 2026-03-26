@@ -4461,22 +4461,36 @@ async function handleEditorFileSelect(files, role, sceneId) {
 }
 
 /**
- * buildVirtualPath — ระบบ path มาตรฐาน (v2)
- * ทุกไฟล์ของฉากจะอยู่ใน folder เดียวกัน จัดกลุ่มทีละ 20 ฉาก
- *   scenes/VP-001-020/VP-001-full.webp
- *   scenes/VP-001-020/VP-001-presenter.webp
- *   scenes/VP-001-020/VP-001-thumb.webp
+ * buildVirtualPath — ระบบ path มาตรฐาน (v3)
+ * รองรับหลาย prefix เช่น VP-, SP-, EQ- ฯลฯ
+ * จัดกลุ่มทีละ 20 ฉากต่อ folder แยกตาม prefix
+ *
+ *   VP-001  → scenes/VP-001-020/VP-001-full.webp
+ *   SP-003  → scenes/SP-001-020/SP-003-thumb.webp
+ *   EQ-025  → scenes/EQ-021-040/EQ-025-presenter.webp
+ *
+ * ID ที่ไม่ตรง pattern PREFIX-NNN → เก็บใน scenes/misc/
  * ใช้ชื่อไฟล์คงที่ตาม role → re-upload ทับได้ ไม่มีไฟล์ขยะ
  */
 function buildVirtualPath(sceneId, filename, role) {
   const pad = n => String(n).padStart(3, '0');
-  const num = parseInt(sceneId.replace('VP-', '')) || 0;
-  const batchStart = Math.floor((num - 1) / 20) * 20 + 1;
-  const batchEnd   = batchStart + 19;
-  const folder = `scenes/VP-${pad(batchStart)}-${pad(batchEnd)}`;
   const ext    = (filename.split('.').pop().toLowerCase()) || 'webp';
   const suffix = role === 'thumb' ? 'thumb' : role === 'presenter' ? 'presenter' : 'full';
-  return `${folder}/${sceneId}-${suffix}.${ext}`;
+
+  // Parse "PREFIX-NNN" pattern (e.g. VP-001, SP-003, EQ-025)
+  const match = sceneId.match(/^([A-Za-z][A-Za-z0-9]*)-(\d+)$/);
+  if (match) {
+    const prefix     = match[1].toUpperCase();
+    const num        = parseInt(match[2]);
+    const batchStart = Math.floor((num - 1) / 20) * 20 + 1;
+    const batchEnd   = batchStart + 19;
+    const folder     = `scenes/${prefix}-${pad(batchStart)}-${pad(batchEnd)}`;
+    return `${folder}/${sceneId.toUpperCase()}-${suffix}.${ext}`;
+  }
+
+  // Fallback: free-form ID → scenes/misc/ (sanitize spaces/special chars)
+  const safeId = sceneId.replace(/[^A-Za-z0-9_-]/g, '_');
+  return `scenes/misc/${safeId}-${suffix}.${ext}`;
 }
 
 /**
