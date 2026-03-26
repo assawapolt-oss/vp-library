@@ -175,7 +175,7 @@
   .upload-zone-label { font-size:12px; font-weight:700; color:var(--dark); }
   .upload-zone-sub { font-size:10px; color:var(--muted); margin-top:2px; }
   .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .upload-file-info { display:flex; align-items:center; gap:8px; margin-top:8px; background:#fff; border-radius:7px; padding:6px 10px; text-align:left; }
+  .upload-file-info { display:flex; align-items:center; gap:8px; margin-top:8px; background:#fff; border-radius:7px; padding:6px 10px; text-align:left; overflow:hidden; max-width:100%; }
   .upload-file-info img { width:48px; height:27px; object-fit:cover; border-radius:4px; flex-shrink:0; background:#e5e7eb; }
   .upload-file-info-text { flex:1; min-width:0; }
   .upload-file-name { font-size:11px; font-weight:700; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -301,6 +301,12 @@
     /* scene list items smaller on mobile */
     .scene-list-item { padding:10px 12px; }
     .sli-thumb { width:40px; height:25px; }
+
+    /* shows panel responsive */
+    #showsPanel > div { padding:14px !important; }
+    #showsGrid { max-width:100% !important; }
+    .show-sort-row { padding:8px 10px !important; gap:7px !important; }
+    .show-sort-row .btn-secondary, .show-sort-row .btn-delete { font-size:10px !important; padding:3px 7px !important; }
 
     /* form grids — single column */
     .form-row { grid-template-columns:1fr !important; }
@@ -534,7 +540,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select id="fmFolderFilter" onchange="loadFileManager()" style="font-size:12px;padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-family:inherit">
-              <option value="">📂 ทุก Folder (root)</option>
+              <option value="">📂 ทุกโฟลเดอร์ (ทั้งหมด)</option>
               <option value="indoor">📁 indoor/</option>
               <option value="outdoor">📁 outdoor/</option>
               <option value="_thumbnails">🔳 _thumbnails/</option>
@@ -3986,16 +3992,51 @@ function fmBuildUsedUrls() {
 async function loadFileManager() {
   if (!window._supaClient) return;
   const grid = document.getElementById('fmGrid');
-  grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">⏳ กำลังโหลดรายการไฟล์...</div>';
-  const folder = document.getElementById('fmFolderFilter')?.value || '';
+  grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">⏳ กำลังสแกนไฟล์ทั้งหมด...</div>';
+  const filterFolder = document.getElementById('fmFolderFilter')?.value || '';
   try {
-    const { data, error } = await window._supaClient.storage.from('vp-images').list(folder || '', {
-      limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' }
-    });
-    if (error) { grid.innerHTML = `<div style="color:var(--red);padding:20px;font-size:13px">❌ ${error.message}</div>`; return; }
-    _fmFiles = (data||[])
-      .filter(f => f.name && f.name !== '.emptyFolderPlaceholder' && !(f.id||'').includes('emptyFolderPlaceholder'))
-      .map(f => ({ ...f, _folder: folder, _path: (folder ? folder+'/' : '') + f.name, _size: f.metadata?.size||0 }));
+    const allFiles = [];
+    // Helper: list a given prefix and collect real files; recurse one more level for subfolders
+    async function _scanFolder(prefix) {
+      const { data, error } = await window._supaClient.storage.from('vp-images').list(prefix, { limit:500 });
+      if (error || !data) return;
+      for (const item of data) {
+        if (!item.name || item.name === '.emptyFolderPlaceholder') continue;
+        const itemPath = (prefix ? prefix+'/' : '') + item.name;
+        if (item.metadata) {
+          // Real file
+          allFiles.push({ ...item, _folder: prefix, _path: itemPath, _size: item.metadata?.size||0 });
+        } else {
+          // Subfolder — go one level deeper (max depth 3)
+          const { data: sub, error: subErr } = await window._supaClient.storage.from('vp-images').list(itemPath, { limit:500 });
+          if (subErr || !sub) continue;
+          for (const f2 of sub) {
+            if (!f2.name || f2.name === '.emptyFolderPlaceholder') continue;
+            const f2Path = itemPath + '/' + f2.name;
+            if (f2.metadata) {
+              allFiles.push({ ...f2, _folder: itemPath, _path: f2Path, _size: f2.metadata?.size||0 });
+            } else {
+              // 3rd level (rare)
+              const { data: sub2 } = await window._supaClient.storage.from('vp-images').list(f2Path, { limit:200 });
+              if (!sub2) continue;
+              sub2.filter(f=>f.name&&f.name!=='.emptyFolderPlaceholder'&&f.metadata).forEach(f3 => {
+                allFiles.push({ ...f3, _folder: f2Path, _path: f2Path+'/'+f3.name, _size: f3.metadata?.size||0 });
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (filterFolder) {
+      // Specific folder selected — scan just that subtree
+      await _scanFolder(filterFolder);
+    } else {
+      // All folders — scan from root
+      await _scanFolder('');
+    }
+
+    _fmFiles = allFiles;
     fmBuildUsedUrls();
     fmRender();
   } catch(e) { grid.innerHTML = `<div style="color:var(--red);padding:20px;font-size:13px">❌ ${e.message}</div>`; }
@@ -4340,16 +4381,25 @@ async function handleEditorFileSelect(files, role, sceneId) {
       showToast('⚠️ Supabase offline — ภาพจะแสดงเฉพาะ session นี้', 'red', 6000);
     }
 
-    // Update form field
+    // Update form field + auto-sync scenes[] so DB reflects new image immediately
     if (role === 'full') {
       document.getElementById('f_filepath').value = finalPath;
       updatePreview();
+      // Auto-save to scenes array + Supabase so no-presenter toggle shows updated image
+      const _sAutoIdx = scenes.findIndex(x => x.id === sceneId);
+      if (_sAutoIdx !== -1) { scenes[_sAutoIdx].filepath = finalPath; saveScenes(); }
     } else if (role === 'presenter') {
       const presEl = document.getElementById('f_presenter_image_url');
       if (presEl) presEl.value = finalPath;
-      showToast('✅ Presenter image อัปโหลดแล้ว — อย่าลืมกด Save!', 'green');
+      // Auto-save presenter image to DB immediately
+      const _sAutoIdx = scenes.findIndex(x => x.id === sceneId);
+      if (_sAutoIdx !== -1) { scenes[_sAutoIdx].presenter_image_url = finalPath; saveScenes(); }
+      showToast('✅ Presenter image อัปโหลดแล้ว (บันทึกอัตโนมัติ)', 'green');
     } else {
       document.getElementById('f_thumb').value = finalPath;
+      // Auto-save thumb to DB immediately
+      const _sAutoIdx = scenes.findIndex(x => x.id === sceneId);
+      if (_sAutoIdx !== -1) { scenes[_sAutoIdx].thumb = finalPath; saveScenes(); }
     }
 
     // Update upload zone UI helper
@@ -4386,6 +4436,9 @@ async function handleEditorFileSelect(files, role, sceneId) {
         // Update thumb path field
         const fThumb = document.getElementById('f_thumb');
         if (fThumb) fThumb.value = thumbFinalPath;
+        // Auto-save thumb path to scenes[] + DB immediately
+        const _tAutoIdx = scenes.findIndex(x => x.id === sceneId);
+        if (_tAutoIdx !== -1) { scenes[_tAutoIdx].thumb = thumbFinalPath; saveScenes(); }
         // Update thumb upload zone UI
         setZoneFile(thumbContentId, thumbZoneId, thumbFile, thumbUrl, 'thumb');
         // Update sidebar thumbnail
