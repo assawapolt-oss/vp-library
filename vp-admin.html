@@ -3411,6 +3411,9 @@ async function initShows() {
         const arr = data.map((r,i) => ({ id:r.id, name:r.name||'', color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'', sort_order:r.sort_order||(i+1)*10 }));
         saveShows(arr);
         renderShowsPanel();
+        // Bootstrap: if ALL rows have sort_order=0 (freshly migrated), write order to DB now
+        const allZero = data.every(r => !r.sort_order);
+        if (allZero) _saveShowsOrder(arr);
         return;
       }
     } catch(e) { console.warn('[initShows] Supabase error:', e.message); }
@@ -3467,7 +3470,7 @@ function renderShowsPanel() {
   // sidebar list
   document.getElementById('showList').innerHTML = shows.map(sh => `
     <div class="scene-list-item" onclick="editShow('${sh.id}')">
-      ${sh.logo_url ? `<img class="sli-thumb" src="${escHtml(sh.logo_url)}" onerror="this.style.display='none'" style="border-radius:4px;background:#f3f4f6;">` : `<div class="sli-thumb" style="background:${sh.color||'#e5e7eb'};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px">📺</div>`}
+      ${sh.logo_url ? `<img src="${escHtml(sh.logo_url)}" onerror="this.style.display='none'" style="width:28px;height:28px;object-fit:contain;border-radius:4px;background:#f3f4f6;flex-shrink:0">` : `<div style="width:28px;height:28px;background:${sh.color||'#e5e7eb'};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📺</div>`}
       <div class="sli-info">
         <div class="sli-id" style="color:${sh.color||'var(--muted)'}">${escHtml(sh.name)}</div>
         <div class="sli-title" style="font-size:11px">${countScenesInShow(sh.id)} ฉาก</div>

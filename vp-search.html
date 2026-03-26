@@ -324,8 +324,17 @@
   .presenter-toggle-btn:not(.active):hover { opacity:.65; border-color:rgba(255,255,255,.6); }
   .presenter-toggle-btn.active { border-color:rgba(255,255,255,.6); box-shadow:none; opacity:1; }
   .presenter-toggle-btn:hover { border-color:rgba(255,255,255,.8); }
-  .ptbtn-card { top:7px; left:7px; }   /* left side — show logo stays top-right */
+  .ptbtn-card { top:7px; left:7px; }   /* thumb/visual mode — left side, over image */
   .ptbtn-modal { position:static; margin-left:8px; }
+  /* presenter inline — sits right of scene title in info-view card */
+  .ptbtn-inline {
+    position:static; width:22px; height:22px; flex-shrink:0;
+    background:rgba(200,32,43,.07); border-color:rgba(200,32,43,.25);
+    backdrop-filter:none;
+  }
+  .ptbtn-inline img { width:18px; height:18px; }
+  .ptbtn-inline:not(.active) { opacity:.32; border-color:rgba(0,0,0,.12); }
+  .ptbtn-inline.active { border-color:rgba(200,32,43,.4); }
   /* video inline thumb */
   .video-inline-thumb { position:relative; width:100%; border-radius:8px; overflow:hidden; background:#000; margin-top:8px; cursor:pointer; }
   .video-inline-thumb img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; }
@@ -1650,7 +1659,7 @@ function renderCards() {
       const hasPresenter = !!s.presenter_image_url;
       const defaultImgPathInfo = s.presenter_image_url || s.thumb || s.filepath;
       const _PICON2 = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
-      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;left:7px"><img src="${_PICON2}" alt="presenter"></button>` : '';
+      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-inline active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร"><img src="${_PICON2}" alt="presenter"></button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
@@ -1658,13 +1667,15 @@ function renderCards() {
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
           ${logoHtml}
         </div>
-        <div class="scene-body" style="position:relative">
-          ${presenterIconInfo}
+        <div class="scene-body">
           <div class="scene-id" style="display:flex;align-items:center;gap:5px">
             ${s.id}
             ${showDots ? `<span style="display:flex;gap:3px;align-items:center;margin-left:2px">${showDots}</span>` : ''}
           </div>
-          <div class="scene-title">${s.title}</div>
+          <div class="scene-title" style="display:flex;align-items:center;gap:5px">
+            <span style="flex:1;min-width:0">${s.title}</span>
+            ${presenterIconInfo}
+          </div>
           <div class="scene-title-th">${s.title_th}</div>
           <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
         </div>
@@ -2075,9 +2086,11 @@ function videoEmbedUrlJs(url) {
 function toggleVideoCollapse(id) {
   const body = document.getElementById(`vid-body-${id}`);
   const chev = document.getElementById(`vid-chev-${id}`);
+  const playIcon = document.getElementById(`vid-thumb-play-${id}`);
   if (!body) return;
-  body.classList.toggle('open');
-  if (chev) chev.classList.toggle('open');
+  const nowOpen = body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', nowOpen);
+  if (playIcon) playIcon.textContent = nowOpen ? '⏸' : '▶';
 }
 
 function openModal(id) {
@@ -2158,7 +2171,7 @@ function openModal(id) {
         const ytMatch = s.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?]+)/);
         if (!ytMatch) return '';
         const ytId = ytMatch[1];
-        return `<div class="video-inline-thumb" onclick="document.getElementById('vid-body-${id}').classList.add('open');document.getElementById('vid-chev-${id}').classList.add('open');event.stopPropagation()"><img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="video preview"><div class="video-inline-play"><div class="video-inline-play-icon">▶</div></div></div>`;
+        return `<div class="video-inline-thumb" onclick="toggleVideoCollapse('${id}');event.stopPropagation()"><img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="video preview"><div class="video-inline-play"><div class="video-inline-play-icon" id="vid-thumb-play-${id}">▶</div></div></div>`;
       })()}
       <div class="video-collapse-body" id="vid-body-${id}">
         ${s.video_url ? `<div class="video-embed-wrap"><iframe src="${videoEmbedUrlJs(s.video_url)}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe></div>` : `<div class="video-no-link">🎬 ยังไม่มี video preview<br><span style="font-size:11px">Admin สามารถเพิ่ม YouTube/Vimeo link ได้ในหน้า Admin</span></div>`}
@@ -2413,25 +2426,44 @@ function renderLightingBlueprint(sceneId) {
         let _equipList = []; try{_equipList=JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]');}catch(e){}
         const equipId = equipField && _sc2 ? (_sc2[equipField]||'') : '';
         const equipItem = equipId ? _equipList.find(e=>e.id===equipId) : null;
-        const dbEquipHtml = equipItem ? `
-          <div style="display:flex;align-items:center;gap:8px;background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:6px 8px;margin-bottom:4px">
+        const equipCardHtml = equipItem ? `
+          <div style="display:flex;align-items:center;gap:8px;background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:6px 8px">
             ${equipItem.image_url?`<img src="${equipItem.image_url}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:repeating-conic-gradient(#1E293B 0% 25%,#111827 0% 50%) 0 0/8px 8px;flex-shrink:0" onerror="this.style.display='none'">`:''}
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;font-weight:700;color:#CBD5E1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${equipItem.name}</div>
               <div style="font-size:10px;color:#60A5FA">${equipItem.brand||''} ${equipItem.model||''}</div>
             </div>
             <div style="font-size:9px;color:#D9232E;font-family:monospace">${equipItem.id}</div>
-          </div>` : (equipField?`<div style="font-size:10px;color:#4B5563;padding:4px 0">ยังไม่ได้ link อุปกรณ์จาก DB</div>`:'');
-        return admin ? `
+          </div>` : '';
+        const noEquipHtml = equipField && !equipItem ? `<div style="font-size:10px;color:#4B5563;padding:4px 0;font-style:italic">ยังไม่ได้ link อุปกรณ์</div>` : '';
+        // Build equipment selector options (all equipment from cache)
+        const equipOpts = admin ? (()=>{
+          const cats = {};
+          _equipList.forEach(e=>{ (cats[e.category||'อื่นๆ'] = cats[e.category||'อื่นๆ']||[]).push(e); });
+          return `<option value="">— ไม่ระบุ —</option>` +
+            Object.entries(cats).map(([cat,items])=>
+              `<optgroup label="${cat}">${items.map(e=>`<option value="${e.id}" ${e.id===equipId?'selected':''}>${e.name}${e.brand?' · '+e.brand:''}</option>`).join('')}</optgroup>`
+            ).join('');
+        })() : '';
+        return admin && equipField ? `
         <details style="margin-top:8px">
           <summary style="font-size:10px;color:#64748B;cursor:pointer;user-select:none">⚙ Fixture Spec</summary>
-          <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
-            ${dbEquipHtml}
+          <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
+            <div id="equip-card-${sceneId}-${key}" style="display:flex;flex-direction:column;gap:4px">
+              ${equipCardHtml}${noEquipHtml}
+            </div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <select id="equip-sel-${sceneId}-${key}"
+                style="flex:1;background:#111827;border:1px solid #334155;border-radius:5px;color:#CBD5E1;font-size:11px;padding:4px 6px;font-family:inherit"
+                onchange="lbPickEquip('${sceneId}','${key}',this.value)">
+                ${equipOpts}
+              </select>
+            </div>
             <input style="background:#111827;border:1px solid #334155;border-radius:5px;color:#CBD5E1;font-size:11px;padding:5px 8px;font-family:inherit;width:100%;box-sizing:border-box"
-              placeholder="ยี่ห้อ/รุ่น เช่น ARRI SkyPanel S60-C" value="${f.model}"
+              placeholder="Model note เช่น ARRI SkyPanel S60-C" value="${f.model}"
               oninput="lbUpdateModel('${sceneId}','${key}',this.value)">
           </div>
-        </details>` : (dbEquipHtml ? `<div style="margin-top:6px">${dbEquipHtml}</div>` : '');
+        </details>` : (equipField ? `<div style="margin-top:6px">${equipCardHtml}${noEquipHtml}</div>` : '');
       })()}
       <!-- FX + Note collapsible per fixture -->
       <div class="lb-fix-fx-section">
@@ -2645,6 +2677,45 @@ function lbUpdateSlider(sceneId, key, field, val) {
 }
 function lbUpdateModel(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].model = val; }
 function lbUpdateFixNote(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].note = val; }
+
+// ── Equipment picker for Lighting Blueprint ──
+async function lbPickEquip(sceneId, fixtureKey, equipId) {
+  const equipFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', back:'back_light_equip_id'};
+  const field = equipFieldMap[fixtureKey];
+  if (!field) return;
+  // Update in-memory SCENES
+  const sc = SCENES.find(x => x.id === sceneId);
+  if (sc) sc[field] = equipId;
+  // Update equipment card display
+  let _equipList = []; try{_equipList=JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]');}catch(e){}
+  const equipItem = equipId ? _equipList.find(e => e.id === equipId) : null;
+  const cardEl = document.getElementById(`equip-card-${sceneId}-${fixtureKey}`);
+  if (cardEl) {
+    cardEl.innerHTML = equipItem ? `
+      <div style="display:flex;align-items:center;gap:8px;background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:6px 8px">
+        ${equipItem.image_url?`<img src="${equipItem.image_url}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:repeating-conic-gradient(#1E293B 0% 25%,#111827 0% 50%) 0 0/8px 8px;flex-shrink:0" onerror="this.style.display='none'">`:''}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:700;color:#CBD5E1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${equipItem.name}</div>
+          <div style="font-size:10px;color:#60A5FA">${equipItem.brand||''} ${equipItem.model||''}</div>
+        </div>
+        <div style="font-size:9px;color:#D9232E;font-family:monospace">${equipItem.id}</div>
+      </div>` : `<div style="font-size:10px;color:#4B5563;padding:4px 0;font-style:italic">ยังไม่ได้ link อุปกรณ์</div>`;
+  }
+  // Update fixture header model display
+  const modelDisp = document.getElementById(`lb-model-disp-${sceneId}-${fixtureKey}`);
+  if (modelDisp && equipItem) modelDisp.textContent = equipItem.name;
+  // Save to Supabase
+  if (window._supaClient) {
+    try {
+      const upd = {}; upd[field] = equipId || null;
+      const { error } = await window._supaClient.from('scenes').update(upd).eq('id', sceneId);
+      if (!error) {
+        const flash = document.getElementById(`lb-saved-${sceneId}`);
+        if (flash) { flash.style.opacity='1'; setTimeout(()=>{flash.style.opacity='0'},2000); }
+      } else console.warn('[lbPickEquip]', error.message);
+    } catch(e) { console.warn('[lbPickEquip]', e); }
+  }
+}
 
 function lbToggleFixFx(sceneId, fixtureKey, fxId, btn) {
   const d = lbGetDraft(sceneId);
