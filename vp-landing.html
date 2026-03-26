@@ -43,12 +43,7 @@ nav{
   opacity:0;
 }
 .nav-brand{display:flex;align-items:center;gap:11px;text-decoration:none}
-.nav-mark{
-  width:30px;height:30px;background:var(--red);border-radius:6px;
-  display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;letter-spacing:-.5px;
-  font-family:'IBM Plex Sans',sans-serif;
-}
-.nav-name{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+.nav-logo-img{height:26px;width:auto;display:block;object-fit:contain;filter:brightness(0) invert(1)}
 .nav-links{display:flex;gap:28px}
 .nav-links a{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s}
 .nav-links a:hover{color:var(--text)}
@@ -280,26 +275,6 @@ nav{
 .show-card.skeleton{background:#111;animation:shimmer 1.4s linear infinite}
 @keyframes shimmer{0%{opacity:.5}50%{opacity:.9}100%{opacity:.5}}
 
-/* ─── BENTO ──────────────────────────────────────── */
-#bento{padding:0 80px 120px}
-.bento-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  grid-template-rows:auto auto;
-  gap:16px;
-}
-.bento-cell{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:36px 32px;
-  transition:border-color .25s,background .25s;
-}
-.bento-cell:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
-.bento-cell.span2{grid-column:span 2}
-.bento-icon{font-size:28px;margin-bottom:16px}
-.bento-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
-.bento-title{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
-.bento-desc{font-size:13px;color:var(--muted);line-height:1.65}
-
 /* ─── CTA ────────────────────────────────────────── */
 #cta{
   padding:120px 80px;text-align:center;
@@ -327,6 +302,51 @@ footer{
 
 /* ─── SCROLL REVEALS ──────────────────────────────── */
 .reveal{opacity:0;transform:translateY(22px)}
+
+/* ─── RESPONSIVE / MOBILE ───────────────────────── */
+@media(max-width:900px){
+  nav{padding:0 20px;height:56px}
+  .nav-logo-img{height:22px}
+  .nav-links{display:none}
+  .nav-btn{padding:6px 14px;font-size:10px}
+
+  #hero{
+    grid-template-columns:1fr;padding-left:24px;padding-right:24px;
+    padding-top:80px;min-height:auto;padding-bottom:48px;gap:40px;
+  }
+  .hero-left{padding-right:0;text-align:center}
+  .hero-badge{margin-left:auto;margin-right:auto}
+  .hero-sub{max-width:100%}
+  .hero-actions{justify-content:center}
+  .hero-stats{justify-content:center}
+  .hero-title{font-size:clamp(36px,9vw,56px)}
+
+  .hero-right{height:320px;order:-1}
+  .deck-wrap{width:240px;height:300px}
+  .deck-card{width:170px;height:240px}
+
+  #fan-section{height:220vh}
+  .fan-card{width:200px;height:113px}
+
+  #shows{padding:80px 24px}
+  .shows-grid{grid-template-columns:repeat(2,1fr)}
+
+  #cta{padding:80px 24px}
+  footer{padding:20px 24px;flex-direction:column;gap:8px;text-align:center}
+
+  .section-divider{margin:0 24px}
+}
+
+@media(max-width:480px){
+  .hero-title{font-size:clamp(30px,10vw,44px)}
+  .shows-grid{grid-template-columns:1fr 1fr}
+  .hero-right{height:260px}
+  .deck-wrap{width:200px;height:260px}
+  .deck-card{width:140px;height:200px}
+  #fan-section{height:180vh}
+  .fan-card{width:160px;height:90px}
+  .btn-primary,.btn-ghost{padding:11px 20px;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -340,8 +360,7 @@ footer{
 <!-- NAV -->
 <nav id="main-nav">
   <a class="nav-brand" href="vp-search.html">
-    <div class="nav-mark">VP</div>
-    <span class="nav-name">THE STANDARD</span>
+    <img src="tsd_logo.webp" alt="THE STANDARD" class="nav-logo-img">
   </a>
   <div class="nav-links">
     <a href="vp-search.html">ค้นหาฉาก</a>
@@ -378,10 +397,6 @@ footer{
         <div class="stat-num" id="stat-shows">—</div>
         <div class="stat-label">รายการ</div>
       </div>
-      <div class="stat-item">
-        <div class="stat-num">7</div>
-        <div class="stat-label">Worlds</div>
-      </div>
     </div>
   </div>
   <div class="hero-right">
@@ -412,44 +427,6 @@ footer{
   </div>
   <div class="shows-grid" id="shows-grid">
     <!-- filled by JS -->
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- BENTO -->
-<section id="bento">
-  <div class="bento-grid">
-    <div class="bento-cell span2 reveal">
-      <div class="bento-icon">🔍</div>
-      <div class="bento-label">Search</div>
-      <div class="bento-title">ค้นหาฉากได้ทันที</div>
-      <div class="bento-desc">กรองตาม World, Energy และ Context Tags ทำให้หาฉากที่เหมาะกับรายการได้รวดเร็วในไม่กี่วินาที</div>
-    </div>
-    <div class="bento-cell reveal">
-      <div class="bento-icon">🎨</div>
-      <div class="bento-label">Lighting Blueprint</div>
-      <div class="bento-title">บันทึก Blueprint</div>
-      <div class="bento-desc">จดจำและแชร์การตั้งค่าแสงระหว่างทีมงานได้ในคลิกเดียว</div>
-    </div>
-    <div class="bento-cell reveal">
-      <div class="bento-icon">📋</div>
-      <div class="bento-label">Service Request</div>
-      <div class="bento-title">ขอใช้งานออนไลน์</div>
-      <div class="bento-desc">ระบบ Request ออนไลน์ ติดตาม Status แบบ Real-time ไม่ต้องใช้ Line หรือ Email</div>
-    </div>
-    <div class="bento-cell reveal">
-      <div class="bento-icon">🤖</div>
-      <div class="bento-label">AI Tagging</div>
-      <div class="bento-title">Tag ด้วย AI</div>
-      <div class="bento-desc">ใช้ Claude วิเคราะห์ภาพฉากและเติมข้อมูล Taxonomy โดยอัตโนมัติ ประหยัดเวลา Tag ได้มาก</div>
-    </div>
-    <div class="bento-cell reveal">
-      <div class="bento-icon">🌍</div>
-      <div class="bento-label">7 Worlds</div>
-      <div class="bento-title">จัดหมวดหมู่ 7 World</div>
-      <div class="bento-desc">ระบบ Taxonomy ที่ครอบคลุมทุกประเภทฉาก ตั้งแต่ Urban City จนถึง Heritage Culture</div>
-    </div>
   </div>
 </section>
 
