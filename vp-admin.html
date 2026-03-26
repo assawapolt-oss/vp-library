@@ -1379,6 +1379,22 @@ function _supaRowToScene(r) {
 }
 
 /** Upsert scenes + shows ทั้งหมดขึ้น Supabase */
+/** Strip duplicate BUCKET_URL prefixes — prevents URL corruption on repeated saves */
+const _BSTRIP = /^(https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\/)+/;
+function _cleanUrl(u) {
+  if (!u) return u;
+  // Strip all leading bucket prefixes, keep only the last segment
+  const match = u.match(_BSTRIP);
+  if (!match) return u;
+  // Walk forward until we have a single clean prefix
+  let rest = u.slice(match[0].length);
+  while (rest.startsWith('http')) {
+    const m2 = rest.match(_BSTRIP);
+    if (m2) rest = rest.slice(m2[0].length); else break;
+  }
+  return match[0].split('/').slice(0,7).join('/') + '/' + rest;
+}
+
 /** Build a full DB row from a scene object */
 function _sceneToRow(s, i) {
   return {
@@ -1386,14 +1402,14 @@ function _sceneToRow(s, i) {
     title:                 s.title||'',
     category:              s.location_type||'',
     tags:                  [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
-    image_url:             s.filepath||'',
-    thumb_url:             s.thumb||'',
+    image_url:             _cleanUrl(s.filepath)||'',
+    thumb_url:             _cleanUrl(s.thumb)||'',
     description:           s.notes||'',
     sort_order:            i != null ? (i + 1) * 10 : undefined,
     // ── fields added via migration ──────────────────────────────
-    video_url:             s.video_url||'',
-    presenter_image_url:   s.presenter_image_url||'',
-    motion_bg_url:         s.motion_bg_url||'',
+    video_url:             _cleanUrl(s.video_url)||'',
+    presenter_image_url:   _cleanUrl(s.presenter_image_url)||'',
+    motion_bg_url:         _cleanUrl(s.motion_bg_url)||'',
     world:                 s.world||'',
     energy:                s.energy||'',
     context_tags:          s.context_tags||[],
