@@ -2198,6 +2198,12 @@ function openModal(id) {
       ${renderLightingBlueprint(id)}
     </div>
 
+    ${s.notes?`
+    <div class="modal-section">
+      <div class="modal-section-title">📝 Production Notes</div>
+      <div class="modal-notes">${s.notes}</div>
+    </div>`:''}
+
     <div class="modal-section" id="usedInSection">
       <div class="ui-header">
         <div class="modal-section-title" style="margin-bottom:0">📺 ใช้ในงาน${uiBadge}</div>
