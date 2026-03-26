@@ -538,6 +538,8 @@
   .lb-btn { padding:7px 14px; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; border:none; font-family:inherit; transition:all .15s; }
   .lb-btn-save   { background:#3B82F6; color:#fff; }
   .lb-btn-save:hover { background:#2563EB; }
+  .lb-btn-save.lb-dirty { background:#D9232E !important; animation:lb-pulse 1.4s infinite; }
+  @keyframes lb-pulse { 0%,100%{opacity:1} 50%{opacity:.72} }
   .lb-btn-reset  { background:#1E293B; color:#94A3B8; }
   .lb-btn-reset:hover { background:#334155; color:#E2E8F0; }
   .lb-btn-export { background:#1E293B; color:#64748B; margin-left:auto; }
@@ -2301,12 +2303,12 @@ function lbDefault() {
   return {
     fixtures: {
       // fixtures placed OUTSIDE the stage perimeter (around it), stage occupies centre
-      backlight: { on:true,  intensity:75, temp:5600, model:'ARRI SkyPanel S60-C',  note:'', diffuser:false, fx:[], px:0.50, py:0.06, role:'backlight' },
-      rimL:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, fx:[], px:0.06, py:0.42, role:'rimL' },
-      rimR:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, fx:[], px:0.94, py:0.42, role:'rimR' },
-      ambient:   { on:true,  intensity:40, temp:5600, model:'ARRI SkyPanel S30-C',   note:'', diffuser:true,  fx:[], px:0.88, py:0.08, role:'ambient' },
-      key:       { on:true,  intensity:80, temp:5600, model:'Aputure LS 300d II',    note:'', diffuser:false, fx:[], px:0.22, py:0.88, role:'key' },
-      fill:      { on:true,  intensity:45, temp:5600, model:'Nanlite Forza 300B',    note:'', diffuser:false, fx:[], px:0.78, py:0.88, role:'fill' },
+      backlight: { on:true,  intensity:75, temp:5600, model:'ARRI SkyPanel S60-C',  note:'', diffuser:false, diffuser_size:'', fx:[], px:0.50, py:0.06, role:'backlight' },
+      rimL:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, diffuser_size:'', fx:[], px:0.06, py:0.42, role:'rimL' },
+      rimR:      { on:true,  intensity:60, temp:5600, model:'Aputure LS 600d Pro',   note:'', diffuser:false, diffuser_size:'', fx:[], px:0.94, py:0.42, role:'rimR' },
+      ambient:   { on:true,  intensity:40, temp:5600, model:'ARRI SkyPanel S30-C',   note:'', diffuser:true,  diffuser_size:'', fx:[], px:0.88, py:0.08, role:'ambient' },
+      key:       { on:true,  intensity:80, temp:5600, model:'Aputure LS 300d II',    note:'', diffuser:false, diffuser_size:'', fx:[], px:0.22, py:0.88, role:'key' },
+      fill:      { on:true,  intensity:45, temp:5600, model:'Nanlite Forza 300B',    note:'', diffuser:false, diffuser_size:'', fx:[], px:0.78, py:0.88, role:'fill' },
     },
     blackFlags: [
       { px:0.12, py:0.55, w:0.08, h:0.05, angle:0 },
@@ -2416,9 +2418,16 @@ function renderLightingBlueprint(sceneId) {
         <span class="lb-fix-row-icon" id="lb-rowicon-${sceneId}-${key}" style="display:inline-flex;align-items:center;justify-content:center">${rowIcon}</span>
         <span class="lb-fix-row-name">${m.label}</span>
         ${admin ? `
-          <button class="lb-diag-btn${f.diffuser?' active':''}" style="font-size:8px;padding:2px 6px;margin-right:2px"
-            onclick="lbToggleDiffuser('${sceneId}','${key}',this)" title="Diffuser ติดกับไฟ">🧣</button>
-        ` : (f.diffuser ? `<span style="font-size:10px;color:#60A5FA;margin-right:4px" title="มี Diffuser">🧣</span>` : '')}
+          <span style="display:inline-flex;align-items:center;gap:3px;margin-right:4px">
+            <button class="lb-diag-btn${f.diffuser?' active':''}" id="lb-diff-btn-${sceneId}-${key}"
+              style="font-size:8px;padding:2px 6px;background:${f.diffuser?'rgba(226,232,240,.18)':'none'};color:#E2E8F0;border-color:${f.diffuser?'#94A3B8':'#334155'}"
+              onclick="lbToggleDiffuser('${sceneId}','${key}',this)" title="Diffuser ติดกับไฟ">◻ Diffuser</button>
+            <input type="text" id="lb-diffsize-${sceneId}-${key}"
+              style="width:60px;background:#111827;border:1px solid #334155;border-radius:4px;color:#E2E8F0;font-size:9px;padding:2px 5px;font-family:inherit;display:${f.diffuser?'':'none'}"
+              placeholder="เช่น 120cm" value="${f.diffuser_size||''}"
+              oninput="lbUpdateDiffuserSize('${sceneId}','${key}',this.value)">
+          </span>
+        ` : (f.diffuser ? `<span style="font-size:9px;color:#E2E8F0;background:rgba(148,163,184,.15);border:1px solid #334155;border-radius:4px;padding:1px 5px;margin-right:4px;white-space:nowrap">◻ Diffuser${f.diffuser_size?' '+f.diffuser_size:''}</span>` : '')}
         <span class="lb-fix-row-model" id="lb-model-disp-${sceneId}-${key}">${modelDisplay}</span>
         ${admin ? `<button class="lb-fix-on-off ${f.on?'on':'off'}" id="lb-onoff-${sceneId}-${key}"
           onclick="lbToggleOnOff('${sceneId}','${key}')">${f.on?'ON':'OFF'}</button>` :
@@ -2461,11 +2470,12 @@ function renderLightingBlueprint(sceneId) {
         const noEquipHtml = !equipItem ? `<div style="font-size:10px;color:#4B5563;padding:4px 0;font-style:italic">ยังไม่ได้ link อุปกรณ์</div>` : '';
         // Build equipment selector options (all equipment from cache)
         const equipOpts = admin ? (()=>{
-          const cats = {};
-          _equipList.forEach(e=>{ (cats[e.category||'อื่นๆ'] = cats[e.category||'อื่นๆ']||[]).push(e); });
+          // group by brand (category removed)
+          const brands = {};
+          _equipList.forEach(e=>{ const b=e.brand||'อื่นๆ'; (brands[b]=brands[b]||[]).push(e); });
           return `<option value="">— ไม่ระบุ —</option>` +
-            Object.entries(cats).map(([cat,items])=>
-              `<optgroup label="${cat}">${items.map(e=>`<option value="${e.id}" ${e.id===equipId?'selected':''}>${e.name}${e.brand?' · '+e.brand:''}</option>`).join('')}</optgroup>`
+            Object.entries(brands).map(([brand,items])=>
+              `<optgroup label="${brand}">${items.map(e=>`<option value="${e.id}" ${e.id===equipId?'selected':''}>${e.name}${e.model?' · '+e.model:''}</option>`).join('')}</optgroup>`
             ).join('');
         })() : '';
         return admin ? `
@@ -2596,6 +2606,10 @@ function renderLightingBlueprint(sceneId) {
       <!-- Action bar -->
       <div class="lb-actions">
         ${isEditor() ? `
+          <div id="lb-caution-${sceneId}" style="display:none;width:100%;background:#422006;border:1.5px solid #F59E0B;border-radius:7px;padding:7px 10px;font-size:11px;color:#FCD34D;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="font-size:13px">⚠️</span>
+            <span>มีการแก้ไขที่<strong>ยังไม่ได้บันทึก</strong> — กด 💾 Save หรือ ↺ Reset เพื่อยกเลิก</span>
+          </div>
           <button class="lb-btn lb-btn-save" onclick="lbSave('${sceneId}')">💾 บันทึก Blueprint</button>
           <button class="lb-btn lb-btn-reset" onclick="lbReset('${sceneId}')">↺ Reset</button>
           <span class="lb-saved-flash" id="lb-saved-${sceneId}">✓ Saved!</span>
@@ -2611,6 +2625,50 @@ function renderLightingBlueprint(sceneId) {
 
 // ── LB live update helpers ──────────────────────────────────
 const _lbDraft = {};
+
+// ── Dirty-change tracking (unsaved warning) ──────────────────
+const _lbDirty = {};
+function _lbMarkDirty(sceneId) {
+  _lbDirty[sceneId] = true;
+  const caution = document.getElementById(`lb-caution-${sceneId}`);
+  if (caution) caution.style.display = 'flex';
+  const saveBtn = document.querySelector(`#lb-body-${sceneId} .lb-btn-save`);
+  if (saveBtn) saveBtn.classList.add('lb-dirty');
+}
+function _lbClearDirty(sceneId) {
+  delete _lbDirty[sceneId];
+  const caution = document.getElementById(`lb-caution-${sceneId}`);
+  if (caution) caution.style.display = 'none';
+  const saveBtn = document.querySelector(`#lb-body-${sceneId} .lb-btn-save`);
+  if (saveBtn) saveBtn.classList.remove('lb-dirty');
+}
+
+// ── Equipment image cache for canvas drawing ─────────────────
+const _lbImgCache = {}; // url → HTMLImageElement | 'loading' | null
+function _lbEnsureImg(url, sceneId) {
+  if (!url) return null;
+  const cleanUrl = url.split('?')[0]; // strip cache-buster
+  const cached = _lbImgCache[cleanUrl];
+  if (cached && cached !== 'loading') return cached;
+  if (cached === 'loading') return null;
+  _lbImgCache[cleanUrl] = 'loading';
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload  = () => { _lbImgCache[cleanUrl] = img; if (sceneId) lbDrawCanvas(sceneId); };
+  img.onerror = () => { _lbImgCache[cleanUrl] = null; };
+  img.src = cleanUrl;
+  return null;
+}
+function _getEquipForFixture(sceneId, key) {
+  const _eFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', backlight:'back_light_equip_id', rimL:'rim_l_equip_id', rimR:'rim_r_equip_id', ambient:'ambient_equip_id'};
+  const field = _eFieldMap[key];
+  if (!field) return null;
+  const sc = SCENES.find(x => x.id === sceneId);
+  const eId = sc ? (sc[field]||'') : '';
+  if (!eId) return null;
+  let list = []; try { list = JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]'); } catch(e) {}
+  return list.find(e => e.id === eId) || null;
+}
 
 function lbGetDraft(id) {
   if (!_lbDraft[id]) _lbDraft[id] = getLB(id);
@@ -2648,6 +2706,7 @@ function lbGetDraft(id) {
   Object.keys(d.fixtures).forEach(k => {
     const f = d.fixtures[k];
     if (f.diffuser === undefined) f.diffuser = false;
+    if (f.diffuser_size === undefined) f.diffuser_size = '';
     if (!f.fx) f.fx = [];
     if (!f.role) f.role = k;
     if (f.px === undefined) { f.px = POS[k]?.px ?? 0.5; f.py = POS[k]?.py ?? 0.5; }
@@ -2670,20 +2729,42 @@ function lbToggleOnOff(sceneId, key) {
   const btn = document.getElementById(`lb-onoff-${sceneId}-${key}`);
   btn.textContent = on ? 'ON' : 'OFF';
   btn.className = `lb-fix-on-off ${on?'on':'off'}`;
-  // icon change in row
-  const iconMap = { backlight:'💡', rimL:'🔵', rimR:'🔵', ambient:'🟢', key:'🟣', fill:'🔷' };
+  // row icon: use equipment image if linked, else emoji
   const iconEl = document.getElementById(`lb-rowicon-${sceneId}-${key}`);
-  if (iconEl) iconEl.textContent = on ? (iconMap[key]||'💡') : '⬛';
+  if (iconEl) {
+    const _eq = _getEquipForFixture(sceneId, key);
+    if (_eq?.image_url) {
+      iconEl.innerHTML = on
+        ? `<img src="${_eq.image_url}" style="width:22px;height:22px;object-fit:contain;border-radius:3px" onerror="this.outerHTML='💡'">`
+        : '⬛';
+    } else {
+      const iconMap = { backlight:'💡', rimL:'🔵', rimR:'🔵', ambient:'🟢', key:'🟣', fill:'🔷' };
+      iconEl.innerHTML = on ? (iconMap[key]||'💡') : '⬛';
+    }
+  }
   const row = document.getElementById(`lb-row-${sceneId}-${key}`);
   if (row) row.style.opacity = on ? '1' : '0.5';
+  _lbMarkDirty(sceneId);
   lbDrawCanvas(sceneId);
 }
 
 function lbToggleDiffuser(sceneId, key, btn) {
   const d = lbGetDraft(sceneId);
   d.fixtures[key].diffuser = !d.fixtures[key].diffuser;
-  btn.classList.toggle('active', d.fixtures[key].diffuser);
+  const on = d.fixtures[key].diffuser;
+  btn.classList.toggle('active', on);
+  btn.style.background   = on ? 'rgba(226,232,240,.18)' : 'none';
+  btn.style.borderColor  = on ? '#94A3B8' : '#334155';
+  // show / hide size input
+  const sizeEl = document.getElementById(`lb-diffsize-${sceneId}-${key}`);
+  if (sizeEl) sizeEl.style.display = on ? '' : 'none';
+  _lbMarkDirty(sceneId);
   lbDrawCanvas(sceneId);
+}
+
+function lbUpdateDiffuserSize(sceneId, key, val) {
+  lbGetDraft(sceneId).fixtures[key].diffuser_size = val;
+  _lbMarkDirty(sceneId);
 }
 
 function lbUpdateSlider(sceneId, key, field, val) {
@@ -2696,10 +2777,11 @@ function lbUpdateSlider(sceneId, key, field, val) {
     const el = document.getElementById(`lb-temp-val-${sceneId}-${key}`);
     el.textContent = val + 'K'; el.style.color = col;
   }
+  _lbMarkDirty(sceneId);
   lbDrawCanvas(sceneId);
 }
-function lbUpdateModel(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].model = val; }
-function lbUpdateFixNote(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].note = val; }
+function lbUpdateModel(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].model = val; _lbMarkDirty(sceneId); }
+function lbUpdateFixNote(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].note = val; _lbMarkDirty(sceneId); }
 
 // ── Equipment picker for Lighting Blueprint ──
 async function lbPickEquip(sceneId, fixtureKey, equipId) {
@@ -2727,6 +2809,19 @@ async function lbPickEquip(sceneId, fixtureKey, equipId) {
   // Update fixture header model display
   const modelDisp = document.getElementById(`lb-model-disp-${sceneId}-${fixtureKey}`);
   if (modelDisp && equipItem) modelDisp.textContent = equipItem.name;
+  // Update row icon with equipment image
+  const rowIconEl = document.getElementById(`lb-rowicon-${sceneId}-${fixtureKey}`);
+  if (rowIconEl) {
+    const d2 = lbGetDraft(sceneId);
+    const on2 = d2.fixtures[fixtureKey]?.on !== false;
+    const iconMap2 = {backlight:'💡',rimL:'🔵',rimR:'🔵',ambient:'🟢',key:'🟣',fill:'🔷'};
+    rowIconEl.innerHTML = (equipItem?.image_url && on2)
+      ? `<img src="${equipItem.image_url}" style="width:22px;height:22px;object-fit:contain;border-radius:3px" onerror="this.outerHTML='${iconMap2[fixtureKey]||'💡'}'">`
+      : (on2 ? (iconMap2[fixtureKey]||'💡') : '⬛');
+  }
+  // Preload equipment image for canvas and redraw
+  if (equipItem?.image_url) _lbEnsureImg(equipItem.image_url, sceneId);
+  lbDrawCanvas(sceneId);
   // Save to Supabase
   if (window._supaClient) {
     try {
@@ -2750,6 +2845,7 @@ function lbToggleFixFx(sceneId, fixtureKey, fxId, btn) {
   // update chevron label
   const chev = document.getElementById(`lb-fx-chev-${sceneId}-${fixtureKey}`);
   if (chev) chev.textContent = arr.length > 0 ? '▾' : '▸';
+  _lbMarkDirty(sceneId);
 }
 
 function lbToggleFixFxPanel(sceneId, key) {
@@ -2760,7 +2856,7 @@ function lbToggleFixFxPanel(sceneId, key) {
   if (chev) chev.textContent = open ? '▾' : '▸';
 }
 
-function lbUpdateNote(sceneId, val) { lbGetDraft(sceneId).note = val; }
+function lbUpdateNote(sceneId, val) { lbGetDraft(sceneId).note = val; _lbMarkDirty(sceneId); }
 
 function lbUpdateStage(sceneId, field, val) {
   const d = lbGetDraft(sceneId);
@@ -2834,13 +2930,18 @@ function lbAddDiffuser(sceneId) {
   const d = lbGetDraft(sceneId);
   if (!d.diffusers) d.diffusers = [];
   d.diffusers.push({ px: 0.3 + Math.random()*0.4, py: 0.15 + Math.random()*0.3, w:0.12, angle:0 });
+  _lbMarkDirty(sceneId);
   lbDrawCanvas(sceneId);
+}
+function lbAddBlackFlagDirty(sceneId) {
+  lbAddBlackFlag(sceneId); _lbMarkDirty(sceneId);
 }
 
 function lbSave(sceneId) {
   const d = _lbDraft[sceneId];
   if (!d) return;
   saveLB(sceneId, d);
+  _lbClearDirty(sceneId);
   const fl = document.getElementById(`lb-saved-${sceneId}`);
   if (fl) { fl.style.opacity = 1; setTimeout(() => fl.style.opacity = 0, 2000); }
   openModal(sceneId);
@@ -2848,6 +2949,7 @@ function lbSave(sceneId) {
 function lbReset(sceneId) {
   if (!confirm('Reset Lighting Blueprint เป็นค่า default?')) return;
   delete _lbDraft[sceneId];
+  _lbClearDirty(sceneId);
   const all = getAllLB(); delete all[sceneId];
   localStorage.setItem(LB_KEY, JSON.stringify(all));
   openModal(sceneId);
@@ -3206,9 +3308,20 @@ function lbDrawCanvas(sceneId) {
       ctx.beginPath(); ctx.roundRect(fx-sz/2-3,fy-sz/2-3,sz+6,sz+6,9); ctx.stroke();
     }
     ctx.globalAlpha=f.on?1:0.3;
-    ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    const iconMap={backlight:'💡',rimL:'🔵',rimR:'🔵',ambient:'🟢',key:'🟣',fill:'🔷'};
-    ctx.fillText(f.on?(iconMap[key]||'💡'):'⬛',fx,fy);
+    // Use equipment image if linked, else fall back to emoji
+    const _eqItem = _getEquipForFixture(sceneId, key);
+    const _eqImg  = _eqItem?.image_url ? _lbEnsureImg(_eqItem.image_url, sceneId) : null;
+    if (_eqImg) {
+      const imgSz = sz - 8;
+      ctx.save();
+      ctx.beginPath(); ctx.roundRect(fx-imgSz/2, fy-imgSz/2, imgSz, imgSz, 5); ctx.clip();
+      ctx.drawImage(_eqImg, fx-imgSz/2, fy-imgSz/2, imgSz, imgSz);
+      ctx.restore();
+    } else {
+      ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const iconMap={backlight:'💡',rimL:'🔵',rimR:'🔵',ambient:'🟢',key:'🟣',fill:'🔷'};
+      ctx.fillText(f.on?(iconMap[key]||'💡'):'⬛',fx,fy);
+    }
     ctx.globalAlpha=f.on?0.9:0.4;
     ctx.font='bold 8px sans-serif'; ctx.fillStyle='#94A3B8'; ctx.textBaseline='alphabetic';
     // show role if swapped
@@ -3401,9 +3514,12 @@ function lbAttachDragListeners(canvas, sceneId, redraw) {
         const hx = isTouch ? downPos.x : x;
         const hy = isTouch ? downPos.y : y;
         const hit=getHit(hx,hy,isTouch), d=lbGetDraft(sceneId);
-        if (hit?.type==='flag-del')  { d.blackFlags.splice(hit.idx,1); redraw(); }
-        else if (hit?.type==='diff-del') { d.diffusers.splice(hit.idx,1); redraw(); }
-        else if (hit?.type==='fur-del')  { d.furniture[hit.fk].on=false; redraw(); }
+        if (hit?.type==='flag-del')  { d.blackFlags.splice(hit.idx,1); _lbMarkDirty(sceneId); redraw(); }
+        else if (hit?.type==='diff-del') { d.diffusers.splice(hit.idx,1); _lbMarkDirty(sceneId); redraw(); }
+        else if (hit?.type==='fur-del')  { d.furniture[hit.fk].on=false; _lbMarkDirty(sceneId); redraw(); }
+      } else if (dragging) {
+        // Any drag that moved something — mark dirty
+        _lbMarkDirty(sceneId);
       }
     }
     dragging=null; downPos=null; canvas.style.cursor='';

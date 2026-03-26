@@ -247,9 +247,9 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <label class="form-label">ช่วงเวลาที่ถ่ายทำ <span class="req">*</span><span id="slotAvail" style="font-weight:400;font-size:11px;margin-left:6px"></span></label>
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
               <span style="font-size:12px;color:var(--muted);white-space:nowrap">จาก</span>
-              <input class="form-input" id="f_time_start" type="time" style="flex:1" oninput="checkSlotAvailability()">
+              <input class="form-input" id="f_time_start" type="time" step="1800" style="flex:1" oninput="checkSlotAvailability()">
               <span style="font-size:12px;color:var(--muted);white-space:nowrap">ถึง</span>
-              <input class="form-input" id="f_time_end" type="time" style="flex:1" oninput="checkSlotAvailability()">
+              <input class="form-input" id="f_time_end" type="time" step="1800" style="flex:1" oninput="checkSlotAvailability()">
             </div>
             <div class="time-slot-group">
               <div class="time-slot-pill" id="slot_morning" onclick="setTimePreset('morning')">🌅 เช้า</div>

@@ -439,17 +439,7 @@
           <div class="sidebar-title">💡 อุปกรณ์ไฟ</div>
           <button class="add-scene-btn" onclick="openEquipmentModal(null)">+ เพิ่ม</button>
         </div>
-        <div style="padding:8px 10px;font-size:11px;color:var(--muted)">
-          กรองตาม:
-          <select id="equipCatFilter" onchange="renderEquipmentPanel()" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;margin-left:4px">
-            <option value="">ทั้งหมด</option>
-            <option value="key_light">Key Light</option>
-            <option value="fill_light">Fill Light</option>
-            <option value="back_light">Back Light</option>
-            <option value="special">Special</option>
-            <option value="other">อื่นๆ</option>
-          </select>
-        </div>
+        <div style="padding:8px 10px;font-size:11px;color:var(--muted)">ไฟทุกดวงใช้ได้กับทุกตำแหน่ง</div>
         <div id="equipmentList" style="padding:4px 8px;"></div>
       </div>
     </div>
@@ -867,16 +857,6 @@
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">ชื่อเต็ม (Name)</label>
       <input class="form-input" id="equipName" placeholder="Aputure 600d Pro" oninput="autoFillEquipName()">
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">ประเภท (Category)</label>
-      <select class="form-input" id="equipCategory">
-        <option value="key_light">Key Light</option>
-        <option value="fill_light">Fill Light</option>
-        <option value="back_light">Back Light</option>
-        <option value="special">Special / Effect</option>
-        <option value="other">อื่นๆ</option>
-      </select>
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">ภาพอุปกรณ์ (PNG โปร่งแสง → แปลงเป็น WebP อัตโนมัติ)</label>
@@ -3205,7 +3185,6 @@ function renderEquipmentGrid(containerId, compact) {
     el.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:13px;padding:16px">ยังไม่มีอุปกรณ์ — กด "+ เพิ่ม" เพื่อเพิ่มอุปกรณ์แรก</div>';
     return;
   }
-  const catLabel = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light', special:'Special', other:'อื่นๆ' };
   el.innerHTML = items.map(e => {
     const img = e.image_url
       ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:90px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/16px 16px;padding:4px" onerror="this.style.display='none'">`
@@ -3213,7 +3192,6 @@ function renderEquipmentGrid(containerId, compact) {
     return `<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .12s" onclick="openEquipmentModal('${e.id}')" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
       ${img}
       <div style="padding:8px">
-        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${catLabel[e.category]||e.category}</div>
         <div style="font-size:12px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(e.name)}">${escHtml(e.name)}</div>
         <div style="font-size:10px;color:var(--muted)">${escHtml(e.brand||'')}${e.model?' · '+escHtml(e.model):''}</div>
         <div style="font-size:9px;font-family:monospace;color:var(--red);margin-top:2px">${e.id}</div>
@@ -3260,7 +3238,7 @@ function openEquipmentModal(id) {
   document.getElementById('equipBrand').value   = e?.brand    || '';
   document.getElementById('equipModel').value   = e?.model    || '';
   document.getElementById('equipName').value    = e?.name     || '';
-  document.getElementById('equipCategory').value = e?.category || 'key_light';
+  // category removed — any light can serve any role
   document.getElementById('equipImageUrl').value = e?.image_url || '';
   document.getElementById('equipNotes').value   = e?.notes    || '';
   document.getElementById('equipDeleteBtn').style.display = isNew ? 'none' : '';
@@ -3338,7 +3316,7 @@ async function saveEquipmentModal() {
     name,
     brand:     document.getElementById('equipBrand').value.trim(),
     model:     document.getElementById('equipModel').value.trim(),
-    category:  document.getElementById('equipCategory').value,
+    category:  '',  // category removed — lights are universal
     image_url: document.getElementById('equipImageUrl').value.trim(),
     notes:     document.getElementById('equipNotes').value.trim(),
     updated_at: new Date().toISOString(),
@@ -3379,26 +3357,23 @@ function openEquipmentPicker(slot, sceneId) {
 }
 
 function _renderEquipmentPickerModal(slot) {
-  const catLabel = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light', special:'Special', other:'อื่นๆ' };
   document.getElementById('equipPickerModal')?.remove();
   const body = document.createElement('div');
   body.id = 'equipPickerModal';
   body.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
   body.onclick = e => { if (e.target === body) body.remove(); };
 
-  // show all equipment, highlighted if in same category
-  const renderGrid = (filter) => {
-    const items = EQUIPMENT_LIST.filter(e => !filter || e.category === filter || filter === 'all');
+  // show all equipment (no category filter — lights are universal)
+  const renderGrid = () => {
+    const items = EQUIPMENT_LIST;
     if (!items.length) return '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">ยังไม่มีอุปกรณ์ — <a onclick="document.getElementById(\'equipPickerModal\').remove();switchAdminTab(\'equipment\')" style="cursor:pointer;color:var(--red)">ไปเพิ่มอุปกรณ์ก่อน</a></div>';
     return items.map(e => {
       const img = e.image_url
         ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:70px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/12px 12px" onerror="this.style.display='none'">`
         : `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:28px;background:#F9FAFB">💡</div>`;
-      const isMatch = e.category === slot;
-      return `<div onclick="selectEquipmentForSlot('${e.id}')" style="border:2px solid ${isMatch?'var(--red)':'var(--border)'};border-radius:8px;overflow:hidden;cursor:pointer;transition:.12s;${isMatch?'background:#FFF8F8':''}" onmouseover="this.style.borderColor='var(--red)';this.style.background='#FFF8F8'" onmouseout="this.style.borderColor='${isMatch?'var(--red)':'var(--border)'}'">
+      return `<div onclick="selectEquipmentForSlot('${e.id}')" style="border:2px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:.12s" onmouseover="this.style.borderColor='var(--red)';this.style.background='#FFF8F8'" onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
         ${img}
         <div style="padding:6px 8px">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${catLabel[e.category]||e.category}</div>
           <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(e.name)}</div>
           <div style="font-size:10px;color:var(--muted)">${escHtml(e.brand||'')} ${escHtml(e.model||'')}</div>
         </div>
@@ -3408,33 +3383,15 @@ function _renderEquipmentPickerModal(slot) {
 
   body.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:15px;font-weight:700">💡 เลือกอุปกรณ์ — ${catLabel[slot]||slot}</div>
+      <div style="font-size:15px;font-weight:700">💡 เลือกอุปกรณ์ไฟ</div>
       <button onclick="document.getElementById('equipPickerModal').remove()" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--muted)">✕</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <button onclick="_equipPickerFilter('all',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;background:#F9FAFB">ทั้งหมด</button>
-      <button onclick="_equipPickerFilter('key_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='key_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='key_light'?'#FFF0F0':'#F9FAFB'}">Key Light</button>
-      <button onclick="_equipPickerFilter('fill_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='fill_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='fill_light'?'#FFF0F0':'#F9FAFB'}">Fill Light</button>
-      <button onclick="_equipPickerFilter('back_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='back_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='back_light'?'#FFF0F0':'#F9FAFB'}">Back Light</button>
-      <button onclick="_equipPickerFilter('special',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;background:#F9FAFB">Special</button>
-    </div>
-    <div id="equipPickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;overflow-y:auto;flex:1">${renderGrid(slot)}</div>
+    <div id="equipPickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;overflow-y:auto;flex:1">${renderGrid()}</div>
     <div style="margin-top:12px;display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border)">
       <button onclick="selectEquipmentForSlot('')" style="font-size:12px;padding:6px 14px;border:1px solid #FECACA;color:var(--red);border-radius:6px;cursor:pointer;background:#FFF0F0">🗑 ล้างการเลือก</button>
     </div>
   </div>`;
   document.body.appendChild(body);
-  // store render function for filter
-  body._renderFn = renderGrid;
-}
-function _equipPickerFilter(cat, btn) {
-  const modal = document.getElementById('equipPickerModal');
-  if (!modal || !modal._renderFn) return;
-  modal.querySelectorAll('button[onclick*="_equipPickerFilter"]').forEach(b => {
-    b.style.borderColor = 'var(--border)'; b.style.background = '#F9FAFB';
-  });
-  btn.style.borderColor = 'var(--red)'; btn.style.background = '#FFF0F0';
-  document.getElementById('equipPickerGrid').innerHTML = modal._renderFn(cat === 'all' ? null : cat);
 }
 
 function selectEquipmentForSlot(equipId) {
