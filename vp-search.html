@@ -1451,25 +1451,26 @@ async function renderCollections() {
     const accent=c.color||'#D9232E';
     const sceneCnt=(c.scene_ids||[]).length;
     const meta=[c.season,c.year,sceneCnt+'  ฉาก'].filter(Boolean).join(' · ');
+    // Shared bottom-overlay markup (used in both card variants)
+    const seasonLine = c.season ? `<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">${c.season}${c.year?' · '+c.year:''}</div>` : '';
+    const overlay = `<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.08) 60%,transparent 100%)"></div>
+      <div style="position:absolute;bottom:10px;left:12px;right:12px">
+        ${seasonLine}
+        <div style="font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)">${c.emoji||''} ${c.name}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px">${sceneCnt} ฉาก</div>
+      </div>`;
     if(c.cover_url){
       return `<div class="col-card" onclick="openCollection('${c.id}')">
         <div style="position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#111">
           <img src="${c.cover_url}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.style.background='${accent}'">
-          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.1) 60%,transparent 100%)"></div>
-          <div style="position:absolute;bottom:10px;left:12px;right:12px">
-            <div style="font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)">${c.emoji||''} ${c.name}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.75);margin-top:2px">${meta}</div>
-          </div>
+          ${overlay}
         </div>
       </div>`;
     }
     return `<div class="col-card" onclick="openCollection('${c.id}')">
-      <div style="width:100%;aspect-ratio:16/9;background:${accent};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-        <div style="font-size:36px">${c.emoji||'🗂'}</div>
-      </div>
-      <div style="padding:14px 16px">
-        <div style="font-size:14px;font-weight:700">${c.name}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${meta}</div>
+      <div style="position:relative;width:100%;aspect-ratio:16/9;background:${accent};display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <div style="font-size:52px;opacity:.85">${c.emoji||'🗂'}</div>
+        ${overlay}
       </div>
     </div>`;
   }).join('')+`</div>`;

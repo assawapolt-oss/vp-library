@@ -1738,7 +1738,6 @@ function buildEditorHTML(s) {
         <div style="margin-top:12px;padding:14px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
           <div class="form-label" style="margin-bottom:4px;color:#065F46;font-size:13px">🧑 ภาพฉากมีพิธีกร (Presenter Toggle)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:10px">อัพโหลดภาพที่มีคนยืนอยู่ — ปุ่ม 🧑 จะขึ้นบนการ์ดให้ switch ได้ทันที หลังกด Save</div>
-          ${s.presenter_image_url ? `<div style="margin-bottom:10px;border-radius:8px;overflow:hidden;max-height:120px;display:flex;align-items:center;justify-content:center;background:#000"><img src="${escHtml(s.presenter_image_url)}" style="max-width:100%;max-height:120px;object-fit:cover" onerror="this.parentElement.style.display='none'"><span style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">✅ มีภาพแล้ว</span></div>` : ''}
           <div class="upload-zone" id="uploadZonePresenter_${s.id}"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
@@ -2224,10 +2223,10 @@ async function uploadFileToDisk(file, destPath) {
       const { error } = await window._supaClient.storage
         .from('vp-images')
         .upload(cleanPath, blob, { upsert: true, contentType: file.type || 'image/webp' });
-      if (!error) {
-        const { data: urlData } = window._supaClient.storage.from('vp-images').getPublicUrl(cleanPath);
-        return { ok: true, url: urlData?.publicUrl || '' };
-      }
+      if (error) return { ok: false, error: error.message };
+      const { data: urlData } = window._supaClient.storage.from('vp-images').getPublicUrl(cleanPath);
+      const publicUrl = urlData?.publicUrl || (BUCKET_URL + cleanPath);
+      return { ok: true, url: publicUrl };
     } catch(e) {
       console.warn('[supa storage] upload error:', e.message);
       return { ok: false, error: e.message };
@@ -2904,19 +2903,21 @@ async function handleColCoverUpload(input) {
     const result = await convertImageToWebP(file, { quality: 0.85 });
     if (result.wasConverted) file = blobToFile(result.blob, result.filename);
   } catch(e) { console.warn('[col cover webp]', e); }
-  // Preview ทันที
+  // Preview ทันที + ตั้ง cover_url ล่วงหน้าเป็น dataUrl ก่อน (ป้องกัน race condition เมื่อ Save ก่อน upload เสร็จ)
   const dataUrl = await new Promise(res => {
     const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
   });
   const wrap = document.getElementById('col_cover_preview_wrap');
   if (wrap) wrap.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:7px">`;
+  document.getElementById('col_cover_url').value = dataUrl; // ← immediate fallback
   if (fnEl) fnEl.textContent = '⏳ กำลัง upload...';
   const colId = document.getElementById('col_editing_id').value || ('col_' + Date.now());
   const destPath = `_graphics/collections/${colId}.webp`;
   const r = await uploadFileToDisk(file, destPath);
-  const finalUrl = (r.ok && r.url) ? r.url : (r.ok && r.path ? r.path : dataUrl);
+  // Build final URL: prefer Supabase public URL, fallback to constructed URL, else keep dataUrl
+  const finalUrl = r.ok ? (r.url || BUCKET_URL + destPath) : dataUrl;
   document.getElementById('col_cover_url').value = finalUrl;
-  if (fnEl) fnEl.textContent = r.ok ? `✅ ${file.name}` : `⚠️ ${file.name} (ไม่สามารถ upload ได้)`;
+  if (fnEl) fnEl.textContent = r.ok ? `✅ ${file.name}` : `⚠️ ${file.name} (บันทึก local preview)`;
 }
 
 function openCollectionEditor(colId) {
@@ -5254,32 +5255,37 @@ function _adminIre2Color(lum) {
 
 async function _adminRenderFalseColor(imgEl, canvasEl) {
   return new Promise((resolve, reject) => {
-    const draw = () => {
-      const W = imgEl.naturalWidth  || imgEl.offsetWidth;
-      const H = imgEl.naturalHeight || imgEl.offsetHeight;
+    // Create a fresh image with crossOrigin to avoid tainted-canvas CORS error
+    // (Supabase Storage URLs require crossOrigin='anonymous' for canvas pixel access)
+    const cors = new Image();
+    cors.crossOrigin = 'anonymous';
+    cors.onerror = () => reject(new Error('CORS: ไม่สามารถอ่านพิกเซลของรูปนี้ได้ (ลอง reload หน้า)'));
+    cors.onload = () => {
+      const W = cors.naturalWidth;
+      const H = cors.naturalHeight;
       if (!W || !H) { reject('img not ready'); return; }
-      const off = document.createElement('canvas');
-      off.width = W; off.height = H;
-      const ctx = off.getContext('2d');
-      ctx.drawImage(imgEl, 0, 0, W, H);
-      const data = ctx.getImageData(0, 0, W, H);
-      const px   = data.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
-        const [r, g, b] = _adminIre2Color(lum);
-        px[i] = r; px[i+1] = g; px[i+2] = b;
-      }
-      ctx.putImageData(data, 0, 0);
-      canvasEl.width  = imgEl.offsetWidth  || W;
-      canvasEl.height = imgEl.offsetHeight || H;
-      canvasEl.getContext('2d').drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
-      resolve();
+      try {
+        const off = document.createElement('canvas');
+        off.width = W; off.height = H;
+        const ctx = off.getContext('2d');
+        ctx.drawImage(cors, 0, 0, W, H);
+        const data = ctx.getImageData(0, 0, W, H);
+        const px   = data.data;
+        for (let i = 0; i < px.length; i += 4) {
+          const lum = 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+          const [r, g, b] = _adminIre2Color(lum);
+          px[i] = r; px[i+1] = g; px[i+2] = b;
+        }
+        ctx.putImageData(data, 0, 0);
+        canvasEl.width  = imgEl.offsetWidth  || W;
+        canvasEl.height = imgEl.offsetHeight || H;
+        canvasEl.getContext('2d').drawImage(off, 0, 0, canvasEl.width, canvasEl.height);
+        resolve();
+      } catch(e) { reject(e); }
     };
-    if (imgEl.complete && imgEl.naturalWidth) draw();
-    else {
-      imgEl.addEventListener('load', draw, { once:true });
-      imgEl.addEventListener('error', () => reject('img error'), { once:true });
-    }
+    // Cache-buster forces CORS re-fetch (browser may have cached non-CORS version)
+    const sep = imgEl.src.includes('?') ? '&' : '?';
+    cors.src = imgEl.src + sep + '_cors=' + Date.now();
   });
 }
 
