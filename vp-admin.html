@@ -1647,7 +1647,7 @@ function buildEditorHTML(s) {
         <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
       </div>
       <div class="editor-actions">
-        <button class="btn-secondary" onclick="openTagGuideModal('${s.id}')" title="Prompt สำหรับ tag ฉากนี้กับ Claude" style="background:#EEF2FF;border-color:#C7D2FE;color:#4F46E5;">✨ Tag by AI</button>
+        <button class="btn-ai-tag" id="aiTagMainBtn" onclick="aiTagMain('${s.id}',this)" title="วิเคราะห์ภาพด้วย AI แล้วเติมทุกช่องให้อัตโนมัติ">✨ Tag by AI</button>
         <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
         <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
         <button class="btn-save" id="saveBtn_${s.id}" onclick="saveScene('${s.id}')">💾 บันทึก</button>
@@ -1851,24 +1851,6 @@ function buildEditorHTML(s) {
         <div class="editor-section-title">📝 Production Notes</div>
         <textarea class="form-textarea" id="f_notes" rows="4">${escHtml(s.notes||'')}</textarea>
         <div class="form-hint">เพิ่ม note สำคัญเกี่ยวกับการ match แสง ตำแหน่ง presenter หรือข้อควรระวัง</div>
-      </div>
-
-      <!-- ── Lighting Blueprint (Equipment Slots) ── -->
-      <div class="editor-section">
-        <div class="editor-section-title">💡 Lighting Blueprint
-          <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">Link อุปกรณ์จาก DB — แสดงใน Frontend Canvas</span>
-        </div>
-        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#065F46;display:flex;align-items:center;gap:8px">
-          <span>🔗</span>
-          <span>อุปกรณ์ที่ link ไว้จะแสดงใน <strong>Fixture Spec</strong> ของ Canvas Blueprint ที่หน้าค้นหาฉาก — ระบบเดียวกัน</span>
-          <a onclick="switchAdminTab('equipment')" style="color:var(--red);cursor:pointer;text-decoration:underline;margin-left:auto;font-weight:700;white-space:nowrap">⚙️ จัดการอุปกรณ์</a>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr;gap:8px">
-          ${buildEquipSlotHtml('key_light', s)}
-          ${buildEquipSlotHtml('fill_light', s)}
-          ${buildEquipSlotHtml('back_light', s)}
-        </div>
-        ${s.canvas_notes ? `<div style="margin-top:10px;padding:10px;background:#F0FDF4;border-radius:8px;font-size:12px;color:#065F46;line-height:1.6">${escHtml(s.canvas_notes)}</div>` : ''}
       </div>
 
       <div style="height:80px"></div>
@@ -4650,6 +4632,161 @@ function refreshThumbPreview(sceneId) {
 
 
 // ══════════════════════════════════════════════
+// AI TAG MAIN — Anthropic direct → Ollama → guide modal
+// ══════════════════════════════════════════════
+const ANTHROPIC_KEY_STORE = 'vp_anthropic_key';
+
+const VP_AI_TAG_PROMPT = `You are classifying a Thai TV broadcast virtual production background image.
+Respond with ONLY a valid JSON object — no markdown, no explanation.
+
+{
+  "title_en": "<3-5 word English scene title, e.g. Modern Loft Interior>",
+  "title_th": "<3-5 คำภาษาไทย สั้นๆ อธิบายฉาก เช่น ห้องนั่งเล่นสมัยใหม่>",
+  "world": "<urban-city|interior-office|nature-outdoor|industrial|scifi-future|stylized-abstract|heritage-culture>",
+  "energy": "<intense|balanced|open>",
+  "context_tags": ["<1-3 from: news-report|talk-interview|analysis-data|field-onsite|opener-drama|social-short|event-special>"],
+  "color_temp": "<cool|warm|neutral|mixed>",
+  "brightness": "<dark|low|medium|bright|high-key>",
+  "has_particles": false,
+  "dominant_colors_desc": "<2-3 words describing main colors>"
+}
+
+WORLD:
+- urban-city = outdoor city/streets/buildings/skyline
+- interior-office = ANY indoor space: loft/lobby/office/studio/home/room with furniture
+- nature-outdoor = nature/sky/mountains/forests/water (no man-made structures)
+- industrial = factory/warehouse/machinery/pipes
+- scifi-future = lab/tech/robot/hologram/futuristic space
+- stylized-abstract = graphic/data visualization/motion/abstract art
+- heritage-culture = temple/historical building/vintage/rustic/cultural artifact
+
+ENERGY: intense=dramatic high-contrast exciting, balanced=professional neutral steady, open=calm warm minimal friendly
+CONTEXT: news-report=news standup/desk, talk-interview=interview/conversation, analysis-data=data explainer, field-onsite=outdoor reporting, opener-drama=dramatic show opener, social-short=short social clip, event-special=live event`;
+
+async function aiTagMain(sceneId, btnEl) {
+  const s = scenes.find(x => x.id === sceneId);
+  if (!s) return;
+  const imgPath = s.filepath || s.thumb || '';
+  if (!imgPath) { showToast('⚠️ ไม่พบภาพสำหรับฉากนี้'); return; }
+
+  const orig = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳ วิเคราะห์…';
+
+  try {
+    // 1) Anthropic direct API (if key stored)
+    const anthropicKey = localStorage.getItem(ANTHROPIC_KEY_STORE);
+    if (anthropicKey) {
+      await _aiTagAnthropic(sceneId, imgPath, anthropicKey);
+      return;
+    }
+    // 2) Ollama (quick ping)
+    const ollamaHost = localStorage.getItem(OLLAMA_HOST_KEY) || 'http://localhost:11434';
+    let ollamaOk = false;
+    try {
+      const ping = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(2000) });
+      ollamaOk = ping.ok;
+    } catch(_) {}
+    if (ollamaOk) { await aiTagSceneOllama(sceneId); return; }
+    // 3) Neither configured — show setup modal
+    _showAiSetupModal(sceneId);
+  } catch(e) {
+    showToast('❌ AI Tag ล้มเหลว: ' + e.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = orig;
+  }
+}
+
+async function _aiTagAnthropic(sceneId, imgPath, apiKey) {
+  try {
+    const cleanUrl = imgPath.split('?')[0];
+    showToast('✨ กำลังส่งภาพให้ Claude วิเคราะห์…', 'blue');
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'url', url: cleanUrl } },
+          { type: 'text',  text: VP_AI_TAG_PROMPT }
+        ]}]
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (res.status === 401) {
+      localStorage.removeItem(ANTHROPIC_KEY_STORE);
+      throw new Error('API Key ไม่ถูกต้อง — ลบออกแล้ว กด ✨ Tag by AI แล้วใส่ใหม่');
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Anthropic ${res.status}: ${err?.error?.message || 'unknown error'}`);
+    }
+
+    const data = await res.json();
+    let raw = data.content?.[0]?.text || '';
+    console.log('[AnthropicTag] raw:', raw);
+    raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const s1 = raw.indexOf('{'), e1 = raw.lastIndexOf('}') + 1;
+    if (s1 === -1 || e1 === 0) throw new Error('ไม่พบ JSON ในผลลัพธ์ของ Claude');
+    const tagged = JSON.parse(raw.slice(s1, e1));
+
+    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
+    const validEnergy = ['intense','balanced','open'];
+    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
+    if (!validWorld.includes(tagged.world))   delete tagged.world;
+    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
+    if (Array.isArray(tagged.context_tags))
+      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0, 3);
+
+    applyAiTagToForm(tagged, 'claude-haiku');
+    showToast('✨ Claude Tag เสร็จแล้ว — ตรวจสอบแล้วกด 💾 บันทึก', 'green');
+  } catch(e) {
+    console.error('[_aiTagAnthropic]', e);
+    throw e;  // re-throw so aiTagMain's catch handles it
+  }
+}
+
+function _showAiSetupModal(sceneId) {
+  document.getElementById('aiSetupModalOverlay')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `
+<div id="aiSetupModalOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999" onclick="if(event.target===this)this.remove()">
+  <div style="background:#1E293B;border:1.5px solid #334155;border-radius:14px;padding:28px;max-width:400px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,.6)">
+    <div style="font-size:17px;font-weight:700;color:#F1F5F9;margin-bottom:4px">✨ ตั้งค่า AI Tag</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">เลือกวิธีวิเคราะห์ภาพ — ใส่ครั้งเดียว จำตลอด</div>
+    <div style="display:grid;gap:10px">
+      <button onclick="
+        const k = prompt('วาง Anthropic API Key (เริ่มด้วย sk-ant-api03-...):');
+        if (k && k.trim().length > 20) {
+          localStorage.setItem('${ANTHROPIC_KEY_STORE}', k.trim());
+          document.getElementById('aiSetupModalOverlay').remove();
+          showToast('✅ บันทึก API Key แล้ว — กด ✨ Tag by AI อีกครั้ง', 'green');
+        } else if (k !== null) { showToast('❌ Key ไม่ถูกต้อง'); }
+      " style="padding:12px 16px;background:linear-gradient(135deg,#6D28D9,#4F46E5);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;line-height:1.5">
+        🔑 ใช้ Anthropic API Key
+        <div style="font-size:10px;font-weight:400;opacity:.8">แม่นที่สุด · ใส่ครั้งเดียว ใช้ได้เรื่อยๆ</div>
+      </button>
+      <button onclick="document.getElementById('aiSetupModalOverlay').remove();openOllamaModal();" style="padding:12px 16px;background:#0F172A;color:#E2E8F0;border:1.5px solid #334155;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:left;line-height:1.5">
+        🤖 ใช้ Ollama (Local AI)
+        <div style="font-size:10px;font-weight:400;opacity:.7">ฟรี · ต้องติดตั้ง Ollama + llava บนเครื่อง</div>
+      </button>
+      <button onclick="document.getElementById('aiSetupModalOverlay').remove();openTagGuideModal('${sceneId}');" style="padding:10px 16px;background:transparent;color:#94A3B8;border:1px solid #334155;border-radius:8px;font-size:12px;cursor:pointer;text-align:left">
+        📋 Copy prompt → วางใน Claude chat แทน
+      </button>
+    </div>
+  </div>
+</div>`);
+}
+
+// ══════════════════════════════════════════════
 // LOCAL AI TAG — OLLAMA
 // ══════════════════════════════════════════════
 const OLLAMA_HOST_KEY  = 'vp_ollama_host';
@@ -4845,6 +4982,7 @@ Respond ONLY with a JSON object — no markdown, no explanation, no extra text.
 
 {
   "title_en": "<3-5 word English title for the PRIMARY scene, e.g. Modern Loft Interior Day>",
+  "title_th": "<3-5 คำภาษาไทย อธิบายฉาก เช่น ห้องนั่งเล่นสมัยใหม่>",
   "world": "<one of: urban-city | interior-office | nature-outdoor | industrial | scifi-future | stylized-abstract | heritage-culture>",
   "energy": "<one of: intense | balanced | open>",
   "context_tags": ["<1-3 of: news-report | talk-interview | analysis-data | field-onsite | opener-drama | social-short | event-special>"],
