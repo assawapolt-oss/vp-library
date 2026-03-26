@@ -4591,43 +4591,25 @@ function openTagGuideModal(sceneId) {
   const prompt = `Tag ฉาก ${sid} ใน VP Admin editor ที่เปิดอยู่ใน browser
 
 ${cleanImg ? `🖼 ภาพ: ${cleanImg}\n` : ''}
-─── บริบท VP Library ───
-ฉาก Virtual Production สำหรับรายการโทรทัศน์ไทย (Unreal Engine)
 แต่ละฉากต้องมี: ชื่อ EN, ชื่อไทย, world, energy, context_tags, production note
 
 ─── Taxonomy ───
-WORLD (เลือก 1 ที่ตรงที่สุด):
-  urban-city       = ถนน ตึก เมือง สกายไลน์ วิวกลางแจ้ง
-  interior-office  = ในร่มทุกประเภท: ออฟฟิศ ห้องนั่งเล่น สตูดิโอ ล็อบบี้ บ้าน คาเฟ่
-  nature-outdoor   = ธรรมชาติล้วน: ท้องฟ้า ภูเขา ป่า ทะเล ทุ่งนา ไม่มีสิ่งก่อสร้าง
-  industrial       = โรงงาน โกดัง ท่าเรือ เครื่องจักร ท่อ โครงสร้างโลหะ
-  scifi-future     = ห้องแล็บ เทคโนโลยี โฮโลแกรม อวกาศ อนาคต ดิจิทัล
-  stylized-abstract= กราฟิก ข้อมูล motion background ไม่ใช่ภาพถ่าย
-  heritage-culture = วัด โบราณสถาน ประวัติศาสตร์ วินเทจ ชนบท วัฒนธรรม
+WORLD (เลือก 1 ที่ตรงที่สุด จาก list ปัจจุบันทั้งหมด):
+  urban-city · interior-office · nature-outdoor · industrial · scifi-future · stylized-abstract · heritage-culture
 
 ENERGY (เลือก 1):
-  intense  = ดราม่า contrast สูง มืด ตื่นเต้น เหมาะ breaking news / opener
-  balanced = สบายตา มืออาชีพ neutral ใช้ได้หลากหลาย
-  open     = สว่าง โปร่ง อบอุ่น friendly เหมาะสัมภาษณ์ / talk show
+  intense · balanced · open
 
-CONTEXT TAGS (เลือก 1–3 ที่เหมาะสม):
-  news-report    = ข่าว anchor desk รายงานข่าว
-  talk-interview = พูดคุย สัมภาษณ์ talk show
-  analysis-data  = วิเคราะห์ กราฟ infographic
-  field-onsite   = รายงานนอกสถานที่ field report
-  opener-drama   = เปิดรายการ ดราม่า cinematic
-  social-short   = คลิปสั้น social media reels
-  event-special  = งาน event พิธีการ live
+CONTEXT TAGS (เลือกจาก list ปัจจุบันทั้งหมด 1–3 ที่เหมาะสม):
+  news-report · talk-interview · analysis-data · field-onsite · opener-drama · social-short · event-special
 
 ─── เติมทุกช่องด้วย javascript_tool บน tab VP Admin ───
-(แทนที่ค่าตัวอย่างด้วยผลวิเคราะห์จริง ห้ามเว้นช่องไหนว่าง)
-
-document.getElementById('f_title').value = 'Modern City Rooftop';
-document.getElementById('f_title_th').value = 'ดาดฟ้าเมืองสมัยใหม่';
+document.getElementById('f_title').value = 'Scene Title EN';
+document.getElementById('f_title_th').value = 'ชื่อฉากภาษาไทย';
 document.getElementById('f_world').value = 'urban-city';
 document.getElementById('f_energy').value = 'balanced';
 tagState['te_context_tags'] = ['news-report','talk-interview']; renderTagEditor('te_context_tags');
-document.getElementById('f_notes').value = 'แสงธรรมชาติกลางวัน วิวตึกสูงกรุงเทพฯ เหมาะรายการข่าวและ talk show ที่ต้องการบรรยากาศเมืองชัดเจน';
+document.getElementById('f_notes').value = 'production note ภาษาไทย';
 saveSceneEditor();`;
 
   document.getElementById('tg_tag').value = prompt;
