@@ -3969,24 +3969,34 @@ let _fmSortKey = 'size';
 let _fmSortDir = -1;      // -1 = desc, 1 = asc
 const BUCKET_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/';
 
-function fmBuildUsedUrls() {
+async function fmBuildUsedUrls() {
   _fmUsedUrls = new Set();
-  scenes.forEach(s => {
-    if (s.filepath) _fmUsedUrls.add(s.filepath.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
-    if (s.thumb)    _fmUsedUrls.add(s.thumb.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
-    if (s.video_url) _fmUsedUrls.add(s.video_url.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
-    if (s.presenter_image_url) _fmUsedUrls.add(s.presenter_image_url.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
-    // also match just filename
-    [s.filepath,s.thumb].filter(Boolean).forEach(u => {
-      const fname = u.split('/').pop();
-      if (fname) _fmUsedUrls.add(fname);
+  const STRIP = /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//;
+
+  const addUrl = (url) => {
+    if (!url || typeof url !== 'string' || url.length < 5) return;
+    _fmUsedUrls.add(url);                          // as-is
+    const rel1 = url.replace(STRIP, '');           // strip 1 prefix level
+    _fmUsedUrls.add(rel1);
+    const rel2 = rel1.replace(STRIP, '');          // strip 2nd prefix (doubled-URL bug)
+    if (rel2 !== rel1) _fmUsedUrls.add(rel2);
+    const base = rel2 || rel1;
+    const fname = base.split('/').pop();
+    if (fname && fname.length > 6) _fmUsedUrls.add(fname); // filename only
+  };
+
+  // Fresh data from Supabase (more reliable than in-memory scenes which may be stale)
+  if (window._supaClient) {
+    const { data } = await window._supaClient
+      .from('scenes')
+      .select('image_url,thumb_url,presenter_image_url,video_url,motion_bg_url');
+    (data||[]).forEach(r => {
+      [r.image_url, r.thumb_url, r.presenter_image_url, r.video_url, r.motion_bg_url].forEach(addUrl);
     });
-  });
-  // also add full absolute URLs for matching
-  scenes.forEach(s => {
-    [s.filepath, s.thumb, s.presenter_image_url].filter(Boolean).forEach(u => {
-      if (u.startsWith('http')) _fmUsedUrls.add(u);
-    });
+  }
+  // Also from in-memory scenes (fallback / catch any unsaved values)
+  (scenes||[]).forEach(s => {
+    [s.filepath, s.thumb, s.presenter_image_url, s.video_url, s.motion_bg_url].forEach(addUrl);
   });
 }
 
@@ -4002,7 +4012,7 @@ async function loadFileManager() {
       const { data, error } = await window._supaClient.storage.from('vp-images').list(prefix, { limit:500 });
       if (error || !data) return;
       for (const item of data) {
-        if (!item.name || item.name === '.emptyFolderPlaceholder') continue;
+        if (!item.name || item.name === '.emptyFolderPlaceholder' || item.name === 'https:') continue;
         const itemPath = (prefix ? prefix+'/' : '') + item.name;
         if (item.metadata) {
           // Real file
@@ -4038,7 +4048,7 @@ async function loadFileManager() {
     }
 
     _fmFiles = allFiles;
-    fmBuildUsedUrls();
+    await fmBuildUsedUrls();   // async — must await for accurate used/unused detection
     fmRender();
   } catch(e) { grid.innerHTML = `<div style="color:var(--red);padding:20px;font-size:13px">❌ ${e.message}</div>`; }
 }
@@ -4113,7 +4123,13 @@ function fmRender() {
 }
 
 async function fmDeleteFile(path, btn) {
-  if (!confirm(`ลบไฟล์ "${path}" ?\nไม่สามารถยกเลิกได้`)) return;
+  const fileObj = _fmFiles.find(f => f._path === path);
+  const isUsed  = fileObj ? fmIsUsed(fileObj) : false;
+  const fname   = path.split('/').pop();
+  const warning = isUsed
+    ? `⛔ ไฟล์ "${fname}" ถูกใช้งานอยู่!\n\nถ้าลบ รูปภาพในระบบจะแสดงไม่ได้\n\nยืนยันที่จะลบหรือไม่?`
+    : `🗑 ลบไฟล์ "${fname}" ?\n\nไม่สามารถยกเลิกได้`;
+  if (!confirm(warning)) return;
   btn.textContent = '⏳'; btn.disabled = true;
   const { error } = await window._supaClient.storage.from('vp-images').remove([path]);
   if (error) { showToast('❌ ลบไม่ได้: ' + error.message, 'red'); btn.textContent='🗑'; btn.disabled=false; return; }
@@ -4466,15 +4482,19 @@ async function handleEditorFileSelect(files, role, sceneId) {
 }
 
 function buildVirtualPath(sceneId, filename, role, scene) {
+  const BUCKET_STRIP = /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//;
   // Thumb always goes to _thumbnails/
   if (role === 'thumb') {
     const ext  = filename.split('.').pop().toLowerCase();
     return `_thumbnails/${sceneId}_thumb.${ext}`;
   }
-  // Full: try to preserve folder structure from existing filepath, else auto-detect
+  // Full/Presenter: try to preserve folder structure from existing filepath, else auto-detect
   if (scene && scene.filepath) {
-    const dir = scene.filepath.split('/').slice(0,-1).join('/');
-    if (dir) return `${dir}/${filename}`;
+    // CRITICAL: strip bucket URL prefix (1-2 times) before using as directory
+    // Without this, full Supabase URLs create a doubled path like /vp-images/https://...
+    let relPath = scene.filepath.replace(BUCKET_STRIP, '').replace(BUCKET_STRIP, '');
+    const dir = relPath.split('/').slice(0,-1).join('/');
+    if (dir && !dir.startsWith('http')) return `${dir}/${filename}`;
   }
   // Auto-detect folder from sceneId / filename
   const lower = filename.toLowerCase();
