@@ -864,9 +864,21 @@
     <div style="border-top:1px solid var(--border);margin:0 -24px 14px;padding-top:14px;padding-left:24px;padding-right:24px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">ข้อมูลพื้นฐาน</div>
 
     <div class="form-row">
+      <div class="form-group" style="max-width:130px;flex-shrink:0">
+        <label class="form-label">Prefix</label>
+        <select class="form-input" id="newPrefix" onchange="onNewPrefixChange()" style="font-family:'IBM Plex Sans',monospace;font-weight:700;">
+          <option value="VP">VP</option>
+          <option value="SP">SP</option>
+          <option value="EQ">EQ</option>
+          <option value="__custom__">กำหนดเอง…</option>
+        </select>
+        <input class="form-input" id="newPrefixCustom" placeholder="PREFIX" maxlength="8"
+          style="display:none;margin-top:6px;font-family:'IBM Plex Sans',monospace;font-weight:700;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');onNewPrefixChange()">
+      </div>
       <div class="form-group">
-        <label class="form-label">Scene ID <span>เช่น VP-011</span></label>
-        <input class="form-input" id="newId" placeholder="VP-011" style="font-family:'IBM Plex Sans',monospace;font-weight:700;">
+        <label class="form-label">Scene ID <span id="newIdHint">—</span></label>
+        <input class="form-input" id="newId" placeholder="VP-001" style="font-family:'IBM Plex Sans',monospace;font-weight:700;">
       </div>
       <div class="form-group">
         <label class="form-label">ชื่อฉาก (EN)</label>
@@ -2021,15 +2033,40 @@ function doDelete(id) {
 // ══════════════════════════════════════════════
 // NEW SCENE
 // ══════════════════════════════════════════════
-function _getNextSceneId() {
-  // Find highest numeric suffix in existing scenes (VP-001 → 1, VP-012 → 12, etc.)
+function _getNextSceneId(prefix) {
+  // Find highest numeric suffix for a given prefix (e.g. VP, SP, EQ)
+  prefix = (prefix || 'VP').toUpperCase().trim();
+  const esc = prefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+  const re  = new RegExp('^' + esc + '-0*(\\d+)$', 'i');
   let max = 0;
   scenes.forEach(s => {
-    const m = (s.id||'').match(/^VP-0*(\d+)/i);
+    const m = (s.id || '').match(re);
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
-  const next = max + 1;
-  return 'VP-' + String(next).padStart(3, '0');
+  return prefix + '-' + String(max + 1).padStart(3, '0');
+}
+
+function onNewPrefixChange() {
+  const sel    = document.getElementById('newPrefix');
+  const custom = document.getElementById('newPrefixCustom');
+  let prefix;
+  if (sel.value === '__custom__') {
+    custom.style.display = '';
+    prefix = custom.value.toUpperCase().trim() || null;
+  } else {
+    custom.style.display = 'none';
+    prefix = sel.value;
+  }
+  if (!prefix) return;
+  const nextId = _getNextSceneId(prefix);
+  const ni     = document.getElementById('newId');
+  ni.value       = nextId;
+  ni.placeholder = nextId;
+  // Update hint: show last scene with this prefix
+  const re        = new RegExp('^' + prefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g,'\\$&') + '-', 'i');
+  const lastScene = [...scenes].reverse().find(s => re.test(s.id));
+  const hint      = document.getElementById('newIdHint');
+  if (hint) hint.textContent = lastScene ? `ล่าสุด: ${lastScene.id} → แนะนำ ${nextId}` : `แนะนำ ${nextId} (ใหม่)`;
 }
 
 function openNewSceneModal() {
@@ -2039,14 +2076,11 @@ function openNewSceneModal() {
   document.getElementById('newFilepath').value = '';
   document.getElementById('importFileInput').value = '';
   setTimeout(() => {
+    // Reset prefix selector to VP then auto-suggest ID
+    const sel = document.getElementById('newPrefix');
+    if (sel) { sel.value = 'VP'; document.getElementById('newPrefixCustom').style.display = 'none'; }
+    onNewPrefixChange();
     const ni = document.getElementById('newId');
-    // Auto-suggest next ID and update label hint
-    const nextId = _getNextSceneId();
-    ni.value = nextId;
-    ni.placeholder = nextId;
-    // Update hint label
-    const hint = document.querySelector('#newSceneOverlay label span');
-    if (hint) hint.textContent = `ฉากล่าสุด: ${scenes.length ? scenes[scenes.length-1].id : '—'} → แนะนำ ${nextId}`;
     ni.focus();
     ni.select();
   }, 100);
@@ -2363,7 +2397,7 @@ async function createNewScene() {
 
   // Close modal and open editor first (UX)
   closeNewModal();
-  document.getElementById('newId').value='VP-';
+  document.getElementById('newId').value='';
   document.getElementById('newTitle').value='';
   document.getElementById('newTitleTh').value='';
   if (document.getElementById('importFileInput')) {
