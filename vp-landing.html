@@ -117,7 +117,7 @@ nav{
 .deck-card{
   position:absolute;top:0;left:0;
   width:240px;height:340px;border-radius:16px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.15);
   box-shadow:0 24px 80px rgba(0,0,0,.7);
   background:#111;
   opacity:0;
@@ -129,6 +129,18 @@ nav{
   background:linear-gradient(transparent,rgba(0,0,0,.85));
   font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);
 }
+
+/* Float animations for deck cards */
+@keyframes float0{0%,100%{transform-origin:center;margin-top:0px}50%{margin-top:-10px}}
+@keyframes float1{0%,100%{margin-top:0px}50%{margin-top:-14px}}
+@keyframes float2{0%,100%{margin-top:0px}50%{margin-top:-8px}}
+@keyframes float3{0%,100%{margin-top:0px}50%{margin-top:-12px}}
+@keyframes float4{0%,100%{margin-top:0px}50%{margin-top:-16px}}
+.deck-card.floating-0{animation:float0 3.2s ease-in-out infinite}
+.deck-card.floating-1{animation:float1 3.8s ease-in-out infinite .4s}
+.deck-card.floating-2{animation:float2 4.1s ease-in-out infinite .8s}
+.deck-card.floating-3{animation:float3 3.5s ease-in-out infinite .2s}
+.deck-card.floating-4{animation:float4 4.4s ease-in-out infinite .6s}
 
 /* gradient fallback covers */
 .deck-card.grad-1{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)}
@@ -208,7 +220,7 @@ nav{
   position:absolute;top:0;left:0;right:0;height:3px;
 }
 .show-logo-wrap{margin-bottom:10px}
-.show-logo{max-width:70%;max-height:40px;object-fit:contain;filter:brightness(0) invert(1);opacity:.9}
+.show-logo{max-width:70%;max-height:44px;object-fit:contain;opacity:1;filter:drop-shadow(0 1px 6px rgba(0,0,0,.6))}
 .show-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;line-height:1.3}
 .show-count{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
 
@@ -423,48 +435,69 @@ function shuffle(arr) {
 function imgUrl(s) {
   const val = s.image_url || s.thumb_url || null;
   if (!val) return null;
-  // already a full URL — use as-is
   if (val.startsWith('http')) return val;
-  // relative path — prepend storage base
   return STORAGE + val;
 }
+
+// prefer presenter image, fallback to scene image
+function presenterImg(s) {
+  const pval = s.presenter_image_url;
+  if (pval && pval.startsWith('http')) return pval;
+  return imgUrl(s);
+}
+
+/* ─── CARD COLORS ──────────────────────────────────── */
+const CARD_COLORS = ['#C41E2A','#2563EB','#F59E0B','#10B981','#8B5CF6'];
 
 /* ─── BUILD HERO DECK ────────────────────────────── */
 function buildDeck(scenes) {
   const wrap = document.getElementById('hero-deck');
-  const picks = shuffle(scenes).slice(0, 5);
+  // prefer scenes with presenter images
+  const withPresenter = scenes.filter(s => s.presenter_image_url && s.presenter_image_url.startsWith('http'));
+  const pool = withPresenter.length >= 5 ? withPresenter : [...withPresenter, ...scenes.filter(s => !s.presenter_image_url || !s.presenter_image_url.startsWith('http'))];
+  const picks = shuffle(pool).slice(0, 5);
   const positions = [
-    {left:'80px',top:'60px',rotate:'-12deg',zIndex:1},
-    {left:'120px',top:'30px',rotate:'-5deg',zIndex:2},
-    {left:'50px',top:'20px',rotate:'3deg',zIndex:3},
-    {left:'100px',top:'50px',rotate:'10deg',zIndex:4},
-    {left:'60px',top:'10px',rotate:'16deg',zIndex:5},
+    {left:'20px', top:'70px', rotate:'-14deg', zIndex:1},
+    {left:'70px', top:'40px', rotate:'-6deg',  zIndex:2},
+    {left:'40px', top:'15px', rotate:'2deg',   zIndex:3},
+    {left:'90px', top:'55px', rotate:'10deg',  zIndex:4},
+    {left:'55px', top:'5px',  rotate:'18deg',  zIndex:5},
   ];
   const grads = ['grad-1','grad-2','grad-3','grad-4','grad-5'];
   wrap.innerHTML = '';
   picks.forEach((s, i) => {
-    const url = imgUrl(s);
+    const url = presenterImg(s);
     const pos = positions[i];
+    const color = CARD_COLORS[i % CARD_COLORS.length];
     const card = document.createElement('div');
-    card.className = 'deck-card ' + (url ? '' : grads[i]);
-    card.style.cssText = `left:${pos.left};top:${pos.top};transform:rotate(${pos.rotate});z-index:${pos.zIndex}`;
+    card.className = 'deck-card floating-' + i + (url ? '' : ' ' + grads[i]);
+    card.style.cssText = [
+      `left:${pos.left}`,`top:${pos.top}`,
+      `transform:rotate(${pos.rotate})`,`z-index:${pos.zIndex}`,
+      `border-color:${color}44`,
+      `box-shadow:0 0 28px ${color}55, 0 0 60px ${color}22, 0 28px 60px rgba(0,0,0,.8)`
+    ].join(';');
     if (url) {
       const img = document.createElement('img');
       img.src = url;
       img.alt = s.title || s.id;
-      img.loading = 'lazy';
+      img.loading = 'eager';
       card.appendChild(img);
     }
+    // color accent line at top
+    const accent = document.createElement('div');
+    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:1`;
+    card.appendChild(accent);
     const lbl = document.createElement('div');
     lbl.className = 'card-label';
-    lbl.textContent = s.id || '';
+    lbl.textContent = s.title || s.id || '';
     card.appendChild(lbl);
     wrap.appendChild(card);
   });
 
   // entrance animation
   gsap.to('.deck-card', {
-    opacity: 1, duration: 0.6, stagger: 0.12, delay: 0.3,
+    opacity: 1, duration: 0.7, stagger: 0.15, delay: 0.4,
     ease: 'power2.out'
   });
 }
@@ -472,14 +505,19 @@ function buildDeck(scenes) {
 /* ─── BUILD FAN ──────────────────────────────────── */
 function buildFan(scenes) {
   const stage = document.getElementById('fan-stage');
-  const picks = shuffle(scenes).slice(0, 8);
+  // prefer presenter images for fan too
+  const withP = scenes.filter(s => s.presenter_image_url && s.presenter_image_url.startsWith('http'));
+  const pool = withP.length >= 8 ? withP : [...withP, ...scenes.filter(s => !s.presenter_image_url || !s.presenter_image_url.startsWith('http'))];
+  const picks = shuffle(pool).slice(0, 8);
   const grads = ['fgrad-0','fgrad-1','fgrad-2','fgrad-3','fgrad-4','fgrad-5','fgrad-6','fgrad-7'];
+  const fanColors = ['#C41E2A','#2563EB','#F59E0B','#10B981','#8B5CF6','#EC4899','#14B8A6','#F97316'];
   stage.innerHTML = '';
   const cards = picks.map((s, i) => {
-    const url = imgUrl(s);
+    const url = presenterImg(s);
+    const color = fanColors[i % fanColors.length];
     const card = document.createElement('div');
     card.className = 'fan-card ' + (url ? '' : grads[i]);
-    card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+    card.style.cssText = `left:50%;top:50%;transform:translate(-50%,-50%);border-color:${color}55;box-shadow:0 0 20px ${color}33,0 12px 40px rgba(0,0,0,.7)`;
     if (url) {
       const img = document.createElement('img');
       img.src = url;
@@ -535,9 +573,8 @@ function buildFan(scenes) {
 }
 
 /* ─── BUILD SHOWS ────────────────────────────────── */
-async function buildShows(scenes) {
+async function buildShows(allScenes) {
   const grid = document.getElementById('shows-grid');
-  // Show 5 skeleton placeholders
   grid.innerHTML = Array(5).fill('<div class="show-card skeleton"></div>').join('');
 
   const { data: shows, error } = await _sc
@@ -551,23 +588,41 @@ async function buildShows(scenes) {
     return;
   }
 
-  // Update stat
   document.getElementById('stat-shows').textContent = shows.length + '+';
 
+  // Build scene lookup by show_id
+  const scenesByShow = {};
+  allScenes.forEach(s => {
+    if (Array.isArray(s.show_ids)) {
+      s.show_ids.forEach(sid => {
+        if (!scenesByShow[sid]) scenesByShow[sid] = [];
+        scenesByShow[sid].push(s);
+      });
+    }
+  });
+
   grid.innerHTML = '';
+  // adjust grid columns to actual count
+  grid.style.gridTemplateColumns = `repeat(${Math.min(shows.length, 5)},1fr)`;
+
   shows.forEach(show => {
     const card = document.createElement('div');
     card.className = 'show-card';
 
-    // Color bar
+    // Color bar + glow border
     const bar = document.createElement('div');
     bar.className = 'show-color-bar';
     bar.style.background = show.color || '#C41E2A';
     card.appendChild(bar);
+    card.style.borderColor = (show.color || '#C41E2A') + '55';
+    card.style.boxShadow = `0 0 20px ${show.color || '#C41E2A'}22`;
 
-    // Background: random scene image
-    const randomScene = shuffle(scenes)[0];
-    const bgUrl = randomScene ? imgUrl(randomScene) : null;
+    // Background: find a scene tagged to this show, prefer presenter image
+    const showScenes = scenesByShow[show.id] || [];
+    const bgScene = showScenes.length > 0
+      ? shuffle(showScenes)[0]
+      : shuffle(allScenes)[0];
+    const bgUrl = bgScene ? presenterImg(bgScene) : null;
     if (bgUrl) {
       const bg = document.createElement('img');
       bg.className = 'show-bg';
@@ -646,7 +701,7 @@ async function init() {
   // Fetch scenes
   const { data: scenes, error } = await _sc
     .from('scenes')
-    .select('id,title,image_url,thumb_url,world,energy')
+    .select('id,title,image_url,thumb_url,presenter_image_url,world,energy,show_ids')
     .order('sort_order', { ascending: true });
 
   const sceneList = (scenes && !error) ? scenes : [];
