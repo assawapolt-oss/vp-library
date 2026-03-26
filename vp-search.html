@@ -1319,13 +1319,13 @@ async function _loadScenes() {
  */
 async function resolveImgOrDisk(path) {
   if (!path) return '';
-  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
-  // Test relative disk path
+  if (path.startsWith('blob:') || path.startsWith('data:')) return path;
+  // Test ALL paths — including http URLs — to catch 4xx / 0-byte responses
   return new Promise(resolve => {
     const test = new Image();
-    test.onload  = () => resolve(path);
+    test.onload  = () => resolve(test.naturalWidth > 0 ? path : '');
     test.onerror = () => resolve('');
-    test.src = path + '?t=' + Date.now();
+    test.src = path.startsWith('http') ? path : (path + '?t=' + Date.now());
   });
 }
 
