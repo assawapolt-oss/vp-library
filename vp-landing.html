@@ -149,8 +149,56 @@ nav{
 .deck-card.grad-4{background:linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 50%,#2d2d2d 100%)}
 .deck-card.grad-5{background:linear-gradient(135deg,#0d1f0f 0%,#1a3a1d 50%,#2d5a30 100%)}
 
+/* ─── APPLE GLASS EFFECTS ────────────────────────── */
+@keyframes liquid-shimmer{
+  0%{transform:translateX(-120%) skewX(-15deg)}
+  100%{transform:translateX(220%) skewX(-15deg)}
+}
+@keyframes orb-drift-a{
+  0%,100%{transform:translate(0,0) scale(1)}
+  40%{transform:translate(40px,-30px) scale(1.12)}
+  70%{transform:translate(-25px,20px) scale(.92)}
+}
+@keyframes orb-drift-b{
+  0%,100%{transform:translate(0,0) scale(1)}
+  35%{transform:translate(-50px,25px) scale(1.08)}
+  65%{transform:translate(30px,-15px) scale(.94)}
+}
+@keyframes orb-drift-c{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(20px,-40px) scale(1.15)}
+}
+
+/* Glass overlay shared */
+.glass-spec{
+  position:absolute;top:0;left:0;right:0;
+  height:45%;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 55%,transparent 100%);
+  pointer-events:none;z-index:3;
+}
+.glass-shimmer{
+  position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:4;
+}
+.glass-shimmer::after{
+  content:'';position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);
+  animation:liquid-shimmer 4.5s ease-in-out infinite;
+}
+.glass-rim{
+  position:absolute;inset:0;border-radius:inherit;
+  border:1px solid rgba(255,255,255,.22);
+  border-top:1px solid rgba(255,255,255,.42);
+  pointer-events:none;z-index:5;
+}
+
+/* Hero background orbs */
+.hero-orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.hero-orb-a{width:500px;height:500px;background:rgba(196,30,42,.18);top:-100px;right:30%;animation:orb-drift-a 9s ease-in-out infinite}
+.hero-orb-b{width:380px;height:380px;background:rgba(37,99,235,.14);bottom:-60px;right:10%;animation:orb-drift-b 11s ease-in-out infinite 1.5s}
+.hero-orb-c{width:280px;height:280px;background:rgba(245,158,11,.1);top:40%;right:55%;animation:orb-drift-c 8s ease-in-out infinite 3s}
+
 /* ─── FAN / SPREAD ─────────────────────────────── */
-#fan-section{position:relative;height:300vh}
+#fan-section{position:relative;height:350vh}
 #fan-pin{
   position:sticky;top:0;height:100vh;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
@@ -161,22 +209,26 @@ nav{
   color:var(--muted);text-align:center;
 }
 .fan-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+
+/* 16:9 landscape fan card */
 .fan-card{
   position:absolute;
-  width:180px;height:260px;border-radius:14px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:0 12px 48px rgba(0,0,0,.6);
+  width:300px;height:169px;border-radius:12px;overflow:visible;
   background:#111;cursor:pointer;
-  transform-origin:center bottom;
+  transform-origin:center center;
   will-change:transform;
+}
+.fan-card .fan-card-inner{
+  position:relative;width:100%;height:100%;border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.7);
 }
 .fan-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .fan-card .fc-overlay{
   position:absolute;inset:0;
-  background:linear-gradient(transparent 55%,rgba(0,0,0,.8));
-  display:flex;align-items:flex-end;padding:12px;
+  background:linear-gradient(transparent 40%,rgba(0,0,0,.75));
+  display:flex;align-items:flex-end;padding:10px 12px;
 }
-.fan-card .fc-id{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.fan-card .fc-id{font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)}
 
 /* grad fallbacks for fan */
 .fan-card.fgrad-0{background:linear-gradient(160deg,#0f172a,#1e3a5f)}
@@ -301,6 +353,10 @@ footer{
 
 <!-- HERO -->
 <section id="hero">
+  <!-- liquid bg orbs -->
+  <div class="hero-orb hero-orb-a"></div>
+  <div class="hero-orb hero-orb-b"></div>
+  <div class="hero-orb hero-orb-c"></div>
   <div class="hero-left">
     <div class="hero-badge">Virtual Production Library</div>
     <h1 class="hero-title">
@@ -486,12 +542,17 @@ function buildDeck(scenes) {
     }
     // color accent line at top
     const accent = document.createElement('div');
-    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:1`;
+    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:6`;
     card.appendChild(accent);
     const lbl = document.createElement('div');
     lbl.className = 'card-label';
     lbl.textContent = s.title || s.id || '';
     card.appendChild(lbl);
+    // Apple glass layers
+    const spec = document.createElement('div'); spec.className = 'glass-spec'; card.appendChild(spec);
+    const shimWrap = document.createElement('div'); shimWrap.className = 'glass-shimmer'; card.appendChild(shimWrap);
+    shimWrap.style.animationDelay = (i * 0.7) + 's';
+    const rim = document.createElement('div'); rim.className = 'glass-rim'; card.appendChild(rim);
     wrap.appendChild(card);
   });
 
@@ -516,37 +577,47 @@ function buildFan(scenes) {
     const url = presenterImg(s);
     const color = fanColors[i % fanColors.length];
     const card = document.createElement('div');
-    card.className = 'fan-card ' + (url ? '' : grads[i]);
-    card.style.cssText = `left:50%;top:50%;transform:translate(-50%,-50%);border-color:${color}55;box-shadow:0 0 20px ${color}33,0 12px 40px rgba(0,0,0,.7)`;
+    card.className = 'fan-card';
+    card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+    // inner wrapper (needed for overflow:hidden on 16:9)
+    const inner = document.createElement('div');
+    inner.className = 'fan-card-inner ' + (url ? '' : grads[i]);
+    inner.style.cssText = `border:1.5px solid ${color}55;box-shadow:0 0 24px ${color}33,0 16px 48px rgba(0,0,0,.7)`;
     if (url) {
       const img = document.createElement('img');
       img.src = url;
       img.alt = s.title || s.id;
       img.loading = 'lazy';
-      card.appendChild(img);
+      inner.appendChild(img);
     }
     const overlay = document.createElement('div');
     overlay.className = 'fc-overlay';
     const idEl = document.createElement('div');
     idEl.className = 'fc-id';
-    idEl.textContent = s.id || '';
+    idEl.textContent = (s.title || s.id || '').slice(0, 28);
     overlay.appendChild(idEl);
-    card.appendChild(overlay);
+    inner.appendChild(overlay);
+    // Apple glass layers on each fan card
+    const spec2 = document.createElement('div'); spec2.className = 'glass-spec'; inner.appendChild(spec2);
+    const shim2 = document.createElement('div'); shim2.className = 'glass-shimmer'; inner.appendChild(shim2);
+    shim2.style.animationDelay = (i * 0.55) + 's';
+    const rim2 = document.createElement('div'); rim2.className = 'glass-rim'; inner.appendChild(rim2);
+    card.appendChild(inner);
     stage.appendChild(card);
     return card;
   });
 
-  // Spread positions: arc-style
+  // Spread positions for 16:9 landscape cards (wider arc)
   const N = cards.length;
   const spread = [
-    {x:-480,y:-60,r:-28,s:.88},
-    {x:-320,y:-100,r:-16,s:.93},
-    {x:-160,y:-120,r:-7,s:.97},
-    {x:0,y:-130,r:0,s:1},
-    {x:160,y:-120,r:7,s:.97},
-    {x:320,y:-100,r:16,s:.93},
-    {x:480,y:-60,r:28,s:.88},
-    {x:600,y:-30,r:38,s:.82},
+    {x:-780,y:-20,r:-22,s:.80},
+    {x:-520,y:-65,r:-13,s:.87},
+    {x:-260,y:-90,r:-6,s:.94},
+    {x:0,   y:-100,r:0,s:1},
+    {x:260, y:-90, r:6, s:.94},
+    {x:520, y:-65, r:13,s:.87},
+    {x:780, y:-20, r:22,s:.80},
+    {x:980, y:20,  r:30,s:.74},
   ].slice(0, N);
 
   // All stacked initially
