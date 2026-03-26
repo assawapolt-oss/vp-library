@@ -245,9 +245,16 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
           </div>
           <div class="form-group">
             <label class="form-label">ช่วงเวลาที่ถ่ายทำ <span class="req">*</span><span id="slotAvail" style="font-weight:400;font-size:11px;margin-left:6px"></span></label>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">จาก</span>
+              <input class="form-input" id="f_time_start" type="time" style="flex:1" oninput="checkSlotAvailability()">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">ถึง</span>
+              <input class="form-input" id="f_time_end" type="time" style="flex:1" oninput="checkSlotAvailability()">
+            </div>
             <div class="time-slot-group">
-              <div class="time-slot-pill" id="slot_morning" onclick="toggleSlot('morning')">🌅 เช้า</div>
-              <div class="time-slot-pill" id="slot_afternoon" onclick="toggleSlot('afternoon')">🌇 บ่าย</div>
+              <div class="time-slot-pill" id="slot_morning" onclick="setTimePreset('morning')">🌅 เช้า</div>
+              <div class="time-slot-pill" id="slot_afternoon" onclick="setTimePreset('afternoon')">🌇 บ่าย</div>
+              <div class="time-slot-pill" id="slot_fullday" onclick="setTimePreset('fullday')">📅 เต็มวัน</div>
             </div>
           </div>
           <div class="form-group">
@@ -539,9 +546,31 @@ function switchTab(t){
   if(t==='calendar')loadCalendar();
 }
 
-function toggleSlot(s){
-  if(_slots.has(s))_slots.delete(s);else _slots.add(s);
-  document.getElementById('slot_'+s)?.classList.toggle('active',_slots.has(s));
+// time-range helpers
+function _slotIsMorning(t){
+  if(!t)return false;
+  if(t.includes('morning')||t.includes('เช้า'))return true;
+  const m=t.match(/^(\d{1,2}):(\d{2})/);
+  if(m){const h=parseInt(m[1]);return h>=5&&h<12;}
+  return false;
+}
+function _slotIsAfternoon(t){
+  if(!t)return false;
+  if(t.includes('afternoon')||t.includes('บ่าย'))return true;
+  // check if end part of range is afternoon, or if only one time given
+  const parts=t.split('-');
+  const endStr=parts.length>1?parts[parts.length-1].trim():parts[0].trim();
+  const m=endStr.match(/^(\d{1,2}):(\d{2})/);
+  if(m){const h=parseInt(m[1]);return h>=12;}
+  return false;
+}
+function setTimePreset(preset){
+  const tbl={morning:['08:00','12:00'],afternoon:['13:00','17:00'],fullday:['08:00','17:00']};
+  const [s,e]=tbl[preset]||['08:00','12:00'];
+  document.getElementById('f_time_start').value=s;
+  document.getElementById('f_time_end').value=e;
+  ['morning','afternoon','fullday'].forEach(k=>document.getElementById('slot_'+k)?.classList.toggle('active',k===preset));
+  checkSlotAvailability();
 }
 async function checkSlotAvailability(){
   const d=document.getElementById('f_shoot_date')?.value;
@@ -549,14 +578,14 @@ async function checkSlotAvailability(){
   if(!d||!avail)return;
   try{
     const{data}=await _sc.from('service_requests').select('time_slot,show_name').eq('shoot_date',d);
-    if(!data||!data.length){avail.style.color='var(--green)';avail.textContent='✓ ว่างทั้ง 2 คิว';return;}
-    const taken=data.map(r=>r.time_slot||'').join(',').toLowerCase();
-    const mTaken=taken.includes('morning')||taken.includes('เช้า');
-    const aTaken=taken.includes('afternoon')||taken.includes('บ่าย');
-    if(mTaken&&aTaken){avail.style.color='var(--red)';avail.textContent='⚠ เต็มทั้ง 2 คิวแล้ว';}
+    if(!data||!data.length){avail.style.color='var(--green)';avail.textContent='✓ ว่าง';return;}
+    const slots=data.map(r=>r.time_slot||'');
+    const mTaken=slots.some(_slotIsMorning);
+    const aTaken=slots.some(_slotIsAfternoon);
+    if(mTaken&&aTaken){avail.style.color='var(--red)';avail.textContent='⚠ เต็มทั้งวัน';}
     else if(mTaken){avail.style.color='#D97706';avail.textContent='⚠ คิวเช้าถูกจองแล้ว';}
     else if(aTaken){avail.style.color='#D97706';avail.textContent='⚠ คิวบ่ายถูกจองแล้ว';}
-    else{avail.style.color='var(--green)';avail.textContent='✓ ว่างทั้ง 2 คิว';}
+    else{avail.style.color='var(--green)';avail.textContent='✓ ว่าง';}
   }catch(e){}
 }
 
@@ -633,7 +662,9 @@ function resetForm(){
     .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('.checkbox-pill').forEach(p=>{p.classList.remove('checked');const cb=p.querySelector('input');if(cb)cb.checked=false;});
   _picked.clear();renderPicker();renderSelTags();
-  _slots.clear();['morning','afternoon'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
+  document.getElementById('f_time_start').value='';
+  document.getElementById('f_time_end').value='';
+  ['morning','afternoon','fullday'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
   const avail=document.getElementById('slotAvail');if(avail)avail.textContent='';
   [{id:'kmc',max:500},{id:'mtc',max:300},{id:'nc',max:400},{id:'tdc',max:600}].forEach(({id,max})=>{const e=document.getElementById(id);if(e)e.textContent='0 / '+max+' chars';});
   setSceneOpt('library');
@@ -648,7 +679,9 @@ async function submitRequest(){
   if(!show){toast('กรุณากรอกชื่อ Show','red');return;}
   if(!email){toast('กรุณากรอก Email ติดต่อ','red');return;}
   if(!shootDate){toast('กรุณาเลือกวันที่ถ่ายทำ','red');return;}
-  if(_slots.size===0){toast('กรุณาเลือกช่วงเวลาที่ถ่ายทำ (เช้า / บ่าย)','red');return;}
+  const timeStart=document.getElementById('f_time_start').value;
+  const timeEnd=document.getElementById('f_time_end').value;
+  if(!timeStart||!timeEnd){toast('กรุณาระบุช่วงเวลาที่ถ่ายทำ','red');return;}
   if(!keyMsg){toast('กรุณากรอก Key Messages','red');return;}
   if(!sceneCount){toast('กรุณาระบุจำนวนฉาก','red');return;}
   if(_sceneOpt==='library'&&_picked.size===0){toast('กรุณาเลือกฉากจากระบบ หรือเปลี่ยนเป็น Tailor Made','red');return;}
@@ -661,13 +694,13 @@ async function submitRequest(){
   const notesRaw=document.getElementById('f_notes').value.trim();
   const notesWithEmail=email?('[Email: '+email+']\n'+notesRaw).trim():notesRaw;
   const row={
-    show_name:show,requester:_user.name||_user.username,username:_user.username,
+    show_name:show,requester:_user.name||_user.username,
     team:document.getElementById('f_team').value.trim(),
-    shoot_date:shootDate,time_slot:Array.from(_slots).join(', '),key_messages:keyMsg,
+    shoot_date:shootDate,time_slot:timeStart+'-'+timeEnd,key_messages:keyMsg,
     mood_tone:document.getElementById('f_mood_tone').value.trim(),
     scene_count:sceneCount,clip_length:clipLength,
     host_count:parseInt(document.getElementById('f_host_count').value)||1,
-    platforms:platforms,scene_type:_sceneOpt,
+    platforms:platforms,
     scene_ids:_sceneOpt==='library'?Array.from(_picked).join(', '):'',
     tailor_desc:_sceneOpt==='tailor'?document.getElementById('f_tailor_desc').value.trim():'',
     ref_links:document.getElementById('f_references').value.trim(),
@@ -688,7 +721,8 @@ async function loadMyRequests(){
   const tb=document.getElementById('myTbody');
   tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">⏳</td></tr>';
   try{
-    const{data,error}=await _sc.from('service_requests').select('*').eq('username',_user.username).order('created_at',{ascending:false});
+    const myName=_user.name||_user.username;
+    const{data,error}=await _sc.from('service_requests').select('*').eq('requester',myName).order('created_at',{ascending:false});
     if(error)throw error;_myReqs=data||[];renderTable(_myReqs,'myTbody',false);
   }catch(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--red)">❌ '+e.message+'</td></tr>';}
 }
@@ -719,11 +753,13 @@ function renderTable(rows,tbodyId,showReq){
   const isAdminOrEd=_user&&(_user.role==='admin'||_user.role==='editor');
   if(!rows.length){tb.innerHTML='<tr><td colspan="'+cols+'" style="text-align:center;padding:32px;color:var(--muted)">ไม่มี Request</td></tr>';return;}
   tb.innerHTML=rows.map(r=>{
-    const canDel=isAdminOrEd||(_user&&r.username===_user.username);
+    const myName=_user?((_user.name||_user.username)):'';
+    const canDel=isAdminOrEd||(_user&&r.requester===myName);
     const stage=STAGES.find(s=>s.key===r.status)||STAGES[0];
     const prog=STAGE_PROG[r.status]||10;
     const date=r.shoot_date?new Date(r.shoot_date).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}):'—';
-    const si=r.scene_type==='tailor'?'✏️ Tailor':(r.scene_ids||'—');
+    const isTailor=(r.scene_type==='tailor')||(r.tailor_desc&&!r.scene_ids);
+    const si=isTailor?'✏️ Tailor':(r.scene_ids||'—');
     const rc=showReq?`<td style="font-size:12px">${r.requester||'—'}<br><span style="color:var(--muted);font-size:11px">${r.team||''}</span></td>`:'';
     return `<tr><td><span class="rt-id">#${String(r.id||'').slice(-6).toUpperCase()}</span><br><span style="font-size:10px;color:var(--muted)">${(r.created_at||'').slice(0,10)}</span></td>
       <td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.show_name||''}">${r.show_name||'—'}</td>
@@ -758,13 +794,14 @@ function openDetail(id,src){
   const canStage=_user.role==='admin'||_user.role==='editor';
   document.getElementById('stageSection').style.display=canStage?'':'none';
   if(canStage)document.getElementById('stageSel').innerHTML=STAGES.map(s=>`<button class="stage-btn ${r.status===s.key?'selected':''}" data-stage="${s.key}" onclick="selStage('${s.key}')">${s.label}</button>`).join('');
-  const canEdit=_user.username===r.username||canStage;
+  const canEdit=(_user.name||_user.username)===r.requester||canStage;
   document.getElementById('editBtn').style.display=canEdit?'':'none';
   document.getElementById('detailModal').classList.add('open');
 }
 
 function renderView(r){
-  const sd=r.scene_type==='tailor'?`<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">TAILOR MADE</div><div style="font-size:13px">${r.tailor_desc||'—'}</div></div>`:`<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">VP SCENES</div><div style="font-family:monospace;font-size:13px">${r.scene_ids||'—'}</div></div>`;
+  const _isTailor=(r.scene_type==='tailor')||(r.tailor_desc&&!r.scene_ids);
+  const sd=_isTailor?`<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">TAILOR MADE</div><div style="font-size:13px">${r.tailor_desc||'—'}</div></div>`:`<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">VP SCENES</div><div style="font-family:monospace;font-size:13px">${r.scene_ids||'—'}</div></div>`;
   document.getElementById('detailBody').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       ${df('ผู้ยื่น',r.requester)}${df('ทีม',r.team)}
@@ -806,7 +843,7 @@ function renderEdit(r){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ชื่อ Show *</div><input class="edit-input" id="ed_show" value="${esc(r.show_name||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">วันถ่ายทำ</div><input class="edit-input" type="date" id="ed_shoot" value="${r.shoot_date||''}"></div>
-      <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">เวลาที่ถ่าย</div><input class="edit-input" id="ed_slot" value="${esc(r.time_slot||'')}"></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ช่วงเวลาถ่าย <span style="font-weight:400;font-size:10px;color:var(--muted)">(HH:MM-HH:MM)</span></div><input class="edit-input" id="ed_slot" value="${esc(r.time_slot||'')}" placeholder="เช่น 08:00-12:00"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ทีม</div><input class="edit-input" id="ed_team" value="${esc(r.team||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Clip Length</div><input class="edit-input" id="ed_clip" value="${esc(r.clip_length||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">จำนวนฉาก</div><input class="edit-input" type="number" id="ed_sc" value="${r.scene_count||''}"></div>
@@ -908,8 +945,8 @@ function renderCalendar(){
     if(!c.cur)return`<div class="cal-cell other-month"><div class="cal-date-num" style="color:var(--muted)">${c.day}</div></div>`;
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(c.day).padStart(2,'0');
     const bookings=_calData[ds]||[];
-    const mornList=bookings.filter(r=>(r.time_slot||'').toLowerCase().includes('morning')||(r.time_slot||'').includes('เช้า'));
-    const aftnList=bookings.filter(r=>(r.time_slot||'').toLowerCase().includes('afternoon')||(r.time_slot||'').includes('บ่าย'));
+    const mornList=bookings.filter(r=>_slotIsMorning(r.time_slot||''));
+    const aftnList=bookings.filter(r=>_slotIsAfternoon(r.time_slot||''));
     const full=(mornList.length>0&&aftnList.length>0);
     const partial=(mornList.length>0||aftnList.length>0)&&!full;
     const isToday=ds===todayStr;

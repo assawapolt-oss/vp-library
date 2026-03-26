@@ -72,6 +72,10 @@
   /* keep old class names in case used elsewhere */
   .sli-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
   .sli-title { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  /* shows / generic sidebar list row */
+  .scene-list-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; transition:background .1s; }
+  .scene-list-item:hover { background:var(--bg); }
+  .sli-info { flex:1; min-width:0; }
 
   /* ── Main Editor ── */
   .editor-area { flex:1; overflow-y:auto; background:var(--bg); }
@@ -670,7 +674,6 @@
         <input type="hidden" id="col_editing_id">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-save" onclick="saveCollection()" style="flex:1">💾 บันทึก Collection</button>
-          <button class="btn-secondary" onclick="closeCollectionEditor()" style="flex-shrink:0">ยกเลิก</button>
           <button id="colDeleteBtn" class="btn-delete" onclick="deleteCollection(document.getElementById('col_editing_id').value)" style="flex-shrink:0;display:none">🗑 ลบ</button>
         </div>
       </div>
@@ -2804,16 +2807,26 @@ async function renderAdminCollections() {
   const sbl = document.getElementById('sidebarCollectionsList');
   if (sbl) {
     if (!ADMIN_COLLECTIONS.length) {
-      sbl.innerHTML = '<div style="padding:8px 0;color:var(--muted);font-size:12px;">ยังไม่มี Collection</div>';
+      sbl.innerHTML = '<div style="padding:12px 14px;color:var(--muted);font-size:12px;">ยังไม่มี Collection</div>';
     } else {
-      sbl.innerHTML = ADMIN_COLLECTIONS.map(c => `
-        <div onclick="openCollectionEditor('${c.id}')" style="padding:8px 10px;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;transition:background .1s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-          <span style="font-size:16px">${c.emoji||'🗂'}</span>
-          <div style="min-width:0">
-            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name||'(ไม่มีชื่อ)'}</div>
-            <div style="font-size:11px;color:var(--muted)">${(c.scene_ids||[]).length} ฉาก</div>
+      const accent = c => c.color || '#D9232E';
+      sbl.innerHTML = ADMIN_COLLECTIONS.map(c => {
+        const thumbBg = `background:${accent(c)}`;
+        const thumbContent = c.cover_url
+          ? `<img src="${c.cover_url}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:5px" onerror="this.style.display='none'">`
+          : `<div style="font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${c.emoji||'🗂'}</div>`;
+        return `<div onclick="openCollectionEditor('${c.id}')"
+          style="padding:7px 10px;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:9px;transition:background .1s;"
+          onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <div style="width:44px;height:28px;border-radius:5px;flex-shrink:0;overflow:hidden;${thumbBg};display:flex;align-items:center;justify-content:center;">
+            ${thumbContent}
           </div>
-        </div>`).join('');
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dark)">${c.name||'(ไม่มีชื่อ)'}</div>
+            <div style="font-size:10px;color:var(--muted)">${c.season||''} · ${(c.scene_ids||[]).length} ฉาก</div>
+          </div>
+        </div>`;
+      }).join('');
     }
   }
   // Main panel list
@@ -2827,23 +2840,74 @@ async function renderAdminCollections() {
     </div>`;
     return;
   }
-  listEl.innerHTML = ADMIN_COLLECTIONS.map(c => {
+  listEl.innerHTML = ADMIN_COLLECTIONS.map((c, idx) => {
     const ids = Array.isArray(c.scene_ids) ? c.scene_ids : [];
     const sceneNames = ids.slice(0, 3).map(id => {
       const sc = scenes.find(s => s.id === id);
       return sc ? (sc.title || sc.id) : id;
     }).join(' · ') + (ids.length > 3 ? ` + ${ids.length-3} more` : '');
     const accent = c.color || 'var(--red)';
-    return `<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:box-shadow .12s" onclick="openCollectionEditor('${c.id}')" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
-      <div style="width:48px;height:48px;border-radius:10px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${c.emoji||'🗂'}</div>
+    const thumbHtml = c.cover_url
+      ? `<img src="${c.cover_url}" style="width:64px;height:40px;object-fit:cover;border-radius:7px;flex-shrink:0" onerror="this.outerHTML='<div style=&quot;width:64px;height:40px;border-radius:7px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0&quot;>${c.emoji||'🗂'}</div>'">`
+      : `<div style="width:64px;height:40px;border-radius:7px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.emoji||'🗂'}</div>`;
+    return `<div class="col-sort-row" data-col-id="${c.id}" draggable="true"
+      ondragstart="_colDragStart(event,'${c.id}')"
+      ondragover="_colDragOver(event)"
+      ondrop="_colDrop(event,'${c.id}')"
+      ondragleave="_colDragLeave(event)"
+      style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:default;transition:box-shadow .12s,border-color .12s">
+      <span title="ลาก เพื่อจัดลำดับ" style="cursor:grab;color:var(--muted);font-size:14px;flex-shrink:0;user-select:none">⠿</span>
+      <span style="font-size:11px;font-weight:700;color:var(--muted);min-width:18px;text-align:right">${idx+1}</span>
+      ${thumbHtml}
       <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700;margin-bottom:2px">${c.name||'(ไม่มีชื่อ)'}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.season||''} ${c.year||''}</div>
-        <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ids.length} ฉาก${sceneNames ? ': ' + sceneNames : ''}</div>
+        <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'(ไม่มีชื่อ)'}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.season||''} ${c.year||''} · ${ids.length} ฉาก</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);flex-shrink:0">แก้ไข ›</div>
+      <button class="btn-secondary" style="font-size:11px;padding:4px 10px;flex-shrink:0" onclick="event.stopPropagation();openCollectionEditor('${c.id}')">✏️ แก้ไข</button>
     </div>`;
   }).join('');
+}
+
+// Drag-to-reorder Collections
+let _colDragId = null;
+function _colDragStart(e, id) {
+  _colDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.closest('.col-sort-row').style.opacity = '0.4', 0);
+}
+function _colDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.borderColor = 'var(--red)';
+  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217,35,46,.2)';
+}
+function _colDragLeave(e) {
+  e.currentTarget.style.borderColor = 'var(--border)';
+  e.currentTarget.style.boxShadow = '';
+}
+function _colDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'var(--border)';
+  e.currentTarget.style.boxShadow = '';
+  if (_colDragId === targetId) return;
+  const fromIdx = ADMIN_COLLECTIONS.findIndex(c => c.id === _colDragId);
+  const toIdx   = ADMIN_COLLECTIONS.findIndex(c => c.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = ADMIN_COLLECTIONS.splice(fromIdx, 1);
+  ADMIN_COLLECTIONS.splice(toIdx, 0, moved);
+  // Re-render without DB reload
+  const listEl = document.getElementById('adminCollectionsList');
+  if (listEl) renderAdminCollections();
+  _saveCollectionsOrder(ADMIN_COLLECTIONS);
+}
+async function _saveCollectionsOrder(cols) {
+  if (!window._supaClient) return;
+  try {
+    for (let i = 0; i < cols.length; i++) {
+      await window._supaClient.from('collections').update({ sort_order: (i+1)*10 }).eq('id', cols[i].id);
+    }
+    showToast('🔢 บันทึกลำดับ Collection แล้ว', 'green', 2000);
+  } catch(e) { console.warn('[colOrder]', e); }
 }
 
 let _colSelectedIds = new Set();

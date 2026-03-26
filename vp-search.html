@@ -1280,6 +1280,9 @@ async function _loadScenes() {
             key_light_equip_id:  r.key_light_equip_id||'',
             fill_light_equip_id: r.fill_light_equip_id||'',
             back_light_equip_id: r.back_light_equip_id||'',
+            rim_l_equip_id:  r.rim_l_equip_id||'',
+            rim_r_equip_id:  r.rim_r_equip_id||'',
+            ambient_equip_id: r.ambient_equip_id||'',
           });
         });
 
@@ -2390,7 +2393,7 @@ function renderLightingBlueprint(sceneId) {
     const fx    = f.fx || [];
     // ── Resolve DB equipment for this fixture ──
     const _scFix = SCENES.find(x => x.id === sceneId);
-    const _eFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', back:'back_light_equip_id'};
+    const _eFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', backlight:'back_light_equip_id', rimL:'rim_l_equip_id', rimR:'rim_r_equip_id', ambient:'ambient_equip_id'};
     let _eList = []; try{_eList=JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]');}catch(e){}
     const _eId = _eFieldMap[key] && _scFix ? (_scFix[_eFieldMap[key]]||'') : '';
     const _eItem = _eId ? _eList.find(e=>e.id===_eId) : null;
@@ -2441,7 +2444,7 @@ function renderLightingBlueprint(sceneId) {
       ${(()=>{
         // Equipment from DB for key/fill/back light
         const _sc2 = SCENES.find(x=>x.id===sceneId);
-        const equipFieldMap = {key:'key_light_equip_id',fill:'fill_light_equip_id',back:'back_light_equip_id'};
+        const equipFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', backlight:'back_light_equip_id', rimL:'rim_l_equip_id', rimR:'rim_r_equip_id', ambient:'ambient_equip_id'};
         const equipField = equipFieldMap[key];
         let _equipList = []; try{_equipList=JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]');}catch(e){}
         const equipId = equipField && _sc2 ? (_sc2[equipField]||'') : '';
@@ -2455,7 +2458,7 @@ function renderLightingBlueprint(sceneId) {
             </div>
             <div style="font-size:9px;color:#D9232E;font-family:monospace">${equipItem.id}</div>
           </div>` : '';
-        const noEquipHtml = equipField && !equipItem ? `<div style="font-size:10px;color:#4B5563;padding:4px 0;font-style:italic">ยังไม่ได้ link อุปกรณ์</div>` : '';
+        const noEquipHtml = !equipItem ? `<div style="font-size:10px;color:#4B5563;padding:4px 0;font-style:italic">ยังไม่ได้ link อุปกรณ์</div>` : '';
         // Build equipment selector options (all equipment from cache)
         const equipOpts = admin ? (()=>{
           const cats = {};
@@ -2465,7 +2468,7 @@ function renderLightingBlueprint(sceneId) {
               `<optgroup label="${cat}">${items.map(e=>`<option value="${e.id}" ${e.id===equipId?'selected':''}>${e.name}${e.brand?' · '+e.brand:''}</option>`).join('')}</optgroup>`
             ).join('');
         })() : '';
-        return admin && equipField ? `
+        return admin ? `
         <details style="margin-top:8px">
           <summary style="font-size:10px;color:#64748B;cursor:pointer;user-select:none">⚙ Fixture Spec</summary>
           <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
@@ -2483,7 +2486,7 @@ function renderLightingBlueprint(sceneId) {
               placeholder="Model note เช่น ARRI SkyPanel S60-C" value="${f.model}"
               oninput="lbUpdateModel('${sceneId}','${key}',this.value)">
           </div>
-        </details>` : (equipField ? `<div style="margin-top:6px">${equipCardHtml}${noEquipHtml}</div>` : '');
+        </details>` : `<div style="margin-top:6px">${equipCardHtml}${noEquipHtml}</div>`;
       })()}
       <!-- FX + Note collapsible per fixture -->
       <div class="lb-fix-fx-section">
@@ -2700,7 +2703,7 @@ function lbUpdateFixNote(sceneId, key, val) { lbGetDraft(sceneId).fixtures[key].
 
 // ── Equipment picker for Lighting Blueprint ──
 async function lbPickEquip(sceneId, fixtureKey, equipId) {
-  const equipFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', back:'back_light_equip_id'};
+  const equipFieldMap = {key:'key_light_equip_id', fill:'fill_light_equip_id', backlight:'back_light_equip_id', rimL:'rim_l_equip_id', rimR:'rim_r_equip_id', ambient:'ambient_equip_id'};
   const field = equipFieldMap[fixtureKey];
   if (!field) return;
   // Update in-memory SCENES
