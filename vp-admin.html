@@ -1832,18 +1832,22 @@ function buildEditorHTML(s) {
         <div class="form-hint">เพิ่ม note สำคัญเกี่ยวกับการ match แสง ตำแหน่ง presenter หรือข้อควรระวัง</div>
       </div>
 
-      <!-- ── Lighting Blueprint ── -->
+      <!-- ── Lighting Blueprint (Equipment Slots) ── -->
       <div class="editor-section">
-        <div class="editor-section-title">💡 Lighting Blueprint <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">เลือกรุ่นไฟที่ใช้ในแต่ละตำแหน่ง</span></div>
+        <div class="editor-section-title">💡 Lighting Blueprint
+          <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">Link อุปกรณ์จาก DB — แสดงใน Frontend Canvas</span>
+        </div>
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#065F46;display:flex;align-items:center;gap:8px">
+          <span>🔗</span>
+          <span>อุปกรณ์ที่ link ไว้จะแสดงใน <strong>Fixture Spec</strong> ของ Canvas Blueprint ที่หน้าค้นหาฉาก — ระบบเดียวกัน</span>
+          <a onclick="switchAdminTab('equipment')" style="color:var(--red);cursor:pointer;text-decoration:underline;margin-left:auto;font-weight:700;white-space:nowrap">⚙️ จัดการอุปกรณ์</a>
+        </div>
         <div style="display:grid;grid-template-columns:1fr;gap:8px">
           ${buildEquipSlotHtml('key_light', s)}
           ${buildEquipSlotHtml('fill_light', s)}
           ${buildEquipSlotHtml('back_light', s)}
         </div>
         ${s.canvas_notes ? `<div style="margin-top:10px;padding:10px;background:#F0FDF4;border-radius:8px;font-size:12px;color:#065F46;line-height:1.6">${escHtml(s.canvas_notes)}</div>` : ''}
-        <div style="margin-top:8px">
-          <a onclick="switchAdminTab('equipment')" style="font-size:12px;color:var(--red);cursor:pointer;text-decoration:underline">⚙️ จัดการรายการอุปกรณ์</a>
-        </div>
       </div>
 
       <div style="height:80px"></div>
@@ -3402,9 +3406,9 @@ async function initShows() {
   // Priority 1: Supabase (source of truth)
   if (window._supaClient) {
     try {
-      const { data, error } = await window._supaClient.from('shows').select('*');
+      const { data, error } = await window._supaClient.from('shows').select('*').order('sort_order', {ascending:true});
       if (!error && data && data.length > 0) {
-        const arr = data.map(r => ({ id:r.id, name:r.name||'', color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'' }));
+        const arr = data.map((r,i) => ({ id:r.id, name:r.name||'', color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'', sort_order:r.sort_order||(i+1)*10 }));
         saveShows(arr);
         renderShowsPanel();
         return;
@@ -3487,8 +3491,8 @@ function renderShowsPanel() {
       <span title="ลาก เพื่อจัดลำดับ" style="cursor:grab;color:var(--muted);font-size:14px;flex-shrink:0;user-select:none">⠿</span>
       <span style="font-size:11px;font-weight:700;color:var(--muted);min-width:18px;text-align:right">${idx+1}</span>
       ${sh.logo_url
-        ? `<img src="${escHtml(sh.logo_url)}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;background:#f3f4f6;flex-shrink:0" onerror="this.style.display='none'">`
-        : `<div style="width:32px;height:32px;border-radius:6px;background:${sh.color||'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📺</div>`}
+        ? `<img src="${escHtml(sh.logo_url)}" style="width:24px;height:24px;object-fit:contain;border-radius:4px;background:#f3f4f6;flex-shrink:0" onerror="this.style.display='none'">`
+        : `<div style="width:24px;height:24px;border-radius:4px;background:${sh.color||'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">📺</div>`}
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(sh.name)}</div>
         <div style="font-size:11px;color:var(--muted)">${countScenesInShow(sh.id)} ฉาก · <span style="font-family:monospace">${sh.id}</span></div>
@@ -3926,7 +3930,7 @@ async function loadFileManager() {
       limit: 500, offset: 0, sortBy: { column: 'updated_at', order: 'desc' }
     });
     if (error) { grid.innerHTML = `<div style="color:var(--red);padding:20px">❌ ${error.message}</div>`; return; }
-    const files = (data||[]).filter(f => f.name && !f.id.includes('emptyFolderPlaceholder'));
+    const files = (data||[]).filter(f => f.name && !(f.id||'').includes('emptyFolderPlaceholder'));
     // update stats
     const totalSize = files.reduce((s, f) => s + (f.metadata?.size||0), 0);
     const fmb = (totalSize / 1024 / 1024).toFixed(2);

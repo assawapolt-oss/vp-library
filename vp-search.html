@@ -50,8 +50,15 @@
   .theme-opt:hover { background:var(--tag-bg); }
   .theme-opt.active { color:var(--red); }
 
-  /* ── Topbar ── */
-  .topbar { background:var(--red); color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px; }
+  /* ── Topbar — Apple glass design ── */
+  .topbar {
+    background: linear-gradient(135deg, #C8202B 0%, var(--red) 55%, #B01C26 100%);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 2px 20px rgba(0,0,0,.28), 0 1px 4px rgba(0,0,0,.18);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    color:#fff; padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:52px;
+  }
   .topbar-logo { height:28px; width:auto; display:block; object-fit:contain; filter:brightness(0) invert(1); }
   .topbar-title { font-size:15px; font-weight:700; }
   .topbar-count { font-size:12px; opacity:.7; }
@@ -315,9 +322,9 @@
   .presenter-toggle-btn img { width:24px; height:24px; object-fit:cover; border-radius:4px; opacity:1; transition:opacity .15s; }
   .presenter-toggle-btn:not(.active) { opacity:.35; border-color:rgba(255,255,255,.2); box-shadow:none; }
   .presenter-toggle-btn:not(.active):hover { opacity:.65; border-color:rgba(255,255,255,.6); }
-  .presenter-toggle-btn.active { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.4); opacity:1; }
-  .presenter-toggle-btn:hover { border-color:rgba(255,255,255,.9); }
-  .ptbtn-card { top:7px; right:7px; }
+  .presenter-toggle-btn.active { border-color:rgba(255,255,255,.6); box-shadow:none; opacity:1; }
+  .presenter-toggle-btn:hover { border-color:rgba(255,255,255,.8); }
+  .ptbtn-card { top:7px; left:7px; }   /* left side — show logo stays top-right */
   .ptbtn-modal { position:static; margin-left:8px; }
   /* video inline thumb */
   .video-inline-thumb { position:relative; width:100%; border-radius:8px; overflow:hidden; background:#000; margin-top:8px; cursor:pointer; }
@@ -1224,7 +1231,7 @@ async function _loadScenes() {
       );
       const { data: sceneRows, error } = await _sc
         .from('scenes').select('*').order('sort_order', { ascending: true });
-      const { data: showRows } = await _sc.from('shows').select('*');
+      const { data: showRows } = await _sc.from('shows').select('*').order('sort_order', {ascending:true});
 
       if (!error && sceneRows && sceneRows.length > 0) {
         // แปลง DB row → scene object
@@ -1257,13 +1264,23 @@ async function _loadScenes() {
             video_url: r.video_url||def.video_url||'',
             presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
             notes: r.description||def.notes||'',
+            key_light_equip_id:  r.key_light_equip_id||'',
+            fill_light_equip_id: r.fill_light_equip_id||'',
+            back_light_equip_id: r.back_light_equip_id||'',
           });
         });
 
         if (showRows && showRows.length > 0) {
-          const sf = showRows.map(r => ({ id:r.id, name:r.name, color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'' }));
+          const sf = showRows.map((r,i) => ({ id:r.id, name:r.name, color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'', sort_order:r.sort_order||(i+1)*10 }));
           try { localStorage.setItem('vp_shows_v1', JSON.stringify(sf)); } catch(e) {}
         }
+        // Load equipment list for Canvas lighting blueprint
+        try {
+          const { data: equipRows } = await _sc.from('equipment').select('*').order('category').order('name');
+          if (equipRows && equipRows.length) {
+            try { localStorage.setItem('vp_equip_list_v1', JSON.stringify(equipRows)); } catch(e) {}
+          }
+        } catch(e) {}
 
         try { localStorage.setItem('vp_admin_scenes_v1', JSON.stringify(SCENES)); } catch(e) {}
         _scenesReady = true;
@@ -1633,7 +1650,7 @@ function renderCards() {
       const hasPresenter = !!s.presenter_image_url;
       const defaultImgPathInfo = s.presenter_image_url || s.thumb || s.filepath;
       const _PICON2 = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
-      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;right:7px"><img src="${_PICON2}" alt="presenter"></button>` : '';
+      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;left:7px"><img src="${_PICON2}" alt="presenter"></button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
@@ -2388,15 +2405,34 @@ function renderLightingBlueprint(sceneId) {
           <div class="lb-temp-bar"></div>
         </div>
       </div>
-      ${admin ? `
-      <details style="margin-top:8px">
-        <summary style="font-size:10px;color:#64748B;cursor:pointer;user-select:none">⚙ Fixture Spec</summary>
-        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
-          <input style="background:#111827;border:1px solid #334155;border-radius:5px;color:#CBD5E1;font-size:11px;padding:5px 8px;font-family:inherit;width:100%;box-sizing:border-box"
-            placeholder="ยี่ห้อ/รุ่น เช่น ARRI SkyPanel S60-C" value="${f.model}"
-            oninput="lbUpdateModel('${sceneId}','${key}',this.value)">
-        </div>
-      </details>` : ''}
+      ${(()=>{
+        // Equipment from DB for key/fill/back light
+        const _sc2 = SCENES.find(x=>x.id===sceneId);
+        const equipFieldMap = {key:'key_light_equip_id',fill:'fill_light_equip_id',back:'back_light_equip_id'};
+        const equipField = equipFieldMap[key];
+        let _equipList = []; try{_equipList=JSON.parse(localStorage.getItem('vp_equip_list_v1')||'[]');}catch(e){}
+        const equipId = equipField && _sc2 ? (_sc2[equipField]||'') : '';
+        const equipItem = equipId ? _equipList.find(e=>e.id===equipId) : null;
+        const dbEquipHtml = equipItem ? `
+          <div style="display:flex;align-items:center;gap:8px;background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:6px 8px;margin-bottom:4px">
+            ${equipItem.image_url?`<img src="${equipItem.image_url}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:repeating-conic-gradient(#1E293B 0% 25%,#111827 0% 50%) 0 0/8px 8px;flex-shrink:0" onerror="this.style.display='none'">`:''}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:#CBD5E1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${equipItem.name}</div>
+              <div style="font-size:10px;color:#60A5FA">${equipItem.brand||''} ${equipItem.model||''}</div>
+            </div>
+            <div style="font-size:9px;color:#D9232E;font-family:monospace">${equipItem.id}</div>
+          </div>` : (equipField?`<div style="font-size:10px;color:#4B5563;padding:4px 0">ยังไม่ได้ link อุปกรณ์จาก DB</div>`:'');
+        return admin ? `
+        <details style="margin-top:8px">
+          <summary style="font-size:10px;color:#64748B;cursor:pointer;user-select:none">⚙ Fixture Spec</summary>
+          <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+            ${dbEquipHtml}
+            <input style="background:#111827;border:1px solid #334155;border-radius:5px;color:#CBD5E1;font-size:11px;padding:5px 8px;font-family:inherit;width:100%;box-sizing:border-box"
+              placeholder="ยี่ห้อ/รุ่น เช่น ARRI SkyPanel S60-C" value="${f.model}"
+              oninput="lbUpdateModel('${sceneId}','${key}',this.value)">
+          </div>
+        </details>` : (dbEquipHtml ? `<div style="margin-top:6px">${dbEquipHtml}</div>` : '');
+      })()}
       <!-- FX + Note collapsible per fixture -->
       <div class="lb-fix-fx-section">
         <button class="lb-fix-fx-toggle" onclick="lbToggleFixFxPanel('${sceneId}','${key}')">
@@ -3400,7 +3436,7 @@ function exportUsedIn(id) {
 // ── Init ──
 // โหลด scenes จาก Supabase แล้วค่อย render ทุกอย่าง
 _loadScenes().then(() => {
-  document.getElementById('totalCount').textContent = `${SCENES.length} scenes · v2.0`;
+  document.getElementById('totalCount').textContent = `${SCENES.length} scenes · v2.5`;
   document.getElementById('vtInfo')?.classList.toggle('active', viewMode==='info');
   document.getElementById('vtThumb')?.classList.toggle('active', viewMode==='thumb');
   renderShowFilter();
