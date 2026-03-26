@@ -421,7 +421,7 @@ function shuffle(arr) {
 }
 
 function imgUrl(s) {
-  const rel = s.image_url || s.filepath || s.thumb_url || null;
+  const rel = s.image_url || s.thumb_url || null;
   return rel ? STORAGE + rel : null;
 }
 
@@ -642,7 +642,7 @@ async function init() {
   // Fetch scenes
   const { data: scenes, error } = await _sc
     .from('scenes')
-    .select('id,title,image_url,thumb_url,filepath,world,energy')
+    .select('id,title,image_url,thumb_url,world,energy')
     .order('sort_order', { ascending: true });
 
   const sceneList = (scenes && !error) ? scenes : [];
