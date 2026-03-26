@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Production Library — THE STANDARD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C41E2A;--red-dim:rgba(196,30,42,.18);--red-glow:rgba(196,30,42,.35);
+  --bg:#060606;--surface:rgba(255,255,255,.04);--border:rgba(255,255,255,.09);
+  --text:#F2F2F2;--muted:rgba(255,255,255,.42);--font:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ─── LOADER ─────────────────────────────────────── */
+#loader{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+}
+.loader-mark{
+  width:52px;height:52px;background:var(--red);border-radius:12px;
+  display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;
+  font-family:'IBM Plex Sans',sans-serif;letter-spacing:-.5px;
+  animation:pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.92)}}
+.loader-text{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* ─── NAV ─────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:60px;padding:0 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(6,6,6,.65);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  opacity:0;
+}
+.nav-brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.nav-mark{
+  width:30px;height:30px;background:var(--red);border-radius:6px;
+  display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;letter-spacing:-.5px;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.nav-name{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+.nav-links{display:flex;gap:28px}
+.nav-links a{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-btn{
+  background:var(--red);color:#fff;border:none;
+  padding:7px 18px;border-radius:6px;font-size:11px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+  font-family:var(--font);text-decoration:none;transition:opacity .2s;display:inline-block;
+}
+.nav-btn:hover{opacity:.82}
+
+/* ─── HERO ─────────────────────────────────────── */
+#hero{
+  min-height:100vh;padding-top:60px;
+  display:grid;grid-template-columns:1fr 1fr;align-items:center;
+  gap:0;padding-left:80px;padding-right:60px;
+  position:relative;overflow:hidden;
+}
+.hero-left{padding-right:40px}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--red-dim);border:1px solid var(--red-glow);
+  border-radius:99px;padding:5px 13px;margin-bottom:28px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red);
+  opacity:0;transform:translateY(12px);
+}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hero-title{
+  font-size:clamp(42px,5.5vw,76px);font-weight:700;line-height:1.0;
+  letter-spacing:-.02em;margin-bottom:8px;opacity:0;
+}
+.hero-title span{display:block}
+.hero-title .line1{color:var(--red)}
+.hero-title .line2,.hero-title .line3{color:var(--text)}
+.hero-slash{font-weight:300;color:var(--muted);padding:0 4px}
+.hero-sub{
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--muted);
+  margin-bottom:36px;max-width:400px;opacity:0;
+}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;opacity:0}
+.btn-primary{
+  background:var(--red);color:#fff;border:none;
+  padding:12px 26px;border-radius:8px;font-size:13px;font-weight:700;
+  letter-spacing:.04em;cursor:pointer;font-family:var(--font);text-decoration:none;
+  display:inline-block;transition:opacity .2s,transform .15s;
+}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.btn-ghost{
+  background:transparent;color:var(--text);border:1px solid var(--border);
+  padding:12px 26px;border-radius:8px;font-size:13px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;font-family:var(--font);text-decoration:none;
+  display:inline-block;transition:border-color .2s,color .2s;
+}
+.btn-ghost:hover{border-color:rgba(255,255,255,.28);color:#fff}
+
+/* Hero stats row */
+.hero-stats{display:flex;gap:32px;margin-top:40px;opacity:0}
+.stat-item{text-align:left}
+.stat-num{font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+/* Hero deck */
+.hero-right{position:relative;height:520px;display:flex;align-items:center;justify-content:center}
+.deck-wrap{position:relative;width:340px;height:420px}
+.deck-card{
+  position:absolute;top:0;left:0;
+  width:240px;height:340px;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 24px 80px rgba(0,0,0,.7);
+  background:#111;
+  opacity:0;
+}
+.deck-card img{width:100%;height:100%;object-fit:cover;display:block}
+.deck-card .card-label{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:14px 14px 12px;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);
+}
+
+/* gradient fallback covers */
+.deck-card.grad-1{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)}
+.deck-card.grad-2{background:linear-gradient(135deg,#0d1117 0%,#1c2526 50%,#2d3748 100%)}
+.deck-card.grad-3{background:linear-gradient(135deg,#1a0a00 0%,#3d1c00 50%,#7c3a00 100%)}
+.deck-card.grad-4{background:linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 50%,#2d2d2d 100%)}
+.deck-card.grad-5{background:linear-gradient(135deg,#0d1f0f 0%,#1a3a1d 50%,#2d5a30 100%)}
+
+/* ─── FAN / SPREAD ─────────────────────────────── */
+#fan-section{position:relative;height:300vh}
+#fan-pin{
+  position:sticky;top:0;height:100vh;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.fan-label{
+  position:absolute;top:44px;left:50%;transform:translateX(-50%);
+  font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted);text-align:center;
+}
+.fan-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.fan-card{
+  position:absolute;
+  width:180px;height:260px;border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 12px 48px rgba(0,0,0,.6);
+  background:#111;cursor:pointer;
+  transform-origin:center bottom;
+  will-change:transform;
+}
+.fan-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.fan-card .fc-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(transparent 55%,rgba(0,0,0,.8));
+  display:flex;align-items:flex-end;padding:12px;
+}
+.fan-card .fc-id{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+
+/* grad fallbacks for fan */
+.fan-card.fgrad-0{background:linear-gradient(160deg,#0f172a,#1e3a5f)}
+.fan-card.fgrad-1{background:linear-gradient(160deg,#1a0a00,#7c3a00)}
+.fan-card.fgrad-2{background:linear-gradient(160deg,#0d1f0f,#2d5a30)}
+.fan-card.fgrad-3{background:linear-gradient(160deg,#1a001a,#4a0a5a)}
+.fan-card.fgrad-4{background:linear-gradient(160deg,#0a0a1a,#1a1a3a)}
+.fan-card.fgrad-5{background:linear-gradient(160deg,#1a1000,#3a2a00)}
+.fan-card.fgrad-6{background:linear-gradient(160deg,#001a1a,#003a3a)}
+.fan-card.fgrad-7{background:linear-gradient(160deg,#1a0505,#4a0000)}
+
+/* ─── SHOWS ─────────────────────────────────────── */
+#shows{padding:120px 80px}
+.section-header{margin-bottom:52px}
+.section-eyebrow{
+  font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--red);margin-bottom:12px;
+}
+.section-title{font-size:clamp(28px,3.5vw,44px);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.section-sub{font-size:14px;color:var(--muted);margin-top:10px;line-height:1.6}
+
+.shows-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.show-card{
+  position:relative;border-radius:14px;overflow:hidden;
+  aspect-ratio:3/4;background:#111;border:1px solid var(--border);
+  cursor:pointer;transition:transform .25s,box-shadow .25s;
+}
+.show-card:hover{transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.show-card img.show-bg{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  display:block;filter:brightness(.45) saturate(.7);
+  transition:filter .3s;
+}
+.show-card:hover img.show-bg{filter:brightness(.55) saturate(.85)}
+.show-card-inner{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  justify-content:flex-end;padding:16px;
+  background:linear-gradient(transparent 30%,rgba(0,0,0,.75));
+}
+.show-color-bar{
+  position:absolute;top:0;left:0;right:0;height:3px;
+}
+.show-logo-wrap{margin-bottom:10px}
+.show-logo{max-width:70%;max-height:40px;object-fit:contain;filter:brightness(0) invert(1);opacity:.9}
+.show-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;line-height:1.3}
+.show-count{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+
+/* loading skeleton */
+.show-card.skeleton{background:#111;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{0%{opacity:.5}50%{opacity:.9}100%{opacity:.5}}
+
+/* ─── BENTO ──────────────────────────────────────── */
+#bento{padding:0 80px 120px}
+.bento-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:auto auto;
+  gap:16px;
+}
+.bento-cell{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:36px 32px;
+  transition:border-color .25s,background .25s;
+}
+.bento-cell:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
+.bento-cell.span2{grid-column:span 2}
+.bento-icon{font-size:28px;margin-bottom:16px}
+.bento-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.bento-title{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+.bento-desc{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* ─── CTA ────────────────────────────────────────── */
+#cta{
+  padding:120px 80px;text-align:center;
+  background:radial-gradient(ellipse 70% 60% at 50% 80%,var(--red-dim) 0%,transparent 70%);
+}
+.cta-title{font-size:clamp(36px,5vw,64px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:20px}
+.cta-sub{font-size:16px;color:var(--muted);max-width:480px;margin:0 auto 36px;line-height:1.65}
+
+/* ─── FOOTER ─────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);
+  padding:28px 80px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.foot-brand{display:flex;align-items:center;gap:9px}
+.foot-mark{width:24px;height:24px;background:var(--red);border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;font-family:'IBM Plex Sans',sans-serif}
+.foot-name{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.foot-copy{font-size:11px;color:rgba(255,255,255,.24)}
+
+/* ─── DIVIDER ─────────────────────────────────────── */
+.section-divider{
+  height:1px;background:linear-gradient(90deg,transparent,var(--border) 30%,var(--border) 70%,transparent);
+  margin:0 80px;
+}
+
+/* ─── SCROLL REVEALS ──────────────────────────────── */
+.reveal{opacity:0;transform:translateY(22px)}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-mark">VP</div>
+  <div class="loader-text">Loading Library</div>
+</div>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <a class="nav-brand" href="vp-search.html">
+    <div class="nav-mark">VP</div>
+    <span class="nav-name">THE STANDARD</span>
+  </a>
+  <div class="nav-links">
+    <a href="vp-search.html">ค้นหาฉาก</a>
+    <a href="vp-service-request.html">Service Request</a>
+    <a href="vp-admin.html">Admin</a>
+  </div>
+  <a class="nav-btn" href="vp-search.html">เปิด Library →</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-left">
+    <div class="hero-badge">Virtual Production Library</div>
+    <h1 class="hero-title">
+      <span class="line1">VIRTUAL</span>
+      <span class="line2">PRODUCTION</span>
+      <span class="line3">LIBRARY</span>
+    </h1>
+    <p class="hero-sub">ห้องสมุดฉากเสมือนจริงสำหรับ THE STANDARD — ค้นหา วิเคราะห์ และบริหาร Virtual Set ทั้งหมดในที่เดียว</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="vp-search.html">ค้นหาฉาก</a>
+      <a class="btn-ghost" href="vp-service-request.html">ขอใช้งานฉาก</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num" id="stat-scenes">—</div>
+        <div class="stat-label">Virtual Scenes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-shows">—</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">7</div>
+        <div class="stat-label">Worlds</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="deck-wrap" id="hero-deck">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- FAN / SPREAD -->
+<section id="fan-section">
+  <div id="fan-pin">
+    <div class="fan-label">ฉากทั้งหมดในห้องสมุด</div>
+    <div class="fan-stage" id="fan-stage">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- SHOWS -->
+<section id="shows">
+  <div class="section-header reveal">
+    <div class="section-eyebrow">รายการ</div>
+    <h2 class="section-title">รายการที่ใช้ Virtual Production</h2>
+    <p class="section-sub">5 รายการหลักที่ใช้ฉากในห้องสมุดบ่อยที่สุด</p>
+  </div>
+  <div class="shows-grid" id="shows-grid">
+    <!-- filled by JS -->
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- BENTO -->
+<section id="bento">
+  <div class="bento-grid">
+    <div class="bento-cell span2 reveal">
+      <div class="bento-icon">🔍</div>
+      <div class="bento-label">Search</div>
+      <div class="bento-title">ค้นหาฉากได้ทันที</div>
+      <div class="bento-desc">กรองตาม World, Energy และ Context Tags ทำให้หาฉากที่เหมาะกับรายการได้รวดเร็วในไม่กี่วินาที</div>
+    </div>
+    <div class="bento-cell reveal">
+      <div class="bento-icon">🎨</div>
+      <div class="bento-label">Lighting Blueprint</div>
+      <div class="bento-title">บันทึก Blueprint</div>
+      <div class="bento-desc">จดจำและแชร์การตั้งค่าแสงระหว่างทีมงานได้ในคลิกเดียว</div>
+    </div>
+    <div class="bento-cell reveal">
+      <div class="bento-icon">📋</div>
+      <div class="bento-label">Service Request</div>
+      <div class="bento-title">ขอใช้งานออนไลน์</div>
+      <div class="bento-desc">ระบบ Request ออนไลน์ ติดตาม Status แบบ Real-time ไม่ต้องใช้ Line หรือ Email</div>
+    </div>
+    <div class="bento-cell reveal">
+      <div class="bento-icon">🤖</div>
+      <div class="bento-label">AI Tagging</div>
+      <div class="bento-title">Tag ด้วย AI</div>
+      <div class="bento-desc">ใช้ Claude วิเคราะห์ภาพฉากและเติมข้อมูล Taxonomy โดยอัตโนมัติ ประหยัดเวลา Tag ได้มาก</div>
+    </div>
+    <div class="bento-cell reveal">
+      <div class="bento-icon">🌍</div>
+      <div class="bento-label">7 Worlds</div>
+      <div class="bento-title">จัดหมวดหมู่ 7 World</div>
+      <div class="bento-desc">ระบบ Taxonomy ที่ครอบคลุมทุกประเภทฉาก ตั้งแต่ Urban City จนถึง Heritage Culture</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <h2 class="cta-title reveal">เริ่มต้นใช้งาน<br>VP Library วันนี้</h2>
+  <p class="cta-sub reveal">ค้นหาฉากที่ใช่ บันทึก Blueprint และบริหารการผลิตทั้งหมดในระบบเดียว</p>
+  <div class="reveal">
+    <a class="btn-primary" href="vp-search.html" style="font-size:14px;padding:14px 32px">เปิด Library →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-brand">
+    <div class="foot-mark">VP</div>
+    <span class="foot-name">Virtual Production Library</span>
+  </div>
+  <div class="foot-copy">© THE STANDARD 2025 — All rights reserved</div>
+</footer>
+
+<script>
+/* ─── SUPABASE ─────────────────────────────────── */
+const SUPA_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4NzMwMjUsImV4cCI6MjA1ODQ0OTAyNX0.h7PBFEZcDXFKUhqMHvQr-kfq3VeflNBq1HcISNd_WnE';
+const STORAGE  = SUPA_URL + '/storage/v1/object/public/vp-images/';
+const _sc = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ─── UTILS ─────────────────────────────────────── */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function imgUrl(s) {
+  const rel = s.image_url || s.filepath || s.thumb_url || null;
+  return rel ? STORAGE + rel : null;
+}
+
+/* ─── BUILD HERO DECK ────────────────────────────── */
+function buildDeck(scenes) {
+  const wrap = document.getElementById('hero-deck');
+  const picks = shuffle(scenes).slice(0, 5);
+  const positions = [
+    {left:'80px',top:'60px',rotate:'-12deg',zIndex:1},
+    {left:'120px',top:'30px',rotate:'-5deg',zIndex:2},
+    {left:'50px',top:'20px',rotate:'3deg',zIndex:3},
+    {left:'100px',top:'50px',rotate:'10deg',zIndex:4},
+    {left:'60px',top:'10px',rotate:'16deg',zIndex:5},
+  ];
+  const grads = ['grad-1','grad-2','grad-3','grad-4','grad-5'];
+  wrap.innerHTML = '';
+  picks.forEach((s, i) => {
+    const url = imgUrl(s);
+    const pos = positions[i];
+    const card = document.createElement('div');
+    card.className = 'deck-card ' + (url ? '' : grads[i]);
+    card.style.cssText = `left:${pos.left};top:${pos.top};transform:rotate(${pos.rotate});z-index:${pos.zIndex}`;
+    if (url) {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = s.title || s.id;
+      img.loading = 'lazy';
+      card.appendChild(img);
+    }
+    const lbl = document.createElement('div');
+    lbl.className = 'card-label';
+    lbl.textContent = s.id || '';
+    card.appendChild(lbl);
+    wrap.appendChild(card);
+  });
+
+  // entrance animation
+  gsap.to('.deck-card', {
+    opacity: 1, duration: 0.6, stagger: 0.12, delay: 0.3,
+    ease: 'power2.out'
+  });
+}
+
+/* ─── BUILD FAN ──────────────────────────────────── */
+function buildFan(scenes) {
+  const stage = document.getElementById('fan-stage');
+  const picks = shuffle(scenes).slice(0, 8);
+  const grads = ['fgrad-0','fgrad-1','fgrad-2','fgrad-3','fgrad-4','fgrad-5','fgrad-6','fgrad-7'];
+  stage.innerHTML = '';
+  const cards = picks.map((s, i) => {
+    const url = imgUrl(s);
+    const card = document.createElement('div');
+    card.className = 'fan-card ' + (url ? '' : grads[i]);
+    card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+    if (url) {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = s.title || s.id;
+      img.loading = 'lazy';
+      card.appendChild(img);
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'fc-overlay';
+    const idEl = document.createElement('div');
+    idEl.className = 'fc-id';
+    idEl.textContent = s.id || '';
+    overlay.appendChild(idEl);
+    card.appendChild(overlay);
+    stage.appendChild(card);
+    return card;
+  });
+
+  // Spread positions: arc-style
+  const N = cards.length;
+  const spread = [
+    {x:-480,y:-60,r:-28,s:.88},
+    {x:-320,y:-100,r:-16,s:.93},
+    {x:-160,y:-120,r:-7,s:.97},
+    {x:0,y:-130,r:0,s:1},
+    {x:160,y:-120,r:7,s:.97},
+    {x:320,y:-100,r:16,s:.93},
+    {x:480,y:-60,r:28,s:.88},
+    {x:600,y:-30,r:38,s:.82},
+  ].slice(0, N);
+
+  // All stacked initially
+  cards.forEach(c => gsap.set(c, {x:0, y:0, rotation:0, scale:1, opacity:0}));
+
+  ScrollTrigger.create({
+    trigger: '#fan-section',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 1.2,
+    onUpdate(self) {
+      const p = self.progress;
+      cards.forEach((c, i) => {
+        const t = spread[i];
+        const x = p * t.x;
+        const y = p * t.y;
+        const r = p * t.r;
+        const sc = 1 - (1 - t.s) * p;
+        const op = Math.min(1, p * 3 + 0.2);
+        gsap.set(c, {x, y, rotation: r, scale: sc, opacity: op});
+      });
+    }
+  });
+}
+
+/* ─── BUILD SHOWS ────────────────────────────────── */
+async function buildShows(scenes) {
+  const grid = document.getElementById('shows-grid');
+  // Show 5 skeleton placeholders
+  grid.innerHTML = Array(5).fill('<div class="show-card skeleton"></div>').join('');
+
+  const { data: shows, error } = await _sc
+    .from('shows')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .limit(5);
+
+  if (error || !shows || shows.length === 0) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:13px;grid-column:span 5;padding:20px 0">ไม่พบข้อมูลรายการ</div>';
+    return;
+  }
+
+  // Update stat
+  document.getElementById('stat-shows').textContent = shows.length + '+';
+
+  grid.innerHTML = '';
+  shows.forEach(show => {
+    const card = document.createElement('div');
+    card.className = 'show-card';
+
+    // Color bar
+    const bar = document.createElement('div');
+    bar.className = 'show-color-bar';
+    bar.style.background = show.color || '#C41E2A';
+    card.appendChild(bar);
+
+    // Background: random scene image
+    const randomScene = shuffle(scenes)[0];
+    const bgUrl = randomScene ? imgUrl(randomScene) : null;
+    if (bgUrl) {
+      const bg = document.createElement('img');
+      bg.className = 'show-bg';
+      bg.src = bgUrl;
+      bg.alt = '';
+      bg.loading = 'lazy';
+      card.appendChild(bg);
+    }
+
+    // Inner content
+    const inner = document.createElement('div');
+    inner.className = 'show-card-inner';
+
+    // Logo
+    if (show.logo_url) {
+      const logoWrap = document.createElement('div');
+      logoWrap.className = 'show-logo-wrap';
+      const logo = document.createElement('img');
+      logo.className = 'show-logo';
+      logo.src = show.logo_url;
+      logo.alt = show.name;
+      logo.loading = 'lazy';
+      logoWrap.appendChild(logo);
+      inner.appendChild(logoWrap);
+    }
+
+    const name = document.createElement('div');
+    name.className = 'show-name';
+    name.textContent = show.name || '—';
+    inner.appendChild(name);
+
+    card.appendChild(inner);
+    grid.appendChild(card);
+  });
+
+  // Reveal animation
+  gsap.from('#shows-grid .show-card', {
+    opacity: 0, y: 24, stagger: 0.1, duration: 0.5,
+    ease: 'power2.out',
+    scrollTrigger: {trigger: '#shows', start: 'top 80%'}
+  });
+}
+
+/* ─── STATS COUNTER ──────────────────────────────── */
+function animateCounter(el, target) {
+  gsap.to({val: 0}, {
+    val: target, duration: 1.4, ease: 'power2.out',
+    onUpdate() { el.textContent = Math.round(this.targets()[0].val); }
+  });
+}
+
+/* ─── SCROLL REVEALS ──────────────────────────────── */
+function setupReveals() {
+  document.querySelectorAll('.reveal').forEach(el => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
+      scrollTrigger: {trigger: el, start: 'top 84%'}
+    });
+  });
+}
+
+/* ─── HERO ENTRANCE ──────────────────────────────── */
+function heroEntrance() {
+  const tl = gsap.timeline({delay: 0.1});
+  tl.to('.hero-badge', {opacity:1, y:0, duration:.5, ease:'power2.out'})
+    .to('.hero-title', {opacity:1, duration:.7, ease:'power2.out'}, '-=.2')
+    .to('.hero-sub', {opacity:1, y:0, duration:.5, ease:'power2.out'}, '-=.3')
+    .to('.hero-actions', {opacity:1, y:0, duration:.5, ease:'power2.out'}, '-=.2')
+    .to('.hero-stats', {opacity:1, y:0, duration:.5, ease:'power2.out'}, '-=.2');
+}
+
+/* ─── INIT ────────────────────────────────────────── */
+async function init() {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Fetch scenes
+  const { data: scenes, error } = await _sc
+    .from('scenes')
+    .select('id,title,image_url,thumb_url,filepath,world,energy')
+    .order('sort_order', { ascending: true });
+
+  const sceneList = (scenes && !error) ? scenes : [];
+
+  // Hide loader
+  gsap.to('#loader', {
+    opacity: 0, duration: 0.5, delay: 0.3,
+    onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+  });
+
+  // Show nav
+  gsap.to('#main-nav', {opacity:1, duration:.5, delay:.5});
+
+  // Hero entrance
+  heroEntrance();
+
+  // Stats
+  if (sceneList.length) {
+    const sEl = document.getElementById('stat-scenes');
+    ScrollTrigger.create({
+      trigger: '.hero-stats', start: 'top 85%', once: true,
+      onEnter: () => animateCounter(sEl, sceneList.length)
+    });
+  }
+
+  // Build sections
+  if (sceneList.length) {
+    buildDeck(sceneList);
+    buildFan(sceneList);
+    await buildShows(sceneList);
+  } else {
+    // fallbacks without images
+    buildDeck([]);
+    buildFan([]);
+    document.getElementById('shows-grid').innerHTML =
+      '<div style="color:var(--muted);font-size:13px;grid-column:span 5;padding:20px 0">ไม่สามารถโหลดข้อมูลได้</div>';
+  }
+
+  // Scroll reveals
+  setupReveals();
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

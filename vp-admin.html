@@ -171,7 +171,7 @@
   .path-input-wrap .form-input { flex:1; font-family:'IBM Plex Sans',monospace; font-size:12px; }
 
   /* upload zone */
-  .upload-zone { border:2px dashed var(--border); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; position:relative; }
+  .upload-zone { border:2px dashed var(--border); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; position:relative; overflow:hidden; }
   .upload-zone:hover, .upload-zone.drag-over { border-color:var(--red); background:#FEF2F2; }
   .upload-zone.has-file { border-color:var(--green); background:#F0FDF4; border-style:solid; }
   .upload-zone.has-file:hover { border-color:#059669; background:#DCFCE7; }
@@ -383,7 +383,7 @@
         <button id="tabCollections" onclick="switchAdminTab('collections')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">🗂 Collections</button>
         <button id="tabUsers" onclick="switchAdminTab('users')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">👥 ผู้ใช้</button>
         <button id="tabEquipment" onclick="switchAdminTab('equipment')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">💡 อุปกรณ์</button>
-        <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📊 Log</button>
+        <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📁 Files Manager</button>
       </div>
 
       <!-- Scenes panel -->
@@ -754,74 +754,21 @@
 
 <!-- Tag Guide Modal -->
 <div class="new-modal-overlay" id="tagGuideOverlay" onclick="if(event.target===this)closeTagGuideModal()" style="display:none">
-  <div class="new-modal" style="max-width:560px;max-height:80vh;overflow-y:auto;">
+  <div class="new-modal" style="max-width:600px;max-height:88vh;overflow-y:auto;">
     <div class="new-modal-title">✨ Tag / Edit VP Scene กับ Claude</div>
-    <p style="font-size:12px;color:#6B7280;margin-bottom:4px;">Copy prompt → วางใน Cowork chat → ส่งได้เลย <b>ไม่ต้องแนบภาพ</b></p>
-    <p style="font-size:11px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;border-radius:6px;padding:7px 10px;margin-bottom:14px;">💡 Claude จะดึงภาพจาก browser โดยอัตโนมัติ — แค่ระบุ ID ฉากที่ต้องการ</p>
+    <p style="font-size:12px;color:#6B7280;margin-bottom:10px;">กด <b>Copy</b> → วาง prompt ใน <b>Cowork chat</b> นี้ → Enter ได้เลย ไม่ต้องแนบไฟล์</p>
 
-    <!-- Tag ฉากใหม่ -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:6px;">🎬 Tag ฉากใหม่</div>
-      <div style="position:relative;">
-        <textarea id="tg_tag" readonly rows="2" onclick="this.select()" style="width:100%;padding:10px 50px 10px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:monospace;resize:none;background:#F9FAFB;cursor:pointer;">tag VP-0XX แล้ว apply เข้า VP Library ให้เลย</textarea>
-        <button onclick="copyText('tg_tag',this)" style="position:absolute;top:6px;right:6px;padding:3px 8px;font-size:10px;background:#6366F1;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">copy</button>
-      </div>
+    <div style="position:relative;">
+      <textarea id="tg_tag" readonly rows="22" onclick="this.select()" style="width:100%;padding:10px 50px 10px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:11.5px;font-family:monospace;line-height:1.55;resize:vertical;background:#F9FAFB;cursor:pointer;color:#1F2937;"></textarea>
+      <button onclick="copyText('tg_tag',this)" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;font-weight:700;background:#6366F1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Copy</button>
     </div>
 
-    <!-- Tag หลายฉาก -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:6px;">🎬🎬 Tag หลายฉากพร้อมกัน</div>
-      <div style="position:relative;">
-        <textarea id="tg_multi" readonly rows="2" onclick="this.select()" style="width:100%;padding:10px 50px 10px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:monospace;resize:none;background:#F9FAFB;cursor:pointer;">tag VP-0XX, VP-0XX, VP-0XX แล้ว apply เข้า VP Library ให้เลย</textarea>
-        <button onclick="copyText('tg_multi',this)" style="position:absolute;top:6px;right:6px;padding:3px 8px;font-size:10px;background:#6366F1;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">copy</button>
-      </div>
-    </div>
-
-    <div style="margin-top:14px;text-align:right;">
+    <div style="margin-top:12px;text-align:right;">
       <button class="btn-secondary" onclick="closeTagGuideModal()">ปิด</button>
     </div>
   </div>
 </div>
 
-<!-- Ollama Local AI Modal -->
-<div class="new-modal-overlay" id="ollamaOverlay" onclick="if(event.target===this)closeOllamaModal()">
-  <div class="new-modal" style="max-width:500px;">
-    <div class="new-modal-title">🤖 Local AI Tag (Ollama)</div>
-    <p style="font-size:13px;color:#6B7280;margin-bottom:14px;line-height:1.6">ใช้ Ollama รัน vision model บนเครื่องของคุณเอง — ไม่ต้องใช้ API Key และข้อมูลไม่ออกอินเทอร์เน็ต</p>
-
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">Ollama Host</label>
-      <input type="text" id="ollamaHostInput" class="form-input" placeholder="http://localhost:11434" value="http://localhost:11434" style="font-family:monospace;font-size:13px;" autocomplete="off">
-    </div>
-    <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Model</span>
-        <button class="btn-secondary" onclick="ollamaFetchModels()" id="ollamaFetchBtn" style="font-size:11px;padding:3px 10px;height:auto">🔄 ดึงรายการ</button>
-      </label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="ollamaModelSelect" class="form-input" style="font-family:monospace;font-size:13px;flex:1;display:none"></select>
-        <input type="text" id="ollamaModelInput" class="form-input" placeholder="moondream" value="moondream" style="font-family:monospace;font-size:13px;flex:1" autocomplete="off">
-        <button class="btn-secondary" onclick="ollamaCheckConnection()" style="white-space:nowrap;flex-shrink:0">🔌 ทดสอบ</button>
-      </div>
-      <div id="ollamaModelHint" style="font-size:11px;color:#9CA3AF;margin-top:5px">กด <strong>ดึงรายการ</strong> เพื่อโหลด model ที่ติดตั้งแล้ว หรือพิมพ์ชื่อเองได้เลย</div>
-    </div>
-    <div id="ollamaStatus" style="font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px;display:none"></div>
-
-    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.8;color:#4B5563">
-      <div style="font-weight:700;margin-bottom:6px;color:#1E293B">📋 วิธีติดตั้ง Ollama</div>
-      <div>1. ดาวน์โหลดจาก <strong>ollama.com</strong></div>
-      <div>2. เปิด Terminal แล้วรัน: <code style="background:#E2E8F0;padding:1px 5px;border-radius:3px">ollama pull moondream</code></div>
-      <div>3. รัน: <code style="background:#E2E8F0;padding:1px 5px;border-radius:3px">ollama serve</code> (ถ้ายังไม่ได้เปิด)</div>
-      <div style="margin-top:6px;color:#6B7280">หรือใช้ Python script สำหรับ batch tag ทุก scene พร้อมกัน:<br>
-        <code style="background:#E2E8F0;padding:2px 6px;border-radius:3px;font-size:11px">cd VP_Library &amp;&amp; python3 vp-ai-tag.py</code>
-      </div>
-    </div>
-    <div class="confirm-actions">
-      <button class="btn-secondary" onclick="closeOllamaModal()">ปิด</button>
-      <button class="btn-save" onclick="saveOllamaSettings()" style="background:#10B981">💾 บันทึกการตั้งค่า</button>
-    </div>
-  </div>
-</div>
 
 <!-- Delete Confirm -->
 <div class="confirm-overlay" id="confirmOverlay">
@@ -1647,7 +1594,7 @@ function buildEditorHTML(s) {
         <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
       </div>
       <div class="editor-actions">
-        <button class="btn-ai-tag" id="aiTagMainBtn" onclick="aiTagMain('${s.id}',this)" title="วิเคราะห์ภาพด้วย AI แล้วเติมทุกช่องให้อัตโนมัติ">✨ Tag by AI</button>
+        <button class="btn-ai-tag" onclick="openTagGuideModal('${s.id}')" title="Copy prompt → วางใน Claude Cowork chat เพื่อเติมทุกช่องอัตโนมัติ">✨ Tag by AI</button>
         <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
         <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
         <button class="btn-save" id="saveBtn_${s.id}" onclick="saveScene('${s.id}')">💾 บันทึก</button>
@@ -4634,170 +4581,56 @@ function refreshThumbPreview(sceneId) {
 // ══════════════════════════════════════════════
 // AI TAG MAIN — Anthropic direct → Ollama → guide modal
 // ══════════════════════════════════════════════
-const ANTHROPIC_KEY_STORE = 'vp_anthropic_key';
-
-const VP_AI_TAG_PROMPT = `You are classifying a Thai TV broadcast virtual production background image.
-Respond with ONLY a valid JSON object — no markdown, no explanation.
-
-{
-  "title_en": "<3-5 word English scene title, e.g. Modern Loft Interior>",
-  "title_th": "<3-5 คำภาษาไทย สั้นๆ อธิบายฉาก เช่น ห้องนั่งเล่นสมัยใหม่>",
-  "world": "<urban-city|interior-office|nature-outdoor|industrial|scifi-future|stylized-abstract|heritage-culture>",
-  "energy": "<intense|balanced|open>",
-  "context_tags": ["<1-3 from: news-report|talk-interview|analysis-data|field-onsite|opener-drama|social-short|event-special>"],
-  "color_temp": "<cool|warm|neutral|mixed>",
-  "brightness": "<dark|low|medium|bright|high-key>",
-  "has_particles": false,
-  "dominant_colors_desc": "<2-3 words describing main colors>"
-}
-
-WORLD:
-- urban-city = outdoor city/streets/buildings/skyline
-- interior-office = ANY indoor space: loft/lobby/office/studio/home/room with furniture
-- nature-outdoor = nature/sky/mountains/forests/water (no man-made structures)
-- industrial = factory/warehouse/machinery/pipes
-- scifi-future = lab/tech/robot/hologram/futuristic space
-- stylized-abstract = graphic/data visualization/motion/abstract art
-- heritage-culture = temple/historical building/vintage/rustic/cultural artifact
-
-ENERGY: intense=dramatic high-contrast exciting, balanced=professional neutral steady, open=calm warm minimal friendly
-CONTEXT: news-report=news standup/desk, talk-interview=interview/conversation, analysis-data=data explainer, field-onsite=outdoor reporting, opener-drama=dramatic show opener, social-short=short social clip, event-special=live event`;
-
-async function aiTagMain(sceneId, btnEl) {
-  const s = scenes.find(x => x.id === sceneId);
-  if (!s) return;
-  const imgPath = s.filepath || s.thumb || '';
-  if (!imgPath) { showToast('⚠️ ไม่พบภาพสำหรับฉากนี้'); return; }
-
-  const orig = btnEl.textContent;
-  btnEl.disabled = true;
-  btnEl.textContent = '⏳ วิเคราะห์…';
-
-  try {
-    // 1) Anthropic direct API (if key stored)
-    const anthropicKey = localStorage.getItem(ANTHROPIC_KEY_STORE);
-    if (anthropicKey) {
-      await _aiTagAnthropic(sceneId, imgPath, anthropicKey);
-      return;
-    }
-    // 2) Ollama (quick ping)
-    const ollamaHost = localStorage.getItem(OLLAMA_HOST_KEY) || 'http://localhost:11434';
-    let ollamaOk = false;
-    try {
-      const ping = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(2000) });
-      ollamaOk = ping.ok;
-    } catch(_) {}
-    if (ollamaOk) { await aiTagSceneOllama(sceneId); return; }
-    // 3) Neither configured — show setup modal
-    _showAiSetupModal(sceneId);
-  } catch(e) {
-    showToast('❌ AI Tag ล้มเหลว: ' + e.message);
-  } finally {
-    btnEl.disabled = false;
-    btnEl.textContent = orig;
-  }
-}
-
-async function _aiTagAnthropic(sceneId, imgPath, apiKey) {
-  try {
-    const cleanUrl = imgPath.split('?')[0];
-    showToast('✨ กำลังส่งภาพให้ Claude วิเคราะห์…', 'blue');
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'url', url: cleanUrl } },
-          { type: 'text',  text: VP_AI_TAG_PROMPT }
-        ]}]
-      }),
-      signal: AbortSignal.timeout(30000)
-    });
-
-    if (res.status === 401) {
-      localStorage.removeItem(ANTHROPIC_KEY_STORE);
-      throw new Error('API Key ไม่ถูกต้อง — ลบออกแล้ว กด ✨ Tag by AI แล้วใส่ใหม่');
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`Anthropic ${res.status}: ${err?.error?.message || 'unknown error'}`);
-    }
-
-    const data = await res.json();
-    let raw = data.content?.[0]?.text || '';
-    console.log('[AnthropicTag] raw:', raw);
-    raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const s1 = raw.indexOf('{'), e1 = raw.lastIndexOf('}') + 1;
-    if (s1 === -1 || e1 === 0) throw new Error('ไม่พบ JSON ในผลลัพธ์ของ Claude');
-    const tagged = JSON.parse(raw.slice(s1, e1));
-
-    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
-    const validEnergy = ['intense','balanced','open'];
-    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
-    if (!validWorld.includes(tagged.world))   delete tagged.world;
-    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
-    if (Array.isArray(tagged.context_tags))
-      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0, 3);
-
-    applyAiTagToForm(tagged, 'claude-haiku');
-    showToast('✨ Claude Tag เสร็จแล้ว — ตรวจสอบแล้วกด 💾 บันทึก', 'green');
-  } catch(e) {
-    console.error('[_aiTagAnthropic]', e);
-    throw e;  // re-throw so aiTagMain's catch handles it
-  }
-}
-
-function _showAiSetupModal(sceneId) {
-  document.getElementById('aiSetupModalOverlay')?.remove();
-  document.body.insertAdjacentHTML('beforeend', `
-<div id="aiSetupModalOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999" onclick="if(event.target===this)this.remove()">
-  <div style="background:#1E293B;border:1.5px solid #334155;border-radius:14px;padding:28px;max-width:400px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,.6)">
-    <div style="font-size:17px;font-weight:700;color:#F1F5F9;margin-bottom:4px">✨ ตั้งค่า AI Tag</div>
-    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">เลือกวิธีวิเคราะห์ภาพ — ใส่ครั้งเดียว จำตลอด</div>
-    <div style="display:grid;gap:10px">
-      <button onclick="
-        const k = prompt('วาง Anthropic API Key (เริ่มด้วย sk-ant-api03-...):');
-        if (k && k.trim().length > 20) {
-          localStorage.setItem('${ANTHROPIC_KEY_STORE}', k.trim());
-          document.getElementById('aiSetupModalOverlay').remove();
-          showToast('✅ บันทึก API Key แล้ว — กด ✨ Tag by AI อีกครั้ง', 'green');
-        } else if (k !== null) { showToast('❌ Key ไม่ถูกต้อง'); }
-      " style="padding:12px 16px;background:linear-gradient(135deg,#6D28D9,#4F46E5);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:left;line-height:1.5">
-        🔑 ใช้ Anthropic API Key
-        <div style="font-size:10px;font-weight:400;opacity:.8">แม่นที่สุด · ใส่ครั้งเดียว ใช้ได้เรื่อยๆ</div>
-      </button>
-      <button onclick="document.getElementById('aiSetupModalOverlay').remove();openOllamaModal();" style="padding:12px 16px;background:#0F172A;color:#E2E8F0;border:1.5px solid #334155;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:left;line-height:1.5">
-        🤖 ใช้ Ollama (Local AI)
-        <div style="font-size:10px;font-weight:400;opacity:.7">ฟรี · ต้องติดตั้ง Ollama + llava บนเครื่อง</div>
-      </button>
-      <button onclick="document.getElementById('aiSetupModalOverlay').remove();openTagGuideModal('${sceneId}');" style="padding:10px 16px;background:transparent;color:#94A3B8;border:1px solid #334155;border-radius:8px;font-size:12px;cursor:pointer;text-align:left">
-        📋 Copy prompt → วางใน Claude chat แทน
-      </button>
-    </div>
-  </div>
-</div>`);
-}
-
-// ══════════════════════════════════════════════
-// LOCAL AI TAG — OLLAMA
-// ══════════════════════════════════════════════
-const OLLAMA_HOST_KEY  = 'vp_ollama_host';
-const OLLAMA_MODEL_KEY = 'vp_ollama_model';
 
 function openTagGuideModal(sceneId) {
-  if (sceneId) {
-    document.getElementById('tg_tag').value = `tag ${sceneId} แล้ว apply เข้า VP Library ให้เลย`;
-  } else {
-    document.getElementById('tg_tag').value = 'tag VP-0XX แล้ว apply เข้า VP Library ให้เลย';
-  }
+  const s = sceneId ? scenes.find(x => x.id === sceneId) : null;
+  const imgUrl = s ? (s.filepath || s.image_url || s.thumb_url || '') : '';
+  const cleanImg = imgUrl.split('?')[0];
+  const sid = sceneId || 'VP-0XX';
+
+  const prompt = `Tag ฉาก ${sid} ใน VP Admin editor ที่เปิดอยู่ใน browser
+
+${cleanImg ? `🖼 ภาพ: ${cleanImg}\n` : ''}
+─── บริบท VP Library ───
+ฉาก Virtual Production สำหรับรายการโทรทัศน์ไทย (Unreal Engine)
+แต่ละฉากต้องมี: ชื่อ EN, ชื่อไทย, world, energy, context_tags, production note
+
+─── Taxonomy ───
+WORLD (เลือก 1 ที่ตรงที่สุด):
+  urban-city       = ถนน ตึก เมือง สกายไลน์ วิวกลางแจ้ง
+  interior-office  = ในร่มทุกประเภท: ออฟฟิศ ห้องนั่งเล่น สตูดิโอ ล็อบบี้ บ้าน คาเฟ่
+  nature-outdoor   = ธรรมชาติล้วน: ท้องฟ้า ภูเขา ป่า ทะเล ทุ่งนา ไม่มีสิ่งก่อสร้าง
+  industrial       = โรงงาน โกดัง ท่าเรือ เครื่องจักร ท่อ โครงสร้างโลหะ
+  scifi-future     = ห้องแล็บ เทคโนโลยี โฮโลแกรม อวกาศ อนาคต ดิจิทัล
+  stylized-abstract= กราฟิก ข้อมูล motion background ไม่ใช่ภาพถ่าย
+  heritage-culture = วัด โบราณสถาน ประวัติศาสตร์ วินเทจ ชนบท วัฒนธรรม
+
+ENERGY (เลือก 1):
+  intense  = ดราม่า contrast สูง มืด ตื่นเต้น เหมาะ breaking news / opener
+  balanced = สบายตา มืออาชีพ neutral ใช้ได้หลากหลาย
+  open     = สว่าง โปร่ง อบอุ่น friendly เหมาะสัมภาษณ์ / talk show
+
+CONTEXT TAGS (เลือก 1–3 ที่เหมาะสม):
+  news-report    = ข่าว anchor desk รายงานข่าว
+  talk-interview = พูดคุย สัมภาษณ์ talk show
+  analysis-data  = วิเคราะห์ กราฟ infographic
+  field-onsite   = รายงานนอกสถานที่ field report
+  opener-drama   = เปิดรายการ ดราม่า cinematic
+  social-short   = คลิปสั้น social media reels
+  event-special  = งาน event พิธีการ live
+
+─── เติมทุกช่องด้วย javascript_tool บน tab VP Admin ───
+(แทนที่ค่าตัวอย่างด้วยผลวิเคราะห์จริง ห้ามเว้นช่องไหนว่าง)
+
+document.getElementById('f_title').value = 'Modern City Rooftop';
+document.getElementById('f_title_th').value = 'ดาดฟ้าเมืองสมัยใหม่';
+document.getElementById('f_world').value = 'urban-city';
+document.getElementById('f_energy').value = 'balanced';
+tagState['te_context_tags'] = ['news-report','talk-interview']; renderTagEditor('te_context_tags');
+document.getElementById('f_notes').value = 'แสงธรรมชาติกลางวัน วิวตึกสูงกรุงเทพฯ เหมาะรายการข่าวและ talk show ที่ต้องการบรรยากาศเมืองชัดเจน';
+saveSceneEditor();`;
+
+  document.getElementById('tg_tag').value = prompt;
   document.getElementById('tagGuideOverlay').style.display = 'flex';
 }
 function closeTagGuideModal() {
@@ -4813,364 +4646,6 @@ function copyText(id, btn) {
   setTimeout(() => { btn.textContent = orig; btn.style.background = '#6366F1'; }, 1500);
 }
 
-function openOllamaModal() {
-  const host  = localStorage.getItem(OLLAMA_HOST_KEY)  || 'http://localhost:11434';
-  const model = localStorage.getItem(OLLAMA_MODEL_KEY) || 'moondream';
-  document.getElementById('ollamaHostInput').value  = host;
-  document.getElementById('ollamaModelInput').value = model;
-  const st = document.getElementById('ollamaStatus');
-  st.style.display = 'none';
-  document.getElementById('ollamaOverlay').classList.add('open');
-  // Auto-fetch model list when opening
-  setTimeout(() => ollamaFetchModels(true), 200);
-}
-function closeOllamaModal() {
-  document.getElementById('ollamaOverlay').classList.remove('open');
-}
-function _ollamaGetSelectedModel() {
-  const sel = document.getElementById('ollamaModelSelect');
-  const inp = document.getElementById('ollamaModelInput');
-  if (sel && sel.style.display !== 'none' && sel.value) return sel.value;
-  return (inp ? inp.value.trim() : '') || 'moondream';
-}
-function saveOllamaSettings() {
-  const host  = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
-  const model = _ollamaGetSelectedModel();
-  localStorage.setItem(OLLAMA_HOST_KEY,  host);
-  localStorage.setItem(OLLAMA_MODEL_KEY, model);
-  showToast(`✓ บันทึกการตั้งค่า Ollama แล้ว (${model})`, 'green');
-  closeOllamaModal();
-}
-
-async function ollamaFetchModels(silent = false) {
-  const host = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
-  const btn  = document.getElementById('ollamaFetchBtn');
-  const sel  = document.getElementById('ollamaModelSelect');
-  const inp  = document.getElementById('ollamaModelInput');
-  const hint = document.getElementById('ollamaModelHint');
-  const st   = document.getElementById('ollamaStatus');
-
-  if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
-
-  try {
-    const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data   = await res.json();
-    const models = (data.models || []).map(m => m.name).filter(Boolean);
-
-    if (models.length === 0) {
-      if (!silent) {
-        st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-        st.textContent = '⚠️ Ollama เชื่อมต่อได้แต่ยังไม่มี model — รัน: ollama pull moondream';
-      }
-      return;
-    }
-
-    // Saved model
-    const saved = localStorage.getItem(OLLAMA_MODEL_KEY) || inp.value.trim() || '';
-
-    // Build dropdown
-    sel.innerHTML = '';
-    // Vision-capable models first
-    const visionKeywords = ['llava','moondream','bakllava','cogvlm','minicpm-v','qwen-vl','internvl','phi3-vision','gemma3'];
-    const visionModels = models.filter(m => visionKeywords.some(k => m.toLowerCase().includes(k)));
-    const otherModels  = models.filter(m => !visionKeywords.some(k => m.toLowerCase().includes(k)));
-
-    if (visionModels.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = '👁 Vision Models (แนะนำ)';
-      visionModels.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m; opt.textContent = m;
-        if (m === saved || m.startsWith(saved + ':')) opt.selected = true;
-        grp.appendChild(opt);
-      });
-      sel.appendChild(grp);
-    }
-    if (otherModels.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = '💬 Other Models';
-      otherModels.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m; opt.textContent = m;
-        if (m === saved || m.startsWith(saved + ':')) opt.selected = true;
-        grp.appendChild(opt);
-      });
-      sel.appendChild(grp);
-    }
-    // If nothing selected yet, pick first vision model
-    if (!sel.value && visionModels.length > 0) sel.value = visionModels[0];
-
-    // Show dropdown, hide text input
-    sel.style.display = '';
-    inp.style.display = 'none';
-    hint.innerHTML = `<span style="color:#10B981">✅ พบ ${models.length} model</span> — เลือก Vision Model เพื่อวิเคราะห์ภาพ`;
-
-    if (!silent) {
-      st.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#166534;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-      st.textContent = `✅ โหลด ${models.length} model สำเร็จ — เลือก model ด้านบนแล้วกดบันทึก`;
-    }
-
-  } catch(e) {
-    sel.style.display  = 'none';
-    inp.style.display  = '';
-    hint.innerHTML = 'กด <strong>ดึงรายการ</strong> เพื่อโหลด model ที่ติดตั้งแล้ว หรือพิมพ์ชื่อเองได้เลย';
-    if (!silent) {
-      st.style.cssText = 'display:block;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-      st.textContent = `❌ ไม่สามารถเชื่อมต่อ ${host} — ตรวจสอบว่า "ollama serve" รันอยู่`;
-    }
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔄 ดึงรายการ'; }
-  }
-}
-
-async function ollamaCheckConnection() {
-  const host  = document.getElementById('ollamaHostInput').value.trim() || 'http://localhost:11434';
-  const model = _ollamaGetSelectedModel();
-  const st    = document.getElementById('ollamaStatus');
-  st.style.cssText = 'display:block;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-  st.textContent   = '⏳ กำลังตรวจสอบ…';
-
-  try {
-    const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data   = await res.json();
-    const models = (data.models || []).map(m => m.name);
-    const found  = models.some(m => m === model || m.startsWith(model + ':'));
-    if (found) {
-      st.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#166534;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-      st.textContent = `✅ เชื่อมต่อสำเร็จ — model "${model}" พร้อมใช้งาน`;
-    } else if (models.length > 0) {
-      st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-      st.textContent = `⚠️ เชื่อมต่อได้แต่ไม่พบ "${model}" — มี: ${models.join(', ')}`;
-      // Refresh dropdown too
-      ollamaFetchModels(true);
-    } else {
-      st.style.cssText = 'display:block;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-      st.textContent = `⚠️ เชื่อมต่อได้แต่ยังไม่มี model — รัน: ollama pull moondream`;
-    }
-  } catch(e) {
-    st.style.cssText = 'display:block;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12px;padding:8px 10px;border-radius:6px;margin-bottom:12px';
-    st.textContent = `❌ ไม่สามารถเชื่อมต่อ ${host} — ตรวจสอบว่า "ollama serve" รันอยู่`;
-  }
-}
-
-async function aiTagSceneOllama(sceneId) {
-  const s = scenes.find(x => x.id === sceneId);
-  if (!s) return;
-
-  const host  = localStorage.getItem(OLLAMA_HOST_KEY)  || 'http://localhost:11434';
-  const model = localStorage.getItem(OLLAMA_MODEL_KEY) || _ollamaGetSelectedModel() || 'moondream';
-
-  const btn = document.getElementById('ollamaTagBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ AI…'; }
-
-  try {
-    // Resolve image — prefer full image (filepath) for accuracy, thumb only as fallback
-    const imgPath = s.filepath || s.thumb || '';
-    if (!imgPath) { showToast('⚠️ ไม่พบไฟล์ภาพสำหรับฉากนี้'); return; }
-
-    const imgBase64 = await loadImageAsBase64ForOllama(imgPath);
-    if (!imgBase64) { showToast('⚠️ โหลดภาพไม่สำเร็จ — ตรวจสอบ thumb path'); return; }
-    // DEBUG: log image size so we can verify the right image was loaded
-    console.log(`[AI Tag] imgPath="${imgPath}" base64len=${imgBase64.length} (~${Math.round(imgBase64.length*0.75/1024)}KB)`);
-    showToast(`🔍 โหลดภาพแล้ว ~${Math.round(imgBase64.length*0.75/1024)}KB — กำลังส่ง llava…`, 'blue');
-
-    const prompt = `You are a scene classifier for a Thai TV broadcast virtual production library. This image may show a single scene or a split-screen/composite of multiple views of the SAME location. Classify based on the PRIMARY or DOMINANT environment shown — focus on the LEFT or CENTER of the image if multiple panels exist.
-
-Respond ONLY with a JSON object — no markdown, no explanation, no extra text.
-
-{
-  "title_en": "<3-5 word English title for the PRIMARY scene, e.g. Modern Loft Interior Day>",
-  "title_th": "<3-5 คำภาษาไทย อธิบายฉาก เช่น ห้องนั่งเล่นสมัยใหม่>",
-  "world": "<one of: urban-city | interior-office | nature-outdoor | industrial | scifi-future | stylized-abstract | heritage-culture>",
-  "energy": "<one of: intense | balanced | open>",
-  "context_tags": ["<1-3 of: news-report | talk-interview | analysis-data | field-onsite | opener-drama | social-short | event-special>"],
-  "color_temp": "<one of: cool | warm | neutral | mixed>",
-  "brightness": "<one of: dark | low | medium | bright | high-key>",
-  "has_particles": <true or false>,
-  "dominant_colors_desc": "<2-3 words describing the main colors, e.g. warm wood brown, dark teal blue>"
-}
-
-RULES:
-- urban-city = OUTDOOR city streets/buildings/skyline ONLY
-- interior-office = ANY indoor space: loft, lobby, office, studio, home, room with furniture/stairs/plants
-- If image shows BOTH indoor and outdoor, classify the indoor area as the PRIMARY scene
-- industrial = factory/warehouse/machinery (NOT loft/studio)
-- nature-outdoor = nature, sky, mountains, forests, water (no buildings)
-world: urban-city=outdoor city streets buildings skyline, interior-office=indoor loft lobby studio office home stairs furniture, nature-outdoor=nature sky mountains water, industrial=factory warehouse machinery pipes, scifi-future=lab tech robot hologram futuristic, stylized-abstract=graphic data motion abstract, heritage-culture=temple monument historical
-energy: intense=dramatic high-contrast exciting, balanced=professional neutral steady, open=calm minimal warm friendly
-context: news-report=news standup, talk-interview=interview conversation, analysis-data=data explainer, field-onsite=outdoor reporting, opener-drama=dramatic opener, social-short=short clip, event-special=live event`;
-
-    // Check Ollama is reachable first
-    try {
-      const pingRes = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(4000) });
-      if (!pingRes.ok) throw new Error();
-    } catch(e) {
-      showToast(`❌ ไม่พบ Ollama ที่ ${host} — กด 🤖 Local AI ที่แถบด้านบนเพื่อตั้งค่า`);
-      openOllamaModal();
-      return;
-    }
-
-    const payload = JSON.stringify({
-      model: model,
-      prompt: prompt,
-      images: [imgBase64],
-      stream: false,
-      options: { temperature: 0.1, num_predict: 500 }
-    });
-
-    const res = await fetch(`${host}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-      signal: AbortSignal.timeout(180000)
-    });
-
-    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
-    const result = await res.json();
-    const raw    = result.response || '';
-    // DEBUG: log raw response so we can see what llava actually said
-    console.log('[AI Tag] raw response:', raw);
-
-    // Strip markdown fences, extract first {...}
-    let jsonStr = raw.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim();
-    const start = jsonStr.indexOf('{');
-    const end   = jsonStr.lastIndexOf('}') + 1;
-    if (start === -1 || end === 0) {
-      const nonVision = ['moondream','llama3','llama2','mistral','gemma','phi','qwen','deepseek','codellama','orca','falcon'];
-      const isNonVision = nonVision.some(m => model.toLowerCase().startsWith(m));
-      const hint = isNonVision
-        ? `"${model}" ไม่รองรับการวิเคราะห์ภาพ — กรุณาเปลี่ยนเป็น llava ใน 🤖 Local AI`
-        : `model "${model}" ไม่ส่ง JSON กลับมา — ลองเปลี่ยนเป็น llava`;
-      throw new Error(hint);
-    }
-    jsonStr = jsonStr.slice(start, end);
-
-    // Sanitize common LLM JSON issues before parsing:
-    // 1) Replace literal newlines / tabs inside string values with spaces
-    // 2) Remove invalid control characters (0x00–0x1F except tab/newline which we already handled)
-    // 3) Fix bad escape sequences: backslash NOT followed by valid JSON escape char
-    jsonStr = jsonStr
-      .replace(/\r\n/g, ' ')          // CRLF → space
-      .replace(/\r/g, ' ')            // CR → space
-      .replace(/\n/g, ' ')            // LF → space
-      .replace(/\t/g, ' ')            // tab → space
-      .replace(/[\x00-\x1F]/g, ' ')   // other control chars
-      // Fix bad escapes: \x, \u not followed by 4 hex, \' etc.
-      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
-
-    let tagged;
-    try {
-      tagged = JSON.parse(jsonStr);
-    } catch(parseErr) {
-      // Last resort: try extracting key-value pairs manually for the fields we need
-      const extract = (key) => {
-        const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*)"`, 'i'));
-        return m ? m[1] : undefined;
-      };
-      const extractArr = (key) => {
-        const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]*)\\]`, 'i'));
-        if (!m) return [];
-        return m[1].match(/"([^"]*)"/g)?.map(s => s.replace(/"/g,'')) || [];
-      };
-      tagged = {
-        title_en:          extract('title_en'),
-        world:             extract('world'),
-        energy:            extract('energy'),
-        context_tags:      extractArr('context_tags'),
-        color_temp:        extract('color_temp'),
-        brightness:        extract('brightness'),
-        dominant_colors_desc: extract('dominant_colors_desc'),
-        has_particles:     /has_particles"\s*:\s*true/i.test(jsonStr),
-      };
-      // If we got nothing useful, throw the original error
-      if (!tagged.world && !tagged.title_en) throw new Error(`JSON parse ล้มเหลว: ${parseErr.message}`);
-    }
-
-    // Sanitize taxonomy enums
-    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
-    const validEnergy = ['intense','balanced','open'];
-    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
-    if (!validWorld.includes(tagged.world))   delete tagged.world;
-    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
-    if (Array.isArray(tagged.context_tags))
-      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0,3);
-
-    applyAiTagToForm(tagged, model);
-    showToast(`🤖 AI Tag เสร็จแล้ว (${model}) — ตรวจสอบและกด 💾 บันทึก`, 'green');
-
-  } catch(e) {
-    console.error('[aiTagSceneOllama]', e);
-    showToast('❌ AI Tag ล้มเหลว: ' + e.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🤖 AI Tag'; }
-  }
-}
-
-// ══════════════════════════════════════════════
-// CLAUDE API TAG (via local proxy vp-proxy.py)
-// ══════════════════════════════════════════════
-const CLAUDE_PROXY_URL = 'http://localhost:8081';
-
-async function aiTagSceneClaude(sceneId) {
-  const s = scenes.find(x => x.id === sceneId);
-  if (!s) return;
-
-  const btn = document.getElementById('claudeTagBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Claude…'; }
-
-  try {
-    // Check proxy is running
-    try {
-      const ping = await fetch(`${CLAUDE_PROXY_URL}/health`, { signal: AbortSignal.timeout(3000) });
-      if (!ping.ok) throw new Error();
-    } catch(e) {
-      showToast('❌ ไม่พบ bridge — รัน: python vp-bridge.py ก่อนใช้ Claude Tag');
-      return;
-    }
-
-    // Load full image
-    const imgPath = s.filepath || s.thumb || '';
-    if (!imgPath) { showToast('⚠️ ไม่พบไฟล์ภาพสำหรับฉากนี้'); return; }
-
-    const imgBase64 = await loadImageAsBase64ForOllama(imgPath); // reuse same loader
-    if (!imgBase64) { showToast('⚠️ โหลดภาพไม่สำเร็จ'); return; }
-
-    showToast(`✨ ส่งภาพให้ Claude วิเคราะห์…`, 'blue');
-
-    const res = await fetch(`${CLAUDE_PROXY_URL}/ai-tag`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_base64: imgBase64 }),
-      signal: AbortSignal.timeout(90000)
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || `proxy error ${res.status}`);
-
-    const tagged = data.tagged;
-    console.log('[Claude Tag] result:', tagged);
-
-    // Sanitize enums
-    const validWorld  = ['urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'];
-    const validEnergy = ['intense','balanced','open'];
-    const validCtx    = ['news-report','talk-interview','analysis-data','field-onsite','opener-drama','social-short','event-special'];
-    if (!validWorld.includes(tagged.world))   delete tagged.world;
-    if (!validEnergy.includes(tagged.energy)) delete tagged.energy;
-    if (Array.isArray(tagged.context_tags))
-      tagged.context_tags = tagged.context_tags.filter(t => validCtx.includes(t)).slice(0,3);
-
-    applyAiTagToForm(tagged, data.model || 'claude');
-    showToast(`✨ Claude Tag เสร็จแล้ว — ตรวจสอบและกด 💾 บันทึก`, 'green');
-
-  } catch(e) {
-    console.error('[aiTagSceneClaude]', e);
-    showToast('❌ Claude Tag ล้มเหลว: ' + e.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '✨ Claude Tag'; }
-  }
-}
 
 // ══════════════════════════════════════════════
 // THAI TEMPLATE GENERATOR
@@ -5411,42 +4886,6 @@ function applyAiTagToForm(tagged, modelName) {
   set('f_notes', notesTh);
 }
 
-/** Load image for Ollama — returns raw base64 string (no data: prefix). */
-async function loadImageAsBase64ForOllama(imgPath) {
-  try {
-    let blob = null;
-
-    // Fetch image (http URLs for Supabase, or relative paths)
-    try {
-      const res = await fetch(imgPath + (imgPath.includes('?') ? '&' : '?') + '_ol=' + Date.now());
-      if (res.ok) {
-        const b = await res.blob();
-        if (b && b.size > 5000) blob = b;
-      }
-    } catch(e) { /* fetch failed */ }
-
-    if (!blob || blob.size === 0) return null;
-
-    console.log(`[loadImageAsBase64ForOllama] blob size: ${Math.round(blob.size/1024)}KB from "${imgPath}"`);
-
-    // Resize to 768px for better vision accuracy (was 512)
-    const blobUrl = URL.createObjectURL(blob);
-    const img = new Image();
-    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = blobUrl; });
-    URL.revokeObjectURL(blobUrl);
-    const maxDim = 768;
-    const ratio  = Math.min(maxDim / img.width, maxDim / img.height, 1);
-    const canvas = document.createElement('canvas');
-    canvas.width  = Math.round(img.width  * ratio);
-    canvas.height = Math.round(img.height * ratio);
-    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
-    return dataUrl.split(',')[1]; // raw base64
-  } catch(e) {
-    console.warn('[loadImageAsBase64ForOllama]', e);
-    return null;
-  }
-}
 
 // ══════════════════════════════════════════════
 // AUTO LOGIN CHECK

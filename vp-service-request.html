@@ -247,9 +247,9 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <label class="form-label">ช่วงเวลาที่ถ่ายทำ <span class="req">*</span><span id="slotAvail" style="font-weight:400;font-size:11px;margin-left:6px"></span></label>
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
               <span style="font-size:12px;color:var(--muted);white-space:nowrap">จาก</span>
-              <input class="form-input" id="f_time_start" type="time" step="1800" style="flex:1" oninput="checkSlotAvailability()">
+              <select class="form-select" id="f_time_start" style="flex:1" onchange="checkSlotAvailability()"></select>
               <span style="font-size:12px;color:var(--muted);white-space:nowrap">ถึง</span>
-              <input class="form-input" id="f_time_end" type="time" step="1800" style="flex:1" oninput="checkSlotAvailability()">
+              <select class="form-select" id="f_time_end" style="flex:1" onchange="checkSlotAvailability()"></select>
             </div>
             <div class="time-slot-group">
               <div class="time-slot-pill" id="slot_morning" onclick="setTimePreset('morning')">🌅 เช้า</div>
@@ -489,8 +489,28 @@ async function _loadUsersDB(){try{const{data}=await _sc.from('users').select('*'
 function _tryParentLogin(){try{const r=window.parent.localStorage.getItem('vp_user_role'),u=window.parent.localStorage.getItem('vp_username'),n=window.parent.localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
 function _tryLocalLogin(){try{const r=localStorage.getItem('vp_user_role'),u=localStorage.getItem('vp_username'),n=localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
 
+// ── Build 30-min interval time selects ──────────────────────
+function _buildTimeSelects() {
+  const opts = ['-- เลือกเวลา --'];
+  for (let h = 6; h <= 23; h++) {
+    ['00','30'].forEach(m => {
+      if (h === 23 && m === '30') return;
+      const hh = String(h).padStart(2,'0');
+      opts.push(`${hh}:${m}`);
+    });
+  }
+  ['f_time_start','f_time_end'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = opts.map((o,i) =>
+      `<option value="${i===0?'':o}">${o}</option>`
+    ).join('');
+  });
+}
+
 window.addEventListener('load',async()=>{
   applyTheme();
+  _buildTimeSelects();
   await _loadUsersDB();
   const saved=_tryParentLogin()||_tryLocalLogin();
   if(saved){_user=saved;showApp();}else{showLoginGate();}
@@ -855,7 +875,27 @@ function renderEdit(r){
   `;
 }
 
-function selStage(k){document.querySelectorAll('.stage-btn').forEach(b=>b.classList.toggle('selected',b.dataset.stage===k));}
+async function selStage(k) {
+  // Visual update immediately
+  document.querySelectorAll('.stage-btn').forEach(b => b.classList.toggle('selected', b.dataset.stage === k));
+  if (!_detailId) return;
+  // Save status to DB directly (no need to enter edit mode)
+  try {
+    const { error } = await _sc.from('service_requests').update({ status: k }).eq('id', _detailId);
+    if (error) throw error;
+    // Update local cache
+    [_myReqs, _allReqs].forEach(pool => {
+      const i = pool.findIndex(x => x.id === _detailId);
+      if (i >= 0) pool[i].status = k;
+    });
+    const stg = STAGES.find(s => s.key === k);
+    toast(`✅ อัพเดต Stage → ${stg?.label || k}`, 'green');
+    // Refresh tables in background
+    loadMyRequests();
+    const at = document.querySelector('.tab-btn.active')?.id;
+    if (at === 'tab-all') loadAllRequests();
+  } catch(e) { toast('❌ ' + e.message, 'red'); }
+}
 
 async function saveModal(){
   if(!_detailId)return;
@@ -876,7 +916,8 @@ async function saveModal(){
       notes:document.getElementById('ed_nt')?.value.trim(),
     };
   }
-  if(canStage&&sel)upd.status=sel.dataset.stage;
+  // Stage is saved immediately on click — only include if in edit mode to keep in sync
+  if(canStage&&sel&&_editMode)upd.status=sel.dataset.stage;
   try{
     const{error}=await _sc.from('service_requests').update(upd).eq('id',_detailId);
     if(error)throw error;

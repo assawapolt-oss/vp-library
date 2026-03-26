@@ -2613,6 +2613,9 @@ function renderLightingBlueprint(sceneId) {
           <button class="lb-btn lb-btn-save" onclick="lbSave('${sceneId}')">💾 บันทึก Blueprint</button>
           <button class="lb-btn lb-btn-reset" onclick="lbReset('${sceneId}')">↺ Reset</button>
           <span class="lb-saved-flash" id="lb-saved-${sceneId}">✓ Saved!</span>
+          <div style="width:1px;height:22px;background:#1E293B;margin:0 2px;align-self:center"></div>
+          <button class="lb-btn" id="lb-copy-${sceneId}" onclick="lbCopy('${sceneId}',this)" title="Copy Blueprint ของฉากนี้" style="background:#0F172A;border:1.5px solid #334155;color:#94A3B8">📋 Copy</button>
+          <button class="lb-btn" onclick="lbPaste('${sceneId}')" title="Paste Blueprint จากฉากที่ Copy ไว้" style="background:#0F172A;border:1.5px solid #334155;color:#94A3B8" id="lb-paste-${sceneId}">📥 Paste</button>
           <button class="lb-btn lb-btn-export" onclick="lbExportAll()">↗ Export All JSON</button>
         ` : `
           <button class="lb-btn" style="background:#1E293B;color:#94A3B8" onclick="promptLogin();document.getElementById('authOverlay').addEventListener('transitionend',function h(){document.getElementById('authOverlay').removeEventListener('transitionend',h);if(!document.getElementById('authOverlay').classList.contains('open')){var mid=currentModalId;closeModal();setTimeout(()=>openModal(mid),100)}},false)">🔓 Login เพื่อแก้ไข Blueprint</button>
@@ -2954,6 +2957,73 @@ function lbReset(sceneId) {
   localStorage.setItem(LB_KEY, JSON.stringify(all));
   openModal(sceneId);
 }
+
+// ── Minimal toast (for blueprint feedback) ───────────────────
+function showToast(msg, dur=2500) {
+  let t = document.getElementById('_lb_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_lb_toast';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'28px', left:'50%', transform:'translateX(-50%) translateY(20px)',
+      background:'#1E293B', color:'#F1F5F9', border:'1.5px solid #334155',
+      borderRadius:'10px', padding:'10px 20px', fontSize:'13px', fontWeight:'600',
+      zIndex:'9999', opacity:'0', transition:'opacity .2s, transform .2s',
+      whiteSpace:'nowrap', boxShadow:'0 8px 24px rgba(0,0,0,.4)', fontFamily:'inherit'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, dur);
+}
+
+// ── Copy / Paste Blueprint ───────────────────────────────────
+let _lbClipboard = null; // { fromId, data }
+
+function lbCopy(sceneId, btnEl) {
+  // Copy current draft (or saved) blueprint
+  const data = _lbDraft[sceneId] ? JSON.parse(JSON.stringify(_lbDraft[sceneId])) : getLB(sceneId);
+  if (!data || Object.keys(data).length === 0) {
+    showToast('⚠️ ยังไม่มี Blueprint ในฉากนี้ — ตั้งค่าก่อนแล้วค่อย Copy', 3000);
+    return;
+  }
+  _lbClipboard = { fromId: sceneId, data: JSON.parse(JSON.stringify(data)) };
+  // Visual feedback on copy button
+  if (btnEl) {
+    const orig = btnEl.textContent;
+    btnEl.textContent = '✓ Copied!';
+    btnEl.style.borderColor = '#10B981';
+    btnEl.style.color = '#10B981';
+    setTimeout(() => { btnEl.textContent = orig; btnEl.style.borderColor = '#334155'; btnEl.style.color = '#94A3B8'; }, 2000);
+  }
+  showToast(`📋 Copy Blueprint ของ ${sceneId} แล้ว — เปิดฉากอื่นแล้วกด Paste`, 3000);
+}
+
+function lbPaste(sceneId) {
+  if (!_lbClipboard) {
+    showToast('⚠️ ยังไม่ได้ Copy Blueprint จากฉากไหน', 2500);
+    return;
+  }
+  if (_lbClipboard.fromId === sceneId) {
+    showToast('⚠️ Paste ลงในฉากเดิมที่ Copy ไม่มีประโยชน์', 2000);
+    return;
+  }
+  if (!confirm(`Paste Blueprint จาก ${_lbClipboard.fromId} → ${sceneId}?\n\nข้อมูลตำแหน่งไฟ, อุปกรณ์, และ Note จะถูกแทนที่`)) return;
+
+  // Deep-copy clipboard data into draft
+  _lbDraft[sceneId] = JSON.parse(JSON.stringify(_lbClipboard.data));
+  _lbMarkDirty(sceneId);
+  // Re-render section
+  openModal(sceneId);
+  showToast(`📥 Paste Blueprint จาก ${_lbClipboard.fromId} → ${sceneId} แล้ว — กด 💾 บันทึก`, 3000);
+}
+
 function lbExportAll() {
   const all = getAllLB();
   const a = document.createElement('a');
