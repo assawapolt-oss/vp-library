@@ -4394,14 +4394,22 @@ async function handleEditorFileSelect(files, role, sceneId) {
   showToast(`⏳ กำลัง convert ${roleLabel}…`);
 
   try {
-    // Convert PNG/JPG → WebP; use custom quality for thumb
-    const needsConvert = file.name.match(/\.(png|jpg|jpeg)$/i);
+    // ── Thumbnail: always resize to 320×180 WebP (q55) — never upload original size ──
+    if (role === 'thumb') {
+      const thumbBlob = await generateThumb(file, 320, 180);
+      // build filename: <original-base>_thumb.webp
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+      file = blobToFile(thumbBlob, `${baseName}_thumb.webp`);
+      const saved = Math.round((1 - thumbBlob.size / (file.size || 1)) * 100);
+      showToast(`✅ Thumbnail: 320×180 WebP · ${humanFileSize(thumbBlob.size)}`);
+    }
+    // ── Full / Presenter: convert PNG/JPG → WebP q82 only ──
+    const needsConvert = role !== 'thumb' && file.name.match(/\.(png|jpg|jpeg)$/i);
     if (needsConvert) {
-      const q = role === 'thumb' ? 0.55 : 0.82;
-      const result = await convertImageToWebP(file, { quality: q });
+      const result = await convertImageToWebP(file, { quality: 0.82 });
       if (result.wasConverted) {
         file = blobToFile(result.blob, result.filename);
-        showToast(`✅ ${role === 'full' ? 'Full' : 'Thumb'}: ${result.filename} (−${result.savedPct}%)`);
+        showToast(`✅ Full: ${result.filename} (−${result.savedPct}%)`);
       }
     }
 
