@@ -1392,7 +1392,7 @@ function _cleanUrl(u) {
     const m2 = rest.match(_BSTRIP);
     if (m2) rest = rest.slice(m2[0].length); else break;
   }
-  return match[0].split('/').slice(0,7).join('/') + '/' + rest;
+  return match[0].split('/').slice(0,8).join('/') + '/' + rest;
 }
 
 /** Build a full DB row from a scene object */
