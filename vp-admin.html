@@ -183,19 +183,33 @@
   .upload-file-clear { background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted); padding:0 2px; flex-shrink:0; }
   .upload-file-clear:hover { color:#B91C1C; }
 
-  /* file manager */
-  .file-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
-  .file-card { background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-  .file-card-thumb { width:100%; aspect-ratio:16/9; object-fit:cover; background:#111; display:block; }
-  .file-card-body { padding:8px 10px; }
-  .file-card-name { font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .file-card-path { font-size:9px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; font-family:monospace; }
-  .file-card-size { font-size:9px; color:var(--green); font-weight:700; margin-top:3px; }
-  .file-card-actions { display:flex; gap:5px; margin-top:6px; }
-  .file-card-btn { flex:1; padding:4px 6px; font-size:10px; font-weight:700; border:1px solid var(--border); border-radius:5px; background:#fff; cursor:pointer; font-family:inherit; }
-  .file-card-btn:hover { background:#F9FAFB; }
-  .file-card-btn.del { border-color:#FECACA; color:#B91C1C; }
-  .file-card-btn.del:hover { background:#FEF2F2; }
+  /* file manager — list view */
+  .fm-list { border:1.5px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+  .fm-list-head { display:grid; grid-template-columns:40px 1fr 120px 80px 80px 90px; gap:0; background:#F9FAFB; border-bottom:1.5px solid var(--border); font-size:11px; font-weight:700; color:var(--muted); }
+  .fm-list-head > span { padding:8px 10px; cursor:pointer; user-select:none; white-space:nowrap; }
+  .fm-list-head > span:hover { color:var(--dark); }
+  .fm-list-head > span.sort-active { color:var(--red); }
+  .fm-list-row { display:grid; grid-template-columns:40px 1fr 120px 80px 80px 90px; gap:0; border-bottom:1px solid var(--border); align-items:center; transition:background .1s; }
+  .fm-list-row:last-child { border-bottom:none; }
+  .fm-list-row:hover { background:#FFF8F8; }
+  .fm-list-row.fm-unused { background:#FFFBEB; }
+  .fm-list-row.fm-unused:hover { background:#FEF3C7; }
+  .fm-list-cell { padding:7px 10px; font-size:11px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .fm-thumb-cell { padding:5px; }
+  .fm-thumb-cell img { width:32px; height:22px; object-fit:cover; border-radius:3px; display:block; }
+  .fm-thumb-cell .fm-no-thumb { width:32px; height:22px; background:#F3F4F6; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .fm-name { font-weight:600; color:var(--dark); }
+  .fm-path { font-size:10px; color:var(--muted); font-family:monospace; }
+  .fm-size { font-family:monospace; color:var(--green); font-weight:700; }
+  .fm-size.fm-size-large { color:#EF4444; }
+  .fm-used-badge { font-size:9px; padding:2px 6px; border-radius:4px; font-weight:700; }
+  .fm-used-badge.used { background:#D1FAE5; color:#065F46; }
+  .fm-used-badge.unused { background:#FEF3C7; color:#92400E; }
+  .fm-actions { display:flex; gap:4px; padding:4px 6px; }
+  .fm-btn { padding:3px 7px; font-size:10px; font-weight:700; border:1px solid var(--border); border-radius:4px; background:#fff; cursor:pointer; font-family:inherit; }
+  .fm-btn:hover { background:#F9FAFB; }
+  .fm-btn.del { border-color:#FECACA; color:#B91C1C; }
+  .fm-btn.del:hover { background:#FEF2F2; }
   .file-storage-bar { background:#F3F4F6; border-radius:8px; height:6px; margin:8px 0 4px; overflow:hidden; }
   .file-storage-fill { height:100%; background:var(--green); border-radius:8px; transition:width .4s; }
 
@@ -512,34 +526,53 @@
       </div><!-- end subPaneLog -->
 
       <!-- Sub-pane: File Manager -->
-      <div id="subPaneFiles" style="display:none;padding:28px;max-width:1000px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div id="subPaneFiles" style="display:none;padding:28px;max-width:1100px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <div>
             <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📁 Storage File Manager</div>
-            <div style="font-size:13px;color:var(--muted);">จัดการไฟล์ใน Supabase Storage (vp-images bucket)</div>
+            <div style="font-size:13px;color:var(--muted);">Monitor ไฟล์ใน Supabase Storage — เรียงตามขนาด หาไฟล์ขยะที่ไม่ได้ใช้</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select id="fmFolderFilter" onchange="loadFileManager()" style="font-size:12px;padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-family:inherit">
-              <option value="">📂 ทุก Folder</option>
-              <option value="_scenes/">🎬 _scenes/</option>
-              <option value="_thumbs/">🔳 _thumbs/</option>
-              <option value="_equipment/">💡 _equipment/</option>
-              <option value="_graphics/">🖼 _graphics/</option>
+              <option value="">📂 ทุก Folder (root)</option>
+              <option value="indoor">📁 indoor/</option>
+              <option value="outdoor">📁 outdoor/</option>
+              <option value="_thumbnails">🔳 _thumbnails/</option>
+              <option value="_equipment">💡 _equipment/</option>
+              <option value="_graphics">🖼 _graphics/</option>
             </select>
-            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="loadFileManager()">🔄 รีเฟรช</button>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap">
+              <input type="checkbox" id="fmUnusedOnly" onchange="fmRender()" style="cursor:pointer"> ⚠️ ไม่ได้ใช้เท่านั้น
+            </label>
+            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="loadFileManager()">🔄 โหลดไฟล์</button>
           </div>
         </div>
-        <!-- Storage usage bar -->
-        <div id="fmStorageInfo" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-weight:700">พื้นที่ใช้งาน (ไฟล์ที่โหลดมา)</span>
-            <span id="fmStorageText" style="color:var(--muted)">—</span>
-          </div>
-          <div class="file-storage-bar"><div class="file-storage-fill" id="fmStorageFill" style="width:0%"></div></div>
-          <div style="color:var(--muted);margin-top:4px" id="fmFileCount">กำลังโหลด...</div>
+        <!-- Stats bar -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;font-size:12px;">
+          <span style="font-weight:700">📊 สถิติ:</span>
+          <span id="fmStorageText" style="color:var(--muted)">—</span>
+          <span id="fmFileCount" style="color:var(--muted)">—</span>
+          <span id="fmUnusedCount" style="color:#B45309">—</span>
+          <div style="flex:1;min-width:120px"><div class="file-storage-bar"><div class="file-storage-fill" id="fmStorageFill" style="width:0%"></div></div></div>
         </div>
-        <!-- Files grid -->
-        <div id="fmGrid" class="file-grid"><div style="color:var(--muted);font-size:13px;padding:20px">คลิก รีเฟรช เพื่อโหลดรายการไฟล์</div></div>
+        <!-- Sort controls -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:12px;flex-wrap:wrap;">
+          <span style="color:var(--muted)">เรียงตาม:</span>
+          <button class="btn-secondary fm-sort-btn sort-active" id="fmsort-size" onclick="fmSetSort('size')" style="padding:4px 10px;font-size:11px;">📦 ขนาด ↓</button>
+          <button class="btn-secondary fm-sort-btn" id="fmsort-name" onclick="fmSetSort('name')" style="padding:4px 10px;font-size:11px;">🔤 ชื่อ</button>
+          <button class="btn-secondary fm-sort-btn" id="fmsort-date" onclick="fmSetSort('date')" style="padding:4px 10px;font-size:11px;">📅 วันที่</button>
+        </div>
+        <!-- List header -->
+        <div class="fm-list-head">
+          <span></span>
+          <span onclick="fmSetSort('name')">ชื่อไฟล์ / Path</span>
+          <span>ใช้ใน Scene</span>
+          <span onclick="fmSetSort('size')" id="fmh-size" class="sort-active">ขนาด ↓</span>
+          <span onclick="fmSetSort('date')">วันที่</span>
+          <span>Actions</span>
+        </div>
+        <!-- Files list -->
+        <div id="fmGrid" class="fm-list"><div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">กด "โหลดไฟล์" เพื่อดูรายการ</div></div>
       </div>
 
     </div><!-- end activityPanel -->
@@ -3923,56 +3956,129 @@ function switchActivitySubTab(tab) {
 }
 
 // ── File Manager ──
+let _fmFiles = [];        // raw file objects from storage
+let _fmUsedUrls = new Set(); // URLs referenced by scenes
+let _fmSortKey = 'size';
+let _fmSortDir = -1;      // -1 = desc, 1 = asc
+const BUCKET_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/';
+
+function fmBuildUsedUrls() {
+  _fmUsedUrls = new Set();
+  scenes.forEach(s => {
+    if (s.filepath) _fmUsedUrls.add(s.filepath.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
+    if (s.thumb)    _fmUsedUrls.add(s.thumb.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
+    if (s.video_url) _fmUsedUrls.add(s.video_url.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
+    if (s.presenter_image_url) _fmUsedUrls.add(s.presenter_image_url.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//,''));
+    // also match just filename
+    [s.filepath,s.thumb].filter(Boolean).forEach(u => {
+      const fname = u.split('/').pop();
+      if (fname) _fmUsedUrls.add(fname);
+    });
+  });
+  // also add full absolute URLs for matching
+  scenes.forEach(s => {
+    [s.filepath, s.thumb, s.presenter_image_url].filter(Boolean).forEach(u => {
+      if (u.startsWith('http')) _fmUsedUrls.add(u);
+    });
+  });
+}
+
 async function loadFileManager() {
   if (!window._supaClient) return;
   const grid = document.getElementById('fmGrid');
-  grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px">⏳ กำลังโหลด...</div>';
+  grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">⏳ กำลังโหลดรายการไฟล์...</div>';
   const folder = document.getElementById('fmFolderFilter')?.value || '';
   try {
-    const { data, error } = await window._supaClient.storage.from('vp-images').list(folder.replace(/\/$/, '')||'', {
-      limit: 500, offset: 0, sortBy: { column: 'updated_at', order: 'desc' }
+    const { data, error } = await window._supaClient.storage.from('vp-images').list(folder || '', {
+      limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' }
     });
-    if (error) { grid.innerHTML = `<div style="color:var(--red);padding:20px">❌ ${error.message}</div>`; return; }
-    const files = (data||[]).filter(f => f.name && !(f.id||'').includes('emptyFolderPlaceholder'));
-    // update stats
-    const totalSize = files.reduce((s, f) => s + (f.metadata?.size||0), 0);
-    const fmb = (totalSize / 1024 / 1024).toFixed(2);
-    document.getElementById('fmStorageText').textContent = `${fmb} MB (${files.length} files)`;
-    document.getElementById('fmFileCount').textContent = `${files.length} ไฟล์ที่พบ${folder?' ใน '+folder:''}`;
-    document.getElementById('fmStorageFill').style.width = Math.min((totalSize / (500*1024*1024)) * 100, 100) + '%';
-    if (!files.length) { grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">ไม่มีไฟล์ในโฟลเดอร์นี้</div>'; return; }
-    const BUCKET_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/';
-    grid.innerHTML = files.map(f => {
-      const path = (folder ? folder : '') + f.name;
-      const url  = BUCKET_URL + encodeURIComponent(path).replace(/%2F/g,'/');
-      const isImg = /\.(webp|jpg|jpeg|png|gif|avif|svg)$/i.test(f.name);
-      const kb  = f.metadata?.size ? (f.metadata.size/1024).toFixed(1) + ' KB' : '?';
-      const dt  = f.updated_at ? new Date(f.updated_at).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}) : '';
-      return `<div class="file-card">
-        ${isImg
-          ? `<img class="file-card-thumb" src="${url}" loading="lazy" onerror="this.style.background='#F3F4F6';this.removeAttribute('src')">`
-          : `<div class="file-card-thumb" style="display:flex;align-items:center;justify-content:center;font-size:32px">📄</div>`}
-        <div class="file-card-body">
-          <div class="file-card-name" title="${escHtml(f.name)}">${escHtml(f.name)}</div>
-          <div class="file-card-path">${escHtml(path)}</div>
-          <div class="file-card-size">${kb} · ${dt}</div>
-          <div class="file-card-actions">
-            <button class="file-card-btn" onclick="window.open('${url}','_blank')" title="เปิดไฟล์">↗ เปิด</button>
-            <button class="file-card-btn" onclick="copyToClipboard('${url}')" title="คัดลอก URL">📋 Copy</button>
-            <button class="file-card-btn del" onclick="fmDeleteFile('${escHtml(path)}',this)" title="ลบไฟล์">🗑</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { grid.innerHTML = `<div style="color:var(--red);padding:20px">❌ ${e.message}</div>`; }
+    if (error) { grid.innerHTML = `<div style="color:var(--red);padding:20px;font-size:13px">❌ ${error.message}</div>`; return; }
+    _fmFiles = (data||[])
+      .filter(f => f.name && f.name !== '.emptyFolderPlaceholder' && !(f.id||'').includes('emptyFolderPlaceholder'))
+      .map(f => ({ ...f, _folder: folder, _path: (folder ? folder+'/' : '') + f.name, _size: f.metadata?.size||0 }));
+    fmBuildUsedUrls();
+    fmRender();
+  } catch(e) { grid.innerHTML = `<div style="color:var(--red);padding:20px;font-size:13px">❌ ${e.message}</div>`; }
 }
+
+function fmSetSort(key) {
+  if (_fmSortKey === key) _fmSortDir *= -1;
+  else { _fmSortKey = key; _fmSortDir = key==='size' ? -1 : 1; }
+  document.querySelectorAll('.fm-sort-btn').forEach(b => b.classList.remove('sort-active'));
+  const btn = document.getElementById('fmsort-'+key);
+  if (btn) { btn.classList.add('sort-active'); btn.textContent = {size:'📦 ขนาด',name:'🔤 ชื่อ',date:'📅 วันที่'}[key] + (_fmSortDir<0?' ↓':' ↑'); }
+  // header column indicator
+  ['size','name','date'].forEach(k => {
+    const h = document.getElementById('fmh-'+k);
+    if (h) { h.classList.toggle('sort-active', k===key); }
+  });
+  fmRender();
+}
+
+function fmIsUsed(f) {
+  // check if this file's URL or path is referenced by any scene
+  const fullUrl = BUCKET_URL + f._path.replace(/^\//, '');
+  return _fmUsedUrls.has(f._path) || _fmUsedUrls.has(f.name) || _fmUsedUrls.has(fullUrl)
+    || [..._fmUsedUrls].some(u => u.includes(f.name) && f.name.length > 10);
+}
+
+function fmRender() {
+  const grid = document.getElementById('fmGrid');
+  if (!grid) return;
+  const unusedOnly = document.getElementById('fmUnusedOnly')?.checked;
+  let files = [..._fmFiles];
+  // filter
+  if (unusedOnly) files = files.filter(f => !fmIsUsed(f));
+  // sort
+  files.sort((a,b) => {
+    if (_fmSortKey==='size') return _fmSortDir * (b._size - a._size);
+    if (_fmSortKey==='date') return _fmSortDir * ((new Date(b.updated_at||0))-(new Date(a.updated_at||0)));
+    return _fmSortDir * a.name.localeCompare(b.name);
+  });
+  // stats
+  const totalSize = _fmFiles.reduce((s,f)=>s+f._size,0);
+  const unusedFiles = _fmFiles.filter(f=>!fmIsUsed(f));
+  const unusedSize = unusedFiles.reduce((s,f)=>s+f._size,0);
+  document.getElementById('fmStorageText').textContent = `รวม ${(totalSize/1024/1024).toFixed(1)} MB`;
+  document.getElementById('fmFileCount').textContent = `${_fmFiles.length} ไฟล์`;
+  document.getElementById('fmUnusedCount').textContent = unusedFiles.length ? `⚠️ ${unusedFiles.length} ไฟล์ไม่ได้ใช้ (${(unusedSize/1024/1024).toFixed(1)} MB)` : '✅ ทุกไฟล์ถูกใช้งาน';
+  document.getElementById('fmStorageFill').style.width = Math.min((totalSize/(500*1024*1024))*100,100)+'%';
+  if (!files.length) { grid.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">${unusedOnly?'ไม่พบไฟล์ที่ไม่ได้ใช้ 🎉':'ไม่มีไฟล์ในโฟลเดอร์นี้'}</div>`; return; }
+  grid.innerHTML = files.map(f => {
+    const url = BUCKET_URL + f._path.replace(/^\//, '');
+    const isImg = /\.(webp|jpg|jpeg|png|gif|avif|svg)$/i.test(f.name);
+    const sizeByte = f._size;
+    const sizeStr = sizeByte>=1024*1024 ? (sizeByte/1024/1024).toFixed(1)+' MB' : sizeByte>=1024 ? (sizeByte/1024).toFixed(1)+' KB' : sizeByte+' B';
+    const isLarge = sizeByte > 2*1024*1024;
+    const dt = f.updated_at ? new Date(f.updated_at).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}) : '—';
+    const used = fmIsUsed(f);
+    // Find which scene uses this
+    const usedScene = used ? (scenes.find(s=>[s.filepath,s.thumb,s.presenter_image_url].filter(Boolean).some(u=>u.includes(f.name)))||null) : null;
+    const usedLabel = used ? `<span class="fm-used-badge used" title="${usedScene?usedScene.id:''}">✓ ${usedScene?usedScene.id:'ใช้แล้ว'}</span>` : `<span class="fm-used-badge unused">⚠ ไม่ได้ใช้</span>`;
+    return `<div class="fm-list-row${used?'':' fm-unused'}">
+      <div class="fm-thumb-cell">${isImg?`<img src="${url}" loading="lazy" onerror="this.outerHTML='<div class=\\'fm-no-thumb\\'>📄</div>'">`:'<div class="fm-no-thumb">📄</div>'}</div>
+      <div class="fm-list-cell"><div class="fm-name" title="${escHtml(f._path)}">${escHtml(f.name)}</div><div class="fm-path">${escHtml(f._path)}</div></div>
+      <div class="fm-list-cell">${usedLabel}</div>
+      <div class="fm-list-cell fm-size${isLarge?' fm-size-large':''}">${sizeStr}</div>
+      <div class="fm-list-cell" style="color:var(--muted);font-size:10px">${dt}</div>
+      <div class="fm-actions">
+        <button class="fm-btn" onclick="window.open('${url}','_blank')" title="เปิด">↗</button>
+        <button class="fm-btn" onclick="copyToClipboard('${url}')" title="Copy URL">📋</button>
+        <button class="fm-btn del" onclick="fmDeleteFile('${escHtml(f._path)}',this)" title="ลบ">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 async function fmDeleteFile(path, btn) {
   if (!confirm(`ลบไฟล์ "${path}" ?\nไม่สามารถยกเลิกได้`)) return;
   btn.textContent = '⏳'; btn.disabled = true;
   const { error } = await window._supaClient.storage.from('vp-images').remove([path]);
   if (error) { showToast('❌ ลบไม่ได้: ' + error.message, 'red'); btn.textContent='🗑'; btn.disabled=false; return; }
   showToast('🗑 ลบไฟล์แล้ว', 'red');
-  btn.closest('.file-card').remove();
+  _fmFiles = _fmFiles.filter(f => f._path !== path);
+  btn.closest('.fm-list-row').remove();
+  fmRender();
 }
 
 function renderActivityPanel() {
