@@ -421,8 +421,12 @@ function shuffle(arr) {
 }
 
 function imgUrl(s) {
-  const rel = s.image_url || s.thumb_url || null;
-  return rel ? STORAGE + rel : null;
+  const val = s.image_url || s.thumb_url || null;
+  if (!val) return null;
+  // already a full URL — use as-is
+  if (val.startsWith('http')) return val;
+  // relative path — prepend storage base
+  return STORAGE + val;
 }
 
 /* ─── BUILD HERO DECK ────────────────────────────── */
