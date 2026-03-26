@@ -4454,7 +4454,10 @@ async function handleEditorFileSelect(files, role, sceneId) {
 
     // Upload to Supabase Storage
     const uploadResult = await uploadFileToDisk(file, vPath);
-    const finalPath = (uploadResult.ok && uploadResult.url) ? uploadResult.url : vPath;
+    // Add ?v= cache-buster so browser/CDN always fetches fresh after re-upload
+    const _vts = Date.now();
+    const finalPath = (uploadResult.ok && uploadResult.url)
+      ? `${uploadResult.url}?v=${_vts}` : vPath;
     if (uploadResult.ok) {
       showToast('✅ ภาพขึ้น Supabase Storage แล้ว', 'green');
     } else {
@@ -4512,7 +4515,9 @@ async function handleEditorFileSelect(files, role, sceneId) {
         const thumbFile = blobToFile(thumbBlob, `${sceneId}_thumb.webp`);
         const thumbVPath = `_thumbnails/${sceneId}_thumb.webp`;
         const thumbResult = await uploadFileToDisk(thumbFile, thumbVPath);
-        const thumbFinalPath = (thumbResult.ok && thumbResult.url) ? thumbResult.url : thumbVPath;
+        // Cache-bust so browser/CDN fetches the freshly-replaced thumbnail
+        const thumbFinalPath = (thumbResult.ok && thumbResult.url)
+          ? `${thumbResult.url}?v=${Date.now()}` : thumbVPath;
         const thumbUrl = URL.createObjectURL(thumbBlob);
         // Update thumb path field
         const fThumb = document.getElementById('f_thumb');
@@ -4573,24 +4578,79 @@ function buildVirtualPath(sceneId, filename, role, scene) {
   return `${folder}/${filename}`;
 }
 
+/**
+ * _deleteFromStorage(url)
+ * Background-delete a file from Supabase Storage by its public URL.
+ * Non-blocking — errors are only logged.
+ */
+async function _deleteFromStorage(url) {
+  if (!window._supaClient || !url) return;
+  try {
+    const BUCKET_STRIP = /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//;
+    // Strip base URL + any ?v= cache-buster
+    const cleanPath = url.replace(BUCKET_STRIP, '').replace(BUCKET_STRIP, '').split('?')[0];
+    if (!cleanPath || cleanPath.startsWith('http')) return; // safety guard
+    const { error } = await window._supaClient.storage.from('vp-images').remove([cleanPath]);
+    if (error) console.warn('[deleteFromStorage]', error.message);
+    else console.log('[deleteFromStorage] deleted:', cleanPath);
+  } catch(e) { console.warn('[deleteFromStorage]', e); }
+}
+
 function clearEditorUpload(role, sceneId, e) {
   e.stopPropagation();
   const roleKey   = role === 'full' ? 'Full' : role === 'presenter' ? 'Presenter' : 'Thumb';
   const contentId = `upload${roleKey}Content_${sceneId}`;
   const zoneId    = `uploadZone${roleKey}_${sceneId}`;
-  const s = scenes.find(x => x.id === sceneId);
+
+  // Reset upload zone UI to empty
+  const emptyHtml = {
+    full:      '<div class="upload-zone-icon">🖼</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q82 · WebP/AVIF ใช้ต้นฉบับ</div>',
+    presenter: '<div class="upload-zone-icon">🧑</div><div class="upload-zone-label">คลิกหรือลากวางภาพที่นี่</div><div class="upload-zone-sub">อัพโหลดภาพที่มีพิธีกรยืนอยู่</div>',
+    thumb:     '<div class="upload-zone-icon">🔳</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q55 · รองรับ AVIF ด้วย</div>'
+  };
+  const el = document.getElementById(contentId);
+  if (el) el.innerHTML = emptyHtml[role] || emptyHtml.full;
+  document.getElementById(zoneId)?.classList.remove('has-file', 'uploading');
+
+  // Find current saved URL before clearing (for storage delete)
+  const idx = scenes.findIndex(x => x.id === sceneId);
+  const s   = idx !== -1 ? scenes[idx] : null;
+  const oldUrl = s ? (role==='full' ? s.filepath : role==='presenter' ? (s.presenter_image_url||'') : s.thumb) : '';
+
+  // Clear form fields
   if (role === 'full') {
-    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🖼</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q82</div>';
-  } else if (role === 'presenter') {
-    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🧑</div><div class="upload-zone-label">ภาพฉาก + พิธีกร</div><div class="upload-zone-sub">อัพโหลดภาพที่มีพิธีกรยืนอยู่</div>';
-  } else {
-    document.getElementById(contentId).innerHTML = '<div class="upload-zone-icon">🔳</div><div class="upload-zone-label">ลากวางหรือคลิก</div><div class="upload-zone-sub">PNG/JPG → WebP q55</div>';
+    document.getElementById('f_filepath').value = '';
+    const prev = document.getElementById('previewImg');
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
   }
-  document.getElementById(zoneId)?.classList.remove('has-file');
-  // Restore path from current scene data
-  if (role === 'full' && s) document.getElementById('f_filepath').value = s.filepath;
-  if (role === 'thumb' && s) document.getElementById('f_thumb').value   = s.thumb;
-  if (role === 'presenter' && s) { const el = document.getElementById('f_presenter_image_url'); if (el) el.value = s.presenter_image_url||''; }
+  if (role === 'thumb') { const ft = document.getElementById('f_thumb'); if (ft) ft.value = ''; }
+  if (role === 'presenter') { const fp = document.getElementById('f_presenter_image_url'); if (fp) fp.value = ''; }
+
+  // Persist cleared path to scenes[] + DB immediately
+  if (s) {
+    if (role === 'full')      s.filepath = '';
+    if (role === 'thumb')     s.thumb    = '';
+    if (role === 'presenter') s.presenter_image_url = '';
+    saveScenes();
+  }
+
+  // Update sidebar thumbnail when full or thumb is cleared
+  if (role === 'full' || role === 'thumb') {
+    const sliThumb = document.getElementById(`sli-thumb-${sceneId}`);
+    const sliPh    = document.getElementById(`sli-ph-${sceneId}`);
+    // Only hide sidebar thumb if both filepath and thumb are now empty
+    const currentScene = scenes.find(x => x.id === sceneId);
+    const stillHasImg  = currentScene && (currentScene.filepath || currentScene.thumb);
+    if (!stillHasImg) {
+      if (sliThumb) { sliThumb.src = ''; sliThumb.style.display = 'none'; }
+      if (sliPh)    sliPh.style.display = '';
+    }
+  }
+
+  // Delete the old file from Supabase Storage (background, non-blocking)
+  if (oldUrl && oldUrl.startsWith('http')) _deleteFromStorage(oldUrl);
+
+  showToast('🗑 ลบภาพแล้ว — พร้อม Upload ใหม่', 'green');
 }
 
 /** Restore upload zone state when opening editor */
