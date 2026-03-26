@@ -2297,7 +2297,7 @@ async function createNewScene() {
 
   // If a file was uploaded in the modal, upload to Supabase Storage
   if (convertedFile) {
-    const vPath = buildVirtualPath(id, convertedFile.name, 'full', null);
+    const vPath = buildVirtualPath(id, convertedFile.name, 'full');
 
     // Upload to Supabase Storage
     const uploadResult = await uploadFileToDisk(convertedFile, vPath);
@@ -4360,7 +4360,7 @@ async function handleEditorFileSelect(files, role, sceneId) {
 
     // Build virtual path for Supabase Storage
     const s = scenes.find(x => x.id === sceneId);
-    const vPath = buildVirtualPath(sceneId, file.name, role, s);
+    const vPath = buildVirtualPath(sceneId, file.name, role);
 
     // Upload to Supabase Storage
     const uploadResult = await uploadFileToDisk(file, vPath);
@@ -4460,32 +4460,23 @@ async function handleEditorFileSelect(files, role, sceneId) {
   }
 }
 
-function buildVirtualPath(sceneId, filename, role, scene) {
-  const BUCKET_STRIP = /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/vp-images\//;
-  // Thumb always goes to _thumbnails/
-  if (role === 'thumb') {
-    const ext  = filename.split('.').pop().toLowerCase();
-    return `_thumbnails/${sceneId}_thumb.${ext}`;
-  }
-  // Full/Presenter: try to preserve folder structure from existing filepath, else auto-detect
-  if (scene && scene.filepath) {
-    // CRITICAL: strip bucket URL prefix (1-2 times) before using as directory
-    // Without this, full Supabase URLs create a doubled path like /vp-images/https://...
-    let relPath = scene.filepath.replace(BUCKET_STRIP, '').replace(BUCKET_STRIP, '');
-    const dir = relPath.split('/').slice(0,-1).join('/');
-    if (dir && !dir.startsWith('http')) return `${dir}/${filename}`;
-  }
-  // Auto-detect folder from sceneId / filename
-  const lower = filename.toLowerCase();
-  let folder = 'indoor/misc';
-  if (lower.match(/scifi|sci.fi|portal|robot.display|future|cyber/)) folder = 'indoor/sci-fi';
-  else if (lower.match(/industr|factory|warehouse|robot.arm/)) folder = 'indoor/industrial';
-  else if (lower.match(/tunnel|cave|underground/)) folder = 'indoor/tunnel-cave';
-  else if (lower.match(/city|skyline|urban|street/)) folder = 'outdoor/city-skyline';
-  else if (lower.match(/nature|outdoor|mine|quarry|forest/)) folder = 'outdoor/nature-mine';
-  else if (lower.match(/studio|retro|music/)) folder = 'indoor/studio-retro';
-  else if (lower.match(/library|office|study/)) folder = 'indoor/library-study';
-  return `${folder}/${filename}`;
+/**
+ * buildVirtualPath — ระบบ path มาตรฐาน (v2)
+ * ทุกไฟล์ของฉากจะอยู่ใน folder เดียวกัน จัดกลุ่มทีละ 20 ฉาก
+ *   scenes/VP-001-020/VP-001-full.webp
+ *   scenes/VP-001-020/VP-001-presenter.webp
+ *   scenes/VP-001-020/VP-001-thumb.webp
+ * ใช้ชื่อไฟล์คงที่ตาม role → re-upload ทับได้ ไม่มีไฟล์ขยะ
+ */
+function buildVirtualPath(sceneId, filename, role) {
+  const pad = n => String(n).padStart(3, '0');
+  const num = parseInt(sceneId.replace('VP-', '')) || 0;
+  const batchStart = Math.floor((num - 1) / 20) * 20 + 1;
+  const batchEnd   = batchStart + 19;
+  const folder = `scenes/VP-${pad(batchStart)}-${pad(batchEnd)}`;
+  const ext    = (filename.split('.').pop().toLowerCase()) || 'webp';
+  const suffix = role === 'thumb' ? 'thumb' : role === 'presenter' ? 'presenter' : 'full';
+  return `${folder}/${sceneId}-${suffix}.${ext}`;
 }
 
 /**
