@@ -305,12 +305,20 @@
   /* show logo on card */
   .card-show-logo { position:absolute; top:7px; right:7px; z-index:5; width:28px; height:28px; border-radius:5px; overflow:hidden; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(3px); }
   .card-show-logo img { width:22px; height:22px; object-fit:contain; }
-  /* presenter toggle button */
-  .presenter-toggle-btn { position:absolute; z-index:6; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; border:1.5px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; cursor:pointer; backdrop-filter:blur(3px); transition:all .15s; }
-  .presenter-toggle-btn:hover { background:rgba(204,34,41,.85); border-color:var(--red); }
-  .presenter-toggle-btn.active { background:var(--red); border-color:var(--red); }
-  .ptbtn-card { bottom:40px; right:7px; }
-  .ptbtn-modal { margin-left:8px; position:static; font-size:12px; padding:4px 10px; border-radius:7px; border:1.5px solid var(--border); background:var(--card); color:var(--dark); }
+  /* presenter toggle button — square icon */
+  .presenter-toggle-btn {
+    position:absolute; z-index:6; width:28px; height:28px; border-radius:6px;
+    border:1.5px solid rgba(255,255,255,.5); background:rgba(0,0,0,.55);
+    cursor:pointer; backdrop-filter:blur(3px); transition:all .15s;
+    overflow:hidden; padding:0; display:flex; align-items:center; justify-content:center;
+  }
+  .presenter-toggle-btn img { width:24px; height:24px; object-fit:cover; border-radius:4px; opacity:1; transition:opacity .15s; }
+  .presenter-toggle-btn:not(.active) { opacity:.35; border-color:rgba(255,255,255,.2); box-shadow:none; }
+  .presenter-toggle-btn:not(.active):hover { opacity:.65; border-color:rgba(255,255,255,.6); }
+  .presenter-toggle-btn.active { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.4); opacity:1; }
+  .presenter-toggle-btn:hover { border-color:rgba(255,255,255,.9); }
+  .ptbtn-card { top:7px; right:7px; }
+  .ptbtn-modal { position:static; margin-left:8px; }
   /* video inline thumb */
   .video-inline-thumb { position:relative; width:100%; border-radius:8px; overflow:hidden; background:#000; margin-top:8px; cursor:pointer; }
   .video-inline-thumb img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; }
@@ -1460,9 +1468,7 @@ function togglePresenter(sceneId, event) {
   _presenterState[sceneId] = nowShowingPresenter;
   document.querySelectorAll(`[data-presenter-id="${sceneId}"]`).forEach(btn=>{
     btn.classList.toggle('active', nowShowingPresenter);
-    // label: 🎬 = currently showing presenter (click to see bare), 🧑 = currently showing bare (click to see presenter)
-    btn.textContent = nowShowingPresenter ? '🎬' : '🧑';
-    btn.title = nowShowingPresenter ? 'สลับ: ฉากเปล่า' : 'สลับ: มีพิธีกร';
+    btn.title = nowShowingPresenter ? 'แสดงพิธีกร (คลิกเพื่อซ่อน)' : 'ซ่อนพิธีกร (คลิกเพื่อแสดง)';
     const card = btn.closest('.scene-card');
     if (card) {
       const img = card.querySelector('.thumb-img,.scene-thumb');
@@ -1482,7 +1488,7 @@ function toggleModalPresenterImg() {
   const btn = document.getElementById('modalPresenterBtn');
   if (btn) {
     btn.classList.toggle('active', nowShowingPresenter);
-    btn.textContent = nowShowingPresenter ? '🎬 ฉากเปล่า' : '🧑 Presenter';
+    btn.title = nowShowingPresenter ? 'แสดงพิธีกร (คลิกเพื่อซ่อน)' : 'ซ่อนพิธีกร (คลิกเพื่อแสดง)';
   }
 }
 
@@ -1600,7 +1606,8 @@ function renderCards() {
       const hasPresenter = !!s.presenter_image_url;
       // Default image: presenter first, fallback to thumb/filepath
       const defaultImgPath = s.presenter_image_url || s.thumb || s.filepath;
-      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="สลับ: ฉากเปล่า" style="top:7px;right:7px">🎬</button>` : '';
+      const _PICON = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
+      const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร"><img src="${_PICON}" alt="presenter"></button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div class="scene-thumb-wrap" style="position:relative">
@@ -1625,7 +1632,8 @@ function renderCards() {
       const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
       const hasPresenter = !!s.presenter_image_url;
       const defaultImgPathInfo = s.presenter_image_url || s.thumb || s.filepath;
-      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="สลับ: ฉากเปล่า" style="position:absolute;top:7px;right:7px;padding:3px 7px;font-size:13px">🎬</button>` : '';
+      const _PICON2 = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
+      const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:7px;right:7px"><img src="${_PICON2}" alt="presenter"></button>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
@@ -2097,7 +2105,7 @@ function openModal(id) {
   document.getElementById('modalBody').innerHTML = `
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:2px">
       <div class="modal-id">${s.id}</div>
-      ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal active" onclick="toggleModalPresenterImg()" title="สลับ: ฉากเปล่า">🎬 ฉากเปล่า</button>` : ''}
+      ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal active" onclick="toggleModalPresenterImg()" title="แสดงพิธีกร"><img src="https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png" alt="presenter"></button>` : ''}
     </div>
     <div class="modal-title">${s.title}</div>
     <div class="modal-title-th">${s.title_th}</div>

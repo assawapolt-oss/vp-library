@@ -64,10 +64,31 @@ DO $$ BEGIN
 END $$;
 
 -- ──────────────────────────────────────────────────────────────────
--- 3. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
+-- 3. SHOWS TABLE — add sort_order column for drag-to-reorder
+-- ──────────────────────────────────────────────────────────────────
+ALTER TABLE public.shows
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+
+-- ──────────────────────────────────────────────────────────────────
+-- 4. SERVICE REQUESTS TABLE — add time_slot for morning/afternoon
+-- ──────────────────────────────────────────────────────────────────
+ALTER TABLE public.service_requests
+  ADD COLUMN IF NOT EXISTS time_slot text DEFAULT '';
+
+-- ──────────────────────────────────────────────────────────────────
+-- 5. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
 -- ──────────────────────────────────────────────────────────────────
 SELECT column_name, data_type, column_default
 FROM   information_schema.columns
 WHERE  table_schema = 'public'
   AND  table_name   = 'scenes'
+ORDER BY ordinal_position;
+
+-- ──────────────────────────────────────────────────────────────────
+-- 6. VERIFY — service_requests columns
+-- ──────────────────────────────────────────────────────────────────
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_schema = 'public'
+  AND  table_name   = 'service_requests'
 ORDER BY ordinal_position;

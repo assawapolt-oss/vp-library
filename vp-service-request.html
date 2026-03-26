@@ -83,16 +83,50 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .scene-opt-tab .ti{font-size:20px;display:block;margin-bottom:4px}
 .scene-opt-panel{display:none}
 .scene-opt-panel.active{display:block}
-.scene-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:8px;max-height:280px;overflow-y:auto;padding:4px;
-  border:1.5px solid var(--border);border-radius:8px;background:var(--bg)}
-.spi{background:var(--card);border:2px solid var(--border);border-radius:8px;
-  padding:8px;cursor:pointer;transition:all .12s;text-align:center;font-size:11px;font-weight:600}
-.spi:hover{border-color:var(--red)}
-.spi.selected{border-color:var(--red);background:#FFF0F0;color:var(--red)}
-.spi .spi-check{color:var(--red);font-size:14px;margin-bottom:2px;display:none}
-.spi.selected .spi-check{display:block}
-.spi .spi-id{font-size:10px;color:var(--muted);margin-top:2px}
+/* Scene picker — list style */
+.scene-picker-list{max-height:380px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;background:var(--bg)}
+.spi{display:flex;align-items:center;gap:10px;background:var(--card);border-bottom:1px solid var(--border);
+  padding:8px 12px;cursor:pointer;transition:background .1s;user-select:none}
+.spi:last-child{border-bottom:none}
+.spi:hover{background:#FFF8F8}
+.spi.selected{background:#FFF0F0}
+.spi-cb{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .12s;color:#fff}
+.spi.selected .spi-cb{background:var(--red);border-color:var(--red)}
+.spi-cb::after{content:'✓';opacity:0;transition:opacity .1s}
+.spi.selected .spi-cb::after{opacity:1}
+.spi-thumb{width:52px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0;background:var(--bg);display:block}
+.spi-info{flex:1;min-width:0}
+.spi-id{font-size:10px;font-weight:700;color:var(--muted);font-family:monospace}
+.spi-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dark)}
+/* time slot pills */
+.time-slot-group{display:flex;gap:8px}
+.time-slot-pill{flex:1;padding:9px 8px;border:2px solid var(--border);border-radius:8px;text-align:center;
+  cursor:pointer;font-size:13px;font-weight:700;transition:all .15s;color:var(--muted);background:var(--bg);user-select:none}
+.time-slot-pill:hover{border-color:var(--red);color:var(--red)}
+.time-slot-pill.active{border-color:var(--red);background:#FFF0F0;color:var(--red)}
+/* Calendar */
+.cal-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-nav-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;
+  padding:5px 14px;font-size:13px;cursor:pointer;font-family:var(--font);font-weight:700;transition:all .15s}
+.cal-nav-btn:hover{border-color:var(--red);color:var(--red)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.cal-cell{border:1px solid var(--border);border-radius:7px;padding:6px 5px;min-height:64px;
+  background:var(--bg);font-size:11px;position:relative}
+.cal-cell.today{border-color:var(--red);background:#FFF8F8}
+.cal-cell.other-month{opacity:.35}
+.cal-cell.full{background:#FEE2E2;border-color:#FECACA}
+.cal-cell.partial{background:#FEF3C7;border-color:#FDE68A}
+.cal-date-num{font-size:11px;font-weight:700;margin-bottom:4px;color:var(--dark)}
+.cal-slot{display:flex;align-items:center;gap:3px;padding:2px 4px;border-radius:4px;
+  font-size:10px;font-weight:600;margin-bottom:2px;line-height:1.3;cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-slot-morning{background:#DBEAFE;color:#1E40AF}
+.cal-slot-afternoon{background:#D1FAE5;color:#065F46}
+.cal-slot-empty{color:var(--muted);font-style:italic}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:11px}
+.cal-legend span{display:flex;align-items:center;gap:4px}
 .sel-row{margin-top:10px;font-size:12px;color:var(--muted);min-height:20px;
   display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .sel-tag{background:#FFF0F0;border:1px solid #fca5a5;color:var(--red);border-radius:5px;
@@ -156,8 +190,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 </style>
 </head>
 <body>
+<script>
+// Hide topbar when embedded in iframe (parent already has its own topbar)
+if(window!==window.top){document.documentElement.style.setProperty('--topbar-display','none');}
+</script>
 
-<div class="topbar">
+<div class="topbar" style="display:var(--topbar-display,flex)">
   <div class="topbar-left">
     <img class="topbar-logo" src="tsd_logo.webp" alt="THE STANDARD">
     <span class="topbar-title">VP Service Request</span>
@@ -187,6 +225,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
   <div class="tab-bar" id="mainTabBar">
     <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📝 ยื่น Request ใหม่</button>
     <button class="tab-btn" id="tab-all" style="display:none" onclick="switchTab('all')">📊 ทั้งหมด (Admin/Editor)</button>
+    <button class="tab-btn" id="tab-calendar" onclick="switchTab('calendar')">📅 ตารางถ่ายทำ</button>
   </div>
   <div class="main-content">
 
@@ -202,7 +241,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
           </div>
           <div class="form-group">
             <label class="form-label">วันที่ถ่ายทำ <span class="req">*</span></label>
-            <input class="form-input" id="f_shoot_date" type="date">
+            <input class="form-input" id="f_shoot_date" type="date" onchange="checkSlotAvailability()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ช่วงเวลาที่ถ่ายทำ <span class="req">*</span><span id="slotAvail" style="font-weight:400;font-size:11px;margin-left:6px"></span></label>
+            <div class="time-slot-group">
+              <div class="time-slot-pill" id="slot_morning" onclick="toggleSlot('morning')">🌅 เช้า</div>
+              <div class="time-slot-pill" id="slot_afternoon" onclick="toggleSlot('afternoon')">🌇 บ่าย</div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">ผู้ยื่น Request</label>
@@ -281,12 +327,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
             </div>
           </div>
           <div class="scene-opt-panel active" id="panel_library">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-              <span style="font-size:12px;color:var(--muted)">คลิกเลือกฉากจาก VP Library (เลือกได้หลายฉาก)</span>
-              <input class="form-input" id="spSearch" placeholder="🔍 ค้นหาฉาก..." style="max-width:200px;padding:6px 10px;font-size:12px" oninput="filterPicker()">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <input class="form-input" id="spSearch" placeholder="🔍 ค้นหาฉากด้วย ID หรือชื่อ..." style="flex:1;padding:8px 12px;font-size:13px" oninput="filterPicker()">
+              <span id="spCount" style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0">— ฉาก</span>
             </div>
-            <div class="scene-picker-grid" id="spGrid"><div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted)">⏳ กำลังโหลด...</div></div>
-            <div class="sel-row" id="selRow"><span style="font-size:12px;color:var(--muted)">ยังไม่ได้เลือกฉาก</span></div>
+            <div class="scene-picker-list" id="spGrid"><div style="padding:24px;text-align:center;color:var(--muted)">⏳ กำลังโหลด...</div></div>
+            <div class="sel-row" id="selRow" style="margin-top:10px"><span style="font-size:12px;color:var(--muted)">ยังไม่ได้เลือกฉาก</span></div>
           </div>
           <div class="scene-opt-panel" id="panel_tailor">
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">อธิบายฉากที่ต้องการให้ทีม VP ออกแบบให้</div>
@@ -360,6 +406,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
       </div>
     </div>
 
+    <!-- ── PANE CALENDAR ── -->
+    <div id="pane-calendar" style="display:none">
+      <div class="cal-wrap">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calNav(-1)">‹ ก่อนหน้า</button>
+          <div style="font-size:16px;font-weight:700" id="calTitle">—</div>
+          <button class="cal-nav-btn" onclick="calNav(1)">ถัดไป ›</button>
+        </div>
+        <div class="cal-grid" id="calDayHdrs"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
+        <div class="cal-legend">
+          <span><span style="width:12px;height:12px;border-radius:2px;background:#DBEAFE;display:inline-block"></span> เช้า</span>
+          <span><span style="width:12px;height:12px;border-radius:2px;background:#D1FAE5;display:inline-block"></span> บ่าย</span>
+          <span><span style="width:12px;height:12px;border-radius:2px;background:#FEE2E2;display:inline-block"></span> เต็มทั้งวัน</span>
+          <span><span style="width:12px;height:12px;border-radius:2px;background:#FEF3C7;display:inline-block"></span> มี 1 คิว</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -403,6 +468,9 @@ const STAGES=[
 const STAGE_PROG={brief:10,visual:30,virtual:55,shooting:80,done:100,fixer:90};
 
 let _user=null,_allScenes=[],_myReqs=[],_allReqs=[],_detailId=null,_editMode=false,_sceneOpt='library',_picked=new Set();
+let _slots=new Set(); // 'morning' | 'afternoon'
+let _calYear=new Date().getFullYear(),_calMonth=new Date().getMonth();
+let _calData={}; // {YYYY-MM-DD: [{time_slot,show_name,id}]}
 let _usersDB={
   'admin':{role:'admin',hash:'ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270',name:'Administrator'},
   'viewer':{role:'viewer',hash:'65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894',name:'Viewer'},
@@ -461,12 +529,35 @@ async function loginSubmit(){
 }
 
 function switchTab(t){
-  ['new','all'].forEach(x=>{
+  ['new','all','calendar'].forEach(x=>{
     document.getElementById('tab-'+x)?.classList.toggle('active',x===t);
     const p=document.getElementById('pane-'+x);if(p)p.style.display=x===t?'':'none';
   });
-  // pane-list is always visible (inline below form, not a separate tab)
+  // pane-list shows under form only on 'new' tab
+  const pl=document.getElementById('pane-list');if(pl)pl.style.display=t==='new'?'':'none';
   if(t==='all')loadAllRequests();
+  if(t==='calendar')loadCalendar();
+}
+
+function toggleSlot(s){
+  if(_slots.has(s))_slots.delete(s);else _slots.add(s);
+  document.getElementById('slot_'+s)?.classList.toggle('active',_slots.has(s));
+}
+async function checkSlotAvailability(){
+  const d=document.getElementById('f_shoot_date')?.value;
+  const avail=document.getElementById('slotAvail');
+  if(!d||!avail)return;
+  try{
+    const{data}=await _sc.from('service_requests').select('time_slot,show_name').eq('shoot_date',d);
+    if(!data||!data.length){avail.style.color='var(--green)';avail.textContent='✓ ว่างทั้ง 2 คิว';return;}
+    const taken=data.map(r=>r.time_slot||'').join(',').toLowerCase();
+    const mTaken=taken.includes('morning')||taken.includes('เช้า');
+    const aTaken=taken.includes('afternoon')||taken.includes('บ่าย');
+    if(mTaken&&aTaken){avail.style.color='var(--red)';avail.textContent='⚠ เต็มทั้ง 2 คิวแล้ว';}
+    else if(mTaken){avail.style.color='#D97706';avail.textContent='⚠ คิวเช้าถูกจองแล้ว';}
+    else if(aTaken){avail.style.color='#D97706';avail.textContent='⚠ คิวบ่ายถูกจองแล้ว';}
+    else{avail.style.color='var(--green)';avail.textContent='✓ ว่างทั้ง 2 คิว';}
+  }catch(e){}
 }
 
 function setSceneOpt(opt){
@@ -494,15 +585,21 @@ function filterPicker(){
   _pickerQ=q;
   const filtered=_allScenes.filter(s=>!q||(s.title||'').toLowerCase().includes(q)||(s.title_th||'').toLowerCase().includes(q)||(s.id||'').toLowerCase().includes(q));
   const g=document.getElementById('spGrid');if(!g)return;
-  if(!filtered.length){g.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted);font-size:13px">ไม่พบฉาก</div>';return;}
+  const cnt=document.getElementById('spCount');if(cnt)cnt.textContent=filtered.length+' ฉาก';
+  if(!filtered.length){g.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">ไม่พบฉาก</div>';return;}
   g.innerHTML=filtered.map(s=>{
     const on=_picked.has(s.id);
     const thumb=s.thumbnail_url||'';
+    const thumbHtml=thumb
+      ?`<img class="spi-thumb" src="${thumb}" onerror="this.style.display='none'" alt="">`
+      :`<div class="spi-thumb" style="display:flex;align-items:center;justify-content:center;font-size:16px">🎬</div>`;
     return `<div class="spi${on?' selected':''}" id="spi_${s.id}" onclick="togglePick('${s.id}')">
-      <div class="spi-check">✓</div>
-      ${thumb?`<img src="${thumb}" style="width:100%;height:55px;object-fit:cover;border-radius:4px;margin-bottom:4px;display:block" onerror="this.style.display='none'">`:'<div style="width:100%;height:55px;background:var(--bg);border-radius:4px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;font-size:20px">🎬</div>'}
-      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${s.title_th||s.title||s.id}</div>
-      <div class="spi-id">${s.id}</div>
+      <div class="spi-cb"></div>
+      ${thumbHtml}
+      <div class="spi-info">
+        <div class="spi-id">${s.id}</div>
+        <div class="spi-title">${s.title_th||s.title||s.id}</div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -536,6 +633,8 @@ function resetForm(){
     .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('.checkbox-pill').forEach(p=>{p.classList.remove('checked');const cb=p.querySelector('input');if(cb)cb.checked=false;});
   _picked.clear();renderPicker();renderSelTags();
+  _slots.clear();['morning','afternoon'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
+  const avail=document.getElementById('slotAvail');if(avail)avail.textContent='';
   [{id:'kmc',max:500},{id:'mtc',max:300},{id:'nc',max:400},{id:'tdc',max:600}].forEach(({id,max})=>{const e=document.getElementById(id);if(e)e.textContent='0 / '+max+' chars';});
   setSceneOpt('library');
 }
@@ -549,6 +648,7 @@ async function submitRequest(){
   if(!show){toast('กรุณากรอกชื่อ Show','red');return;}
   if(!email){toast('กรุณากรอก Email ติดต่อ','red');return;}
   if(!shootDate){toast('กรุณาเลือกวันที่ถ่ายทำ','red');return;}
+  if(_slots.size===0){toast('กรุณาเลือกช่วงเวลาที่ถ่ายทำ (เช้า / บ่าย)','red');return;}
   if(!keyMsg){toast('กรุณากรอก Key Messages','red');return;}
   if(!sceneCount){toast('กรุณาระบุจำนวนฉาก','red');return;}
   if(_sceneOpt==='library'&&_picked.size===0){toast('กรุณาเลือกฉากจากระบบ หรือเปลี่ยนเป็น Tailor Made','red');return;}
@@ -563,7 +663,7 @@ async function submitRequest(){
   const row={
     show_name:show,requester:_user.name||_user.username,username:_user.username,
     team:document.getElementById('f_team').value.trim(),
-    shoot_date:shootDate,key_messages:keyMsg,
+    shoot_date:shootDate,time_slot:Array.from(_slots).join(', '),key_messages:keyMsg,
     mood_tone:document.getElementById('f_mood_tone').value.trim(),
     scene_count:sceneCount,clip_length:clipLength,
     host_count:parseInt(document.getElementById('f_host_count').value)||1,
@@ -669,7 +769,7 @@ function renderView(r){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       ${df('ผู้ยื่น',r.requester)}${df('ทีม',r.team)}
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px">Email</div><div style="font-size:13px">${r.email?`<a href="mailto:${r.email}" style="color:var(--red)">${r.email}</a>`:'—'}</div></div>
-      ${df('วันถ่าย',r.shoot_date)}${df('จำนวนฉาก',r.scene_count)}
+      ${df('วันถ่าย',r.shoot_date)}${df('เวลาถ่าย',r.time_slot||'—')}${df('จำนวนฉาก',r.scene_count)}
       ${df('Clip Length',r.clip_length)}${df('Platform',(r.platforms||[]).join(', '))}
     </div>
     ${r.key_messages?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">KEY MESSAGES</div><div style="font-size:13px;line-height:1.6">${r.key_messages}</div></div>`:''}
@@ -706,6 +806,7 @@ function renderEdit(r){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ชื่อ Show *</div><input class="edit-input" id="ed_show" value="${esc(r.show_name||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">วันถ่ายทำ</div><input class="edit-input" type="date" id="ed_shoot" value="${r.shoot_date||''}"></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">เวลาที่ถ่าย</div><input class="edit-input" id="ed_slot" value="${esc(r.time_slot||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">ทีม</div><input class="edit-input" id="ed_team" value="${esc(r.team||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Clip Length</div><input class="edit-input" id="ed_clip" value="${esc(r.clip_length||'')}"></div>
       <div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">จำนวนฉาก</div><input class="edit-input" type="number" id="ed_sc" value="${r.scene_count||''}"></div>
@@ -729,6 +830,7 @@ async function saveModal(){
       show_name:document.getElementById('ed_show')?.value.trim(),
       shoot_date:document.getElementById('ed_shoot')?.value,
       team:document.getElementById('ed_team')?.value.trim(),
+      time_slot:document.getElementById('ed_slot')?.value.trim(),
       clip_length:document.getElementById('ed_clip')?.value.trim(),
       scene_count:parseInt(document.getElementById('ed_sc')?.value)||undefined,
       key_messages:document.getElementById('ed_km')?.value.trim(),
@@ -750,6 +852,77 @@ async function saveModal(){
 }
 
 function closeDetail(){document.getElementById('detailModal').classList.remove('open');_detailId=null;_editMode=false;}
+
+// ════════ CALENDAR ════════
+async function loadCalendar(){
+  // Build day headers (Mon-Sun Thai)
+  const DAY_TH=['จ','อ','พ','พฤ','ศ','ส','อา'];
+  const hdrEl=document.getElementById('calDayHdrs');
+  if(hdrEl&&!hdrEl.children.length)
+    hdrEl.innerHTML=DAY_TH.map(d=>`<div class="cal-day-hdr">${d}</div>`).join('');
+  // Load requests for this month
+  const y=_calYear,m=_calMonth;
+  const firstDay=y+'-'+String(m+1).padStart(2,'0')+'-01';
+  const lastDay=y+'-'+String(m+1).padStart(2,'0')+'-'+new Date(y,m+1,0).getDate();
+  try{
+    const{data}=await _sc.from('service_requests')
+      .select('id,show_name,shoot_date,time_slot,status')
+      .gte('shoot_date',firstDay).lte('shoot_date',lastDay);
+    _calData={};
+    (data||[]).forEach(r=>{
+      if(!r.shoot_date)return;
+      if(!_calData[r.shoot_date])_calData[r.shoot_date]=[];
+      _calData[r.shoot_date].push(r);
+    });
+  }catch(e){_calData={};}
+  renderCalendar();
+}
+function calNav(dir){
+  _calMonth+=dir;
+  if(_calMonth>11){_calMonth=0;_calYear++;}
+  if(_calMonth<0){_calMonth=11;_calYear--;}
+  loadCalendar();
+}
+function renderCalendar(){
+  const y=_calYear,m=_calMonth;
+  const MONTHS_TH=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const titleEl=document.getElementById('calTitle');
+  if(titleEl)titleEl.textContent=MONTHS_TH[m]+' '+(y+543);
+  const grid=document.getElementById('calGrid');if(!grid)return;
+  const today=new Date();
+  const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  // First day of month (0=Sun,1=Mon... convert to Mon-first: Mon=0)
+  let startDow=new Date(y,m,1).getDay(); // 0=Sun
+  startDow=(startDow+6)%7; // Mon=0,Tue=1,...,Sun=6
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const daysInPrevMonth=new Date(y,m,0).getDate();
+  const cells=[];
+  // Prev month padding
+  for(let i=startDow-1;i>=0;i--)cells.push({day:daysInPrevMonth-i,cur:false});
+  // Current month
+  for(let d=1;d<=daysInMonth;d++)cells.push({day:d,cur:true});
+  // Next month padding
+  while(cells.length%7!==0)cells.push({day:cells.length-daysInMonth-startDow+1,cur:false});
+
+  grid.innerHTML=cells.map(c=>{
+    if(!c.cur)return`<div class="cal-cell other-month"><div class="cal-date-num" style="color:var(--muted)">${c.day}</div></div>`;
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(c.day).padStart(2,'0');
+    const bookings=_calData[ds]||[];
+    const mornList=bookings.filter(r=>(r.time_slot||'').toLowerCase().includes('morning')||(r.time_slot||'').includes('เช้า'));
+    const aftnList=bookings.filter(r=>(r.time_slot||'').toLowerCase().includes('afternoon')||(r.time_slot||'').includes('บ่าย'));
+    const full=(mornList.length>0&&aftnList.length>0);
+    const partial=(mornList.length>0||aftnList.length>0)&&!full;
+    const isToday=ds===todayStr;
+    const cls=['cal-cell',isToday?'today':'',full?'full':partial?'partial':''].filter(Boolean).join(' ');
+    const mornHtml=mornList.length
+      ?mornList.map(r=>`<div class="cal-slot cal-slot-morning" title="${r.show_name||''}">🌅 ${(r.show_name||'').slice(0,12)}</div>`).join('')
+      :`<div class="cal-slot cal-slot-empty" style="opacity:.4">🌅 ว่าง</div>`;
+    const aftnHtml=aftnList.length
+      ?aftnList.map(r=>`<div class="cal-slot cal-slot-afternoon" title="${r.show_name||''}">🌇 ${(r.show_name||'').slice(0,12)}</div>`).join('')
+      :`<div class="cal-slot cal-slot-empty" style="opacity:.4">🌇 ว่าง</div>`;
+    return`<div class="${cls}"><div class="cal-date-num">${c.day}${isToday?` <span style="color:var(--red)">●</span>`:''}</div>${mornHtml}${aftnHtml}</div>`;
+  }).join('');
+}
 
 let _toastT;
 function toast(msg,type=''){

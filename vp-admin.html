@@ -453,12 +453,19 @@
             <button class="btn-save" onclick="openNewShowModal()">＋ เพิ่มรายการ</button>
           </div>
         </div>
-        <div id="showsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+        <div id="showsGrid" style="display:flex;flex-direction:column;gap:6px;max-width:600px;"></div>
       </div>
     </div>
 
     <!-- Activity Log panel (sibling to editorArea) -->
     <div id="activityPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <!-- Sub-tabs: Log / Files -->
+      <div style="background:#fff;border-bottom:2px solid var(--border);display:flex;gap:0;padding:0 28px;">
+        <button id="subTabLog" onclick="switchActivitySubTab('log')" style="padding:12px 18px;font-size:12px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--red);border-bottom:3px solid var(--red);margin-bottom:-2px;font-family:inherit">📊 Activity Log</button>
+        <button id="subTabFiles" onclick="switchActivitySubTab('files')" style="padding:12px 18px;font-size:12px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit">📁 ไฟล์ใน Storage</button>
+      </div>
+      <!-- Sub-pane: Log -->
+      <div id="subPaneLog">
       <div style="padding:28px;max-width:900px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
           <div>
@@ -502,7 +509,40 @@
           <div id="actRecentEvents" style="font-size:12px;"></div>
         </div>
       </div>
-    </div>
+      </div><!-- end subPaneLog -->
+
+      <!-- Sub-pane: File Manager -->
+      <div id="subPaneFiles" style="display:none;padding:28px;max-width:1000px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:3px;">📁 Storage File Manager</div>
+            <div style="font-size:13px;color:var(--muted);">จัดการไฟล์ใน Supabase Storage (vp-images bucket)</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="fmFolderFilter" onchange="loadFileManager()" style="font-size:12px;padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-family:inherit">
+              <option value="">📂 ทุก Folder</option>
+              <option value="_scenes/">🎬 _scenes/</option>
+              <option value="_thumbs/">🔳 _thumbs/</option>
+              <option value="_equipment/">💡 _equipment/</option>
+              <option value="_graphics/">🖼 _graphics/</option>
+            </select>
+            <button class="btn-secondary" style="font-size:12px;padding:7px 14px;" onclick="loadFileManager()">🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <!-- Storage usage bar -->
+        <div id="fmStorageInfo" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-weight:700">พื้นที่ใช้งาน (ไฟล์ที่โหลดมา)</span>
+            <span id="fmStorageText" style="color:var(--muted)">—</span>
+          </div>
+          <div class="file-storage-bar"><div class="file-storage-fill" id="fmStorageFill" style="width:0%"></div></div>
+          <div style="color:var(--muted);margin-top:4px" id="fmFileCount">กำลังโหลด...</div>
+        </div>
+        <!-- Files grid -->
+        <div id="fmGrid" class="file-grid"><div style="color:var(--muted);font-size:13px;padding:20px">คลิก รีเฟรช เพื่อโหลดรายการไฟล์</div></div>
+      </div>
+
+    </div><!-- end activityPanel -->
 
     <!-- Collections Panel -->
     <div id="collectionsPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
@@ -521,7 +561,10 @@
     <!-- Collections Editor Modal -->
     <div id="collectionEditorOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:20px">
       <div style="background:#fff;border-radius:16px;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">📝 แก้ไข Collection</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-size:16px;font-weight:700;">📝 แก้ไข Collection</div>
+        <button onclick="closeCollectionEditor()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit;transition:all .12s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">✕ ยกเลิก</button>
+      </div>
 
         <!-- Row 1: ชื่อ + Season + ปี -->
         <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:12px">
@@ -1582,11 +1625,10 @@ function buildEditorHTML(s) {
         <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
       </div>
       <div class="editor-actions">
-        <span class="save-indicator" id="saveIndicator">✓ บันทึกแล้ว</span>
         <button class="btn-secondary" onclick="openTagGuideModal('${s.id}')" title="Prompt สำหรับ tag ฉากนี้กับ Claude" style="background:#EEF2FF;border-color:#C7D2FE;color:#4F46E5;">✨ Tag by AI</button>
         <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
         <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
-        <button class="btn-save" onclick="saveScene('${s.id}')">💾 บันทึก</button>
+        <button class="btn-save" id="saveBtn_${s.id}" onclick="saveScene('${s.id}')">💾 บันทึก</button>
       </div>
     </div>
 
@@ -1951,20 +1993,23 @@ async function saveScene(origId) {
   localStorage.setItem(DATA_KEY, JSON.stringify(scenes)); // immediate local save
   statusVal = null;
   renderSidebar();
-  const ind = document.getElementById('saveIndicator');
-  if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 2000); }
+  // Update save button state
+  const saveBtn = document.getElementById('saveBtn_' + origId);
+  if (saveBtn) { saveBtn.textContent = '⏳ กำลังบันทึก...'; saveBtn.disabled = true; }
 
   // Sync to Supabase and show result
   if (window._supaClient) {
-    showToast('⏳ กำลังบันทึก...', 'green');
     try {
       await _supaUpsertAll();
       showToast('💾 บันทึกแล้ว (Supabase ✓)', 'green');
+      if (saveBtn) { saveBtn.textContent = '✓ บันทึกแล้ว'; saveBtn.style.background='var(--green)'; setTimeout(()=>{ saveBtn.textContent='💾 บันทึก'; saveBtn.style.background=''; saveBtn.disabled=false; },2000); }
     } catch(e) {
       showToast('⚠️ บันทึก local แล้ว แต่ Supabase sync ผิดพลาด: ' + e.message, 'red');
+      if (saveBtn) { saveBtn.textContent = '💾 บันทึก'; saveBtn.disabled = false; }
     }
   } else {
-    showToast('💾 บันทึกแล้ว (local เท่านั้น — Supabase offline)', 'green');
+    showToast('💾 บันทึกแล้ว (local เท่านั้น)', 'green');
+    if (saveBtn) { saveBtn.textContent = '✓ บันทึกแล้ว'; setTimeout(()=>{ saveBtn.textContent='💾 บันทึก'; saveBtn.disabled=false; },2000); }
   }
 }
 
@@ -3028,8 +3073,9 @@ async function deleteCollection(colId) {
 // ══════════════════════════════════════════════
 let EQUIPMENT_LIST = []; // in-memory cache
 
-async function _loadEquipment() {
+async function _loadEquipment(forceRefresh) {
   if (!window._supaClient) return;
+  if (!forceRefresh && EQUIPMENT_LIST.length > 0) return; // use cache unless forced
   try {
     const { data, error } = await window._supaClient.from('equipment').select('*').order('category').order('name');
     if (!error && data) EQUIPMENT_LIST = data;
@@ -3220,39 +3266,67 @@ let _equipPickerSceneId = null;
 function openEquipmentPicker(slot, sceneId) {
   _equipPickerSlot = slot;
   _equipPickerSceneId = sceneId;
-  _loadEquipment().then(() => _renderEquipmentPickerModal(slot));
+  // always force-refresh from DB so newly added equipment shows up
+  _loadEquipment(true).then(() => _renderEquipmentPickerModal(slot));
 }
 
 function _renderEquipmentPickerModal(slot) {
   const catLabel = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light', special:'Special', other:'อื่นๆ' };
+  document.getElementById('equipPickerModal')?.remove();
   const body = document.createElement('div');
   body.id = 'equipPickerModal';
   body.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
   body.onclick = e => { if (e.target === body) body.remove(); };
 
-  const items = EQUIPMENT_LIST.filter(e => !slot || e.category === slot || e.category === 'special' || e.category === 'other');
-  const grid = items.map(e => {
-    const img = e.image_url
-      ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:70px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/12px 12px" onerror="this.style.display='none'">`
-      : `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:28px">💡</div>`;
-    return `<div onclick="selectEquipmentForSlot('${e.id}')" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:.12s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
-      ${img}
-      <div style="padding:6px 8px">
-        <div style="font-size:10px;color:var(--muted)">${catLabel[e.category]||e.category}</div>
-        <div style="font-size:11px;font-weight:700">${escHtml(e.name)}</div>
-      </div>
-    </div>`;
-  }).join('') || '<div style="color:var(--muted);font-size:13px;padding:16px">ยังไม่มีอุปกรณ์ในหมวดนี้<br><a onclick="switchAdminTab(\'equipment\')" style="cursor:pointer;color:var(--red)">ไปเพิ่มอุปกรณ์</a></div>';
+  // show all equipment, highlighted if in same category
+  const renderGrid = (filter) => {
+    const items = EQUIPMENT_LIST.filter(e => !filter || e.category === filter || filter === 'all');
+    if (!items.length) return '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">ยังไม่มีอุปกรณ์ — <a onclick="document.getElementById(\'equipPickerModal\').remove();switchAdminTab(\'equipment\')" style="cursor:pointer;color:var(--red)">ไปเพิ่มอุปกรณ์ก่อน</a></div>';
+    return items.map(e => {
+      const img = e.image_url
+        ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:70px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/12px 12px" onerror="this.style.display='none'">`
+        : `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:28px;background:#F9FAFB">💡</div>`;
+      const isMatch = e.category === slot;
+      return `<div onclick="selectEquipmentForSlot('${e.id}')" style="border:2px solid ${isMatch?'var(--red)':'var(--border)'};border-radius:8px;overflow:hidden;cursor:pointer;transition:.12s;${isMatch?'background:#FFF8F8':''}" onmouseover="this.style.borderColor='var(--red)';this.style.background='#FFF8F8'" onmouseout="this.style.borderColor='${isMatch?'var(--red)':'var(--border)'}'">
+        ${img}
+        <div style="padding:6px 8px">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${catLabel[e.category]||e.category}</div>
+          <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(e.name)}</div>
+          <div style="font-size:10px;color:var(--muted)">${escHtml(e.brand||'')} ${escHtml(e.model||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  };
 
-  body.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto">
-    <div style="font-size:16px;font-weight:700;margin-bottom:12px">เลือกอุปกรณ์ — ${catLabel[slot]||slot}</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">${grid}</div>
-    <div style="margin-top:14px;display:flex;gap:8px">
-      <button onclick="selectEquipmentForSlot('')" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#F9FAFB">ล้างการเลือก</button>
-      <button onclick="document.getElementById('equipPickerModal').remove()" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer">ปิด</button>
+  body.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700">💡 เลือกอุปกรณ์ — ${catLabel[slot]||slot}</div>
+      <button onclick="document.getElementById('equipPickerModal').remove()" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--muted)">✕</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="_equipPickerFilter('all',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;background:#F9FAFB">ทั้งหมด</button>
+      <button onclick="_equipPickerFilter('key_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='key_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='key_light'?'#FFF0F0':'#F9FAFB'}">Key Light</button>
+      <button onclick="_equipPickerFilter('fill_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='fill_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='fill_light'?'#FFF0F0':'#F9FAFB'}">Fill Light</button>
+      <button onclick="_equipPickerFilter('back_light',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid ${slot==='back_light'?'var(--red)':'var(--border)'};border-radius:5px;cursor:pointer;background:${slot==='back_light'?'#FFF0F0':'#F9FAFB'}">Back Light</button>
+      <button onclick="_equipPickerFilter('special',this)" style="font-size:11px;padding:4px 10px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;background:#F9FAFB">Special</button>
+    </div>
+    <div id="equipPickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;overflow-y:auto;flex:1">${renderGrid(slot)}</div>
+    <div style="margin-top:12px;display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border)">
+      <button onclick="selectEquipmentForSlot('')" style="font-size:12px;padding:6px 14px;border:1px solid #FECACA;color:var(--red);border-radius:6px;cursor:pointer;background:#FFF0F0">🗑 ล้างการเลือก</button>
     </div>
   </div>`;
   document.body.appendChild(body);
+  // store render function for filter
+  body._renderFn = renderGrid;
+}
+function _equipPickerFilter(cat, btn) {
+  const modal = document.getElementById('equipPickerModal');
+  if (!modal || !modal._renderFn) return;
+  modal.querySelectorAll('button[onclick*="_equipPickerFilter"]').forEach(b => {
+    b.style.borderColor = 'var(--border)'; b.style.background = '#F9FAFB';
+  });
+  btn.style.borderColor = 'var(--red)'; btn.style.background = '#FFF0F0';
+  document.getElementById('equipPickerGrid').innerHTML = modal._renderFn(cat === 'all' ? null : cat);
 }
 
 function selectEquipmentForSlot(equipId) {
@@ -3386,6 +3460,7 @@ function importShows(input) {
 function renderShowsPanel() {
   const shows = loadShows();
   document.getElementById('showCount').textContent = shows.length;
+  // sidebar list
   document.getElementById('showList').innerHTML = shows.map(sh => `
     <div class="scene-list-item" onclick="editShow('${sh.id}')">
       ${sh.logo_url ? `<img class="sli-thumb" src="${escHtml(sh.logo_url)}" onerror="this.style.display='none'" style="border-radius:4px;background:#f3f4f6;">` : `<div class="sli-thumb" style="background:${sh.color||'#e5e7eb'};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px">📺</div>`}
@@ -3396,24 +3471,76 @@ function renderShowsPanel() {
     </div>
   `).join('') || '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:13px">ยังไม่มีรายการ<br>กด + เพิ่ม เพื่อสร้าง</div>';
 
-  document.getElementById('showsGrid').innerHTML = shows.map(sh => `
-    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        ${sh.logo_url
-          ? `<img src="${escHtml(sh.logo_url)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:#f3f4f6;" onerror="this.style.display='none'">`
-          : `<div style="width:40px;height:40px;border-radius:6px;background:${sh.color||'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:20px">📺</div>`}
-        <div>
-          <div style="font-weight:700;font-size:14px">${escHtml(sh.name)}</div>
-          <div style="font-size:12px;color:var(--muted)">${countScenesInShow(sh.id)} ฉาก · ID: ${sh.id}</div>
-        </div>
-        <div style="margin-left:auto;display:flex;gap:6px;">
-          <button class="btn-secondary" style="font-size:11px;padding:4px 10px" onclick="editShow('${sh.id}')">✏️ แก้ไข</button>
-          <button class="btn-delete" style="font-size:11px;padding:4px 10px" onclick="deleteShow('${sh.id}')">🗑</button>
-        </div>
+  // main panel — compact sortable rows
+  const grid = document.getElementById('showsGrid');
+  if (!shows.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">ยังไม่มีรายการ — กด "+ เพิ่มรายการ" ด้านบน</div>';
+    return;
+  }
+  grid.innerHTML = shows.map((sh, idx) => `
+    <div class="show-sort-row" data-show-id="${sh.id}" draggable="true"
+      ondragstart="_showDragStart(event,'${sh.id}')"
+      ondragover="_showDragOver(event)"
+      ondrop="_showDrop(event,'${sh.id}')"
+      ondragleave="_showDragLeave(event)"
+      style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:default;transition:box-shadow .12s,border-color .12s">
+      <span title="ลาก เพื่อจัดลำดับ" style="cursor:grab;color:var(--muted);font-size:14px;flex-shrink:0;user-select:none">⠿</span>
+      <span style="font-size:11px;font-weight:700;color:var(--muted);min-width:18px;text-align:right">${idx+1}</span>
+      ${sh.logo_url
+        ? `<img src="${escHtml(sh.logo_url)}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;background:#f3f4f6;flex-shrink:0" onerror="this.style.display='none'">`
+        : `<div style="width:32px;height:32px;border-radius:6px;background:${sh.color||'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📺</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(sh.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${countScenesInShow(sh.id)} ฉาก · <span style="font-family:monospace">${sh.id}</span></div>
       </div>
-      ${sh.color ? `<div style="height:4px;border-radius:2px;background:${sh.color}"></div>` : ''}
+      ${sh.color ? `<div style="width:10px;height:10px;border-radius:50%;background:${sh.color};flex-shrink:0"></div>` : ''}
+      <button class="btn-secondary" style="font-size:11px;padding:4px 10px;flex-shrink:0" onclick="event.stopPropagation();editShow('${sh.id}')">✏️</button>
+      <button class="btn-delete" style="font-size:11px;padding:4px 10px;flex-shrink:0" onclick="event.stopPropagation();deleteShow('${sh.id}')">🗑</button>
     </div>
-  `).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">ยังไม่มีรายการ — กด "+ เพิ่มรายการ" ด้านบน</div>';
+  `).join('');
+}
+
+// Drag-to-reorder Shows
+let _showDragId = null;
+function _showDragStart(e, id) {
+  _showDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.closest('.show-sort-row').style.opacity = '0.4', 0);
+}
+function _showDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.borderColor = 'var(--red)';
+  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217,35,46,.2)';
+}
+function _showDragLeave(e) {
+  e.currentTarget.style.borderColor = 'var(--border)';
+  e.currentTarget.style.boxShadow = '';
+}
+function _showDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'var(--border)';
+  e.currentTarget.style.boxShadow = '';
+  if (_showDragId === targetId) return;
+  const shows = loadShows();
+  const fromIdx = shows.findIndex(s => s.id === _showDragId);
+  const toIdx   = shows.findIndex(s => s.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = shows.splice(fromIdx, 1);
+  shows.splice(toIdx, 0, moved);
+  saveShows(shows);
+  renderShowsPanel();
+  _saveShowsOrder(shows);
+}
+async function _saveShowsOrder(shows) {
+  if (!window._supaClient) return;
+  try {
+    const rows = shows.map((sh, i) => ({ id: sh.id, sort_order: (i+1)*10 }));
+    for (const r of rows) {
+      await window._supaClient.from('shows').update({ sort_order: r.sort_order }).eq('id', r.id);
+    }
+    showToast('🔢 บันทึกลำดับรายการแล้ว', 'green', 2000);
+  } catch(e) { console.warn('[showOrder]', e); }
 }
 
 function countScenesInShow(showId) {
@@ -3775,6 +3902,70 @@ const ACT_KEY = 'vp_activity_log';
 
 function getActivityLog() {
   try { return JSON.parse(localStorage.getItem(ACT_KEY) || '[]'); } catch(e) { return []; }
+}
+
+// ── Activity sub-tab switching ──
+function switchActivitySubTab(tab) {
+  document.getElementById('subPaneLog').style.display   = tab === 'log'   ? '' : 'none';
+  document.getElementById('subPaneFiles').style.display = tab === 'files' ? '' : 'none';
+  const logBtn  = document.getElementById('subTabLog');
+  const fileBtn = document.getElementById('subTabFiles');
+  if (logBtn)  { logBtn.style.color  = tab==='log'?'var(--red)':'var(--muted)';  logBtn.style.borderBottomColor  = tab==='log'?'var(--red)':'transparent'; }
+  if (fileBtn) { fileBtn.style.color = tab==='files'?'var(--red)':'var(--muted)'; fileBtn.style.borderBottomColor = tab==='files'?'var(--red)':'transparent'; }
+  if (tab === 'files') loadFileManager();
+}
+
+// ── File Manager ──
+async function loadFileManager() {
+  if (!window._supaClient) return;
+  const grid = document.getElementById('fmGrid');
+  grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px">⏳ กำลังโหลด...</div>';
+  const folder = document.getElementById('fmFolderFilter')?.value || '';
+  try {
+    const { data, error } = await window._supaClient.storage.from('vp-images').list(folder.replace(/\/$/, '')||'', {
+      limit: 500, offset: 0, sortBy: { column: 'updated_at', order: 'desc' }
+    });
+    if (error) { grid.innerHTML = `<div style="color:var(--red);padding:20px">❌ ${error.message}</div>`; return; }
+    const files = (data||[]).filter(f => f.name && !f.id.includes('emptyFolderPlaceholder'));
+    // update stats
+    const totalSize = files.reduce((s, f) => s + (f.metadata?.size||0), 0);
+    const fmb = (totalSize / 1024 / 1024).toFixed(2);
+    document.getElementById('fmStorageText').textContent = `${fmb} MB (${files.length} files)`;
+    document.getElementById('fmFileCount').textContent = `${files.length} ไฟล์ที่พบ${folder?' ใน '+folder:''}`;
+    document.getElementById('fmStorageFill').style.width = Math.min((totalSize / (500*1024*1024)) * 100, 100) + '%';
+    if (!files.length) { grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">ไม่มีไฟล์ในโฟลเดอร์นี้</div>'; return; }
+    const BUCKET_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/';
+    grid.innerHTML = files.map(f => {
+      const path = (folder ? folder : '') + f.name;
+      const url  = BUCKET_URL + encodeURIComponent(path).replace(/%2F/g,'/');
+      const isImg = /\.(webp|jpg|jpeg|png|gif|avif|svg)$/i.test(f.name);
+      const kb  = f.metadata?.size ? (f.metadata.size/1024).toFixed(1) + ' KB' : '?';
+      const dt  = f.updated_at ? new Date(f.updated_at).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}) : '';
+      return `<div class="file-card">
+        ${isImg
+          ? `<img class="file-card-thumb" src="${url}" loading="lazy" onerror="this.style.background='#F3F4F6';this.removeAttribute('src')">`
+          : `<div class="file-card-thumb" style="display:flex;align-items:center;justify-content:center;font-size:32px">📄</div>`}
+        <div class="file-card-body">
+          <div class="file-card-name" title="${escHtml(f.name)}">${escHtml(f.name)}</div>
+          <div class="file-card-path">${escHtml(path)}</div>
+          <div class="file-card-size">${kb} · ${dt}</div>
+          <div class="file-card-actions">
+            <button class="file-card-btn" onclick="window.open('${url}','_blank')" title="เปิดไฟล์">↗ เปิด</button>
+            <button class="file-card-btn" onclick="copyToClipboard('${url}')" title="คัดลอก URL">📋 Copy</button>
+            <button class="file-card-btn del" onclick="fmDeleteFile('${escHtml(path)}',this)" title="ลบไฟล์">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { grid.innerHTML = `<div style="color:var(--red);padding:20px">❌ ${e.message}</div>`; }
+}
+async function fmDeleteFile(path, btn) {
+  if (!confirm(`ลบไฟล์ "${path}" ?\nไม่สามารถยกเลิกได้`)) return;
+  btn.textContent = '⏳'; btn.disabled = true;
+  const { error } = await window._supaClient.storage.from('vp-images').remove([path]);
+  if (error) { showToast('❌ ลบไม่ได้: ' + error.message, 'red'); btn.textContent='🗑'; btn.disabled=false; return; }
+  showToast('🗑 ลบไฟล์แล้ว', 'red');
+  btn.closest('.file-card').remove();
 }
 
 function renderActivityPanel() {
