@@ -1240,8 +1240,12 @@ async function _loadScenes() {
             file_format: def.file_format||'webp', is_loopable: def.is_loopable||false,
             engine: def.engine||'AI-Generated', status: 'active',
             world: def.world||'', energy: def.energy||'',
-            context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
-            show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
+            // ── Read from DB row FIRST; fall back to def only when truly missing ──
+            context_tags: (Array.isArray(r.context_tags)&&r.context_tags.length>0) ? r.context_tags
+                          : (Array.isArray(r.tags)&&r.tags.length>0) ? r.tags
+                          : (def.context_tags||[]),
+            show_ids: (Array.isArray(r.show_ids)&&r.show_ids.length>0) ? r.show_ids
+                      : r.show_id ? [r.show_id] : (def.show_ids||[]),
             video_url: r.video_url||def.video_url||'',
             presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
             notes: r.description||def.notes||'',

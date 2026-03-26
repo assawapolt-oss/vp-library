@@ -57,17 +57,21 @@
   .sidebar-search { padding:10px 12px; border-bottom:1px solid var(--border); }
   .sidebar-search input { width:100%; padding:7px 11px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
   .sidebar-search input:focus { border-color:var(--red); }
-  .scene-list-item { padding:12px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; display:flex; align-items:center; gap:10px; }
-  .scene-list-item:hover { background:#F9FAFB; }
-  .scene-list-item.active { background:#FFF0F0; border-left:3px solid var(--red); padding-left:13px; }
-  .sli-thumb { width:48px; height:30px; object-fit:cover; border-radius:5px; background:#E5E7EB; flex-shrink:0; }
-  .sli-info { flex:1; min-width:0; }
+  /* ── Compact scene card grid ── */
+  .sli-card { cursor:pointer; border-radius:7px; overflow:hidden; border:2px solid transparent; transition:border-color .12s, transform .1s; }
+  .sli-card:hover { border-color:var(--red); transform:scale(1.03); }
+  .sli-card.active { border-color:var(--red); box-shadow:0 0 0 1px var(--red); }
+  .sli-card-img-wrap { position:relative; width:100%; aspect-ratio:16/9; background:#E5E7EB; overflow:hidden; }
+  .sli-card-ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:#E5E7EB; }
+  .sli-card-img { width:100%; height:100%; object-fit:cover; display:none; }
+  .sli-card-id { font-size:9px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; padding:2px 4px; background:var(--card); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sli-card-status { position:absolute; bottom:3px; right:3px; width:6px; height:6px; border-radius:50%; }
+  .sli-status-active { background:#10B981; }
+  .sli-status-draft { background:#F59E0B; }
+  .sli-status-archived { background:#9CA3AF; }
+  /* keep old class names in case used elsewhere */
   .sli-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
   .sli-title { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
-  .sli-status { font-size:9px; padding:1px 6px; border-radius:8px; font-weight:700; flex-shrink:0; }
-  .sli-status-active { background:#D1FAE5; color:#065F46; }
-  .sli-status-draft { background:#FEF3C7; color:#92400E; }
-  .sli-status-archived { background:#F3F4F6; color:#6B7280; }
 
   /* ── Main Editor ── */
   .editor-area { flex:1; overflow-y:auto; background:var(--bg); }
@@ -354,6 +358,7 @@
         <button id="tabShows" onclick="switchAdminTab('shows')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📺 รายการ</button>
         <button id="tabCollections" onclick="switchAdminTab('collections')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">🗂 Collections</button>
         <button id="tabUsers" onclick="switchAdminTab('users')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">👥 ผู้ใช้</button>
+        <button id="tabEquipment" onclick="switchAdminTab('equipment')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">💡 อุปกรณ์</button>
         <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📊 Log</button>
       </div>
 
@@ -403,6 +408,25 @@
           <button class="add-scene-btn" onclick="openCollectionEditor(null)">+ สร้าง</button>
         </div>
         <div id="sidebarCollectionsList" style="padding:8px 14px;font-size:12px;color:var(--muted);">กำลังโหลด…</div>
+      </div>
+
+      <div id="sidebarEquipment" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">💡 อุปกรณ์ไฟ</div>
+          <button class="add-scene-btn" onclick="openEquipmentModal(null)">+ เพิ่ม</button>
+        </div>
+        <div style="padding:8px 10px;font-size:11px;color:var(--muted)">
+          กรองตาม:
+          <select id="equipCatFilter" onchange="renderEquipmentPanel()" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;margin-left:4px">
+            <option value="">ทั้งหมด</option>
+            <option value="key_light">Key Light</option>
+            <option value="fill_light">Fill Light</option>
+            <option value="back_light">Back Light</option>
+            <option value="special">Special</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div id="equipmentList" style="padding:4px 8px;"></div>
       </div>
     </div>
 
@@ -582,6 +606,17 @@
           ระบบ static site ไม่สามารถบันทึกไฟล์โดยตรงได้
         </div>
       </div>
+    <!-- Equipment management panel -->
+    <div id="equipmentPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:900px;">
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px;">💡 จัดการอุปกรณ์ไฟ</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">เพิ่ม แก้ไข ลบ อุปกรณ์ที่ใช้ใน Lighting Blueprint — ชื่อรุ่น ยี่ห้อ และภาพ PNG โปร่งแสง</div>
+        <div id="equipmentPanelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;"></div>
+        <div style="margin-top:20px">
+          <button class="btn-primary" style="font-size:13px" onclick="openEquipmentModal(null)">+ เพิ่มอุปกรณ์ใหม่</button>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -721,6 +756,63 @@
     <div class="confirm-actions">
       <button class="btn-secondary" onclick="closeConfirm()">ยกเลิก</button>
       <button class="btn-delete" id="confirmOkBtn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Equipment Add/Edit Modal -->
+<div class="new-modal-overlay" id="equipmentModalOverlay" onclick="if(event.target===this)closeEquipmentModal()">
+  <div class="new-modal" style="max-width:480px">
+    <div class="new-modal-title" id="equipModalTitle">➕ เพิ่มอุปกรณ์ไฟ</div>
+    <input type="hidden" id="equipModalId">
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">รหัส ID <span>เช่น EQ-001</span></label>
+      <input class="form-input" id="equipId" placeholder="EQ-001" style="font-family:monospace;font-weight:700">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">ยี่ห้อ (Brand)</label>
+        <input class="form-input" id="equipBrand" placeholder="Aputure">
+      </div>
+      <div class="form-group">
+        <label class="form-label">รุ่น (Model)</label>
+        <input class="form-input" id="equipModel" placeholder="600d Pro">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">ชื่อเต็ม (Name)</label>
+      <input class="form-input" id="equipName" placeholder="Aputure 600d Pro" oninput="autoFillEquipName()">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">ประเภท (Category)</label>
+      <select class="form-input" id="equipCategory">
+        <option value="key_light">Key Light</option>
+        <option value="fill_light">Fill Light</option>
+        <option value="back_light">Back Light</option>
+        <option value="special">Special / Effect</option>
+        <option value="other">อื่นๆ</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">ภาพอุปกรณ์ (PNG โปร่งแสง → แปลงเป็น WebP อัตโนมัติ)</label>
+      <div id="equipImgPreviewWrap" style="display:none;margin-bottom:8px;text-align:center">
+        <img id="equipImgPreview" src="" style="max-height:120px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%, #fff 0% 50%) 0 0/16px 16px;border-radius:6px;padding:4px">
+      </div>
+      <div id="equipImgDropZone" onclick="document.getElementById('equipImgFile').click()" ondragover="event.preventDefault();this.style.borderColor='var(--red)'" ondragleave="this.style.borderColor=''" ondrop="handleEquipImgDrop(event)" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;font-size:12px;color:var(--muted)">
+        คลิก หรือลากวาง PNG / JPG / WebP ที่นี่
+        <input type="file" id="equipImgFile" accept="image/*" style="display:none" onchange="handleEquipImgSelect(this.files)">
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">หรือใส่ URL โดยตรง:</div>
+      <input class="form-input" id="equipImageUrl" placeholder="https://..." style="margin-top:4px;font-size:12px;font-family:monospace" oninput="previewEquipImgFromUrl()">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">หมายเหตุ</label>
+      <input class="form-input" id="equipNotes" placeholder="Bowens mount, max 600W, etc.">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveEquipmentModal()" style="flex:1">💾 บันทึก</button>
+      <button class="btn-secondary" onclick="closeEquipmentModal()">ยกเลิก</button>
+      <button id="equipDeleteBtn" class="btn-delete" onclick="deleteEquipment(document.getElementById('equipModalId').value)" style="display:none">🗑 ลบ</button>
     </div>
   </div>
 </div>
@@ -1170,7 +1262,9 @@ function migrateScenes(loadedScenes) {
     'presenter_image_url','motion_bg_url',
     // canvas & lighting fields (v2.1)
     'key_light_dir','key_light_type','fill_light','back_light','lighting_ratio',
-    'presenter_zone','camera_setup','canvas_notes'
+    'presenter_zone','camera_setup','canvas_notes',
+    // equipment slots (v2.2)
+    'key_light_equip_id','fill_light_equip_id','back_light_equip_id',
   ];
   return loadedScenes.map(s => {
     const def = DEFAULT_SCENES.find(d => d.id === s.id);
@@ -1217,12 +1311,11 @@ async function initAdmin() {
   }
   _setSupaStatus(false);
 
-  // ── Fallback: DEFAULT_SCENES (Supabase unavailable) ───────────────────────
+  // ── Fallback: DEFAULT_SCENES (Supabase unavailable — read-only, ไม่ push) ──
+  // ⚠️ ไม่ push ขึ้น Supabase เพราะอาจ overwrite ข้อมูลจริงที่มีอยู่
   scenes = JSON.parse(JSON.stringify(DEFAULT_SCENES));
   renderSidebar();
   _finishInitAdmin();
-  // Retry push to Supabase in background
-  if (window._supaClient) _supaUpsertAll().catch(()=>{});
 }
 
 /** แปลง Supabase DB row → scene object */
@@ -1244,41 +1337,118 @@ function _supaRowToScene(r) {
     background_complexity: def.background_complexity||'medium',
     platform_fit: def.platform_fit||['16:9'], resolution: def.resolution||'HD',
     file_format: def.file_format||'webp', is_loopable: def.is_loopable||false,
-    engine: def.engine||'AI-Generated', status: 'active',
-    world: def.world||'', energy: def.energy||'',
-    context_tags: def.context_tags||(Array.isArray(r.tags)?r.tags:[]),
-    show_ids: r.show_id ? [r.show_id] : (def.show_ids||[]),
-    video_url: r.video_url||def.video_url||'',
-    presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
-    motion_bg_url: r.motion_bg_url||def.motion_bg_url||'',
-    notes: r.description||def.notes||'',
+    engine: def.engine||'AI-Generated', status: r.status||'active',
+    // ── DB row FIRST; def as fallback only when column is missing/empty ──
+    world:  r.world  || def.world  || '',
+    energy: r.energy || def.energy || '',
+    context_tags: (Array.isArray(r.context_tags)&&r.context_tags.length>0) ? r.context_tags
+                  : (Array.isArray(r.tags)&&r.tags.length>0) ? r.tags
+                  : (def.context_tags||[]),
+    show_ids: (Array.isArray(r.show_ids)&&r.show_ids.length>0) ? r.show_ids
+              : r.show_id ? [r.show_id] : (def.show_ids||[]),
+    video_url:           r.video_url           || def.video_url           || '',
+    presenter_image_url: r.presenter_image_url || def.presenter_image_url || '',
+    motion_bg_url:       r.motion_bg_url       || '',
+    notes:               r.description         || def.notes               || '',
+    // canvas / lighting blueprint
+    key_light_dir:    r.key_light_dir    || def.key_light_dir    || '',
+    key_light_type:   r.key_light_type   || def.key_light_type   || '',
+    fill_light:       r.fill_light       || def.fill_light       || '',
+    back_light:       r.back_light       || def.back_light       || '',
+    lighting_ratio:   r.lighting_ratio   || def.lighting_ratio   || '',
+    presenter_zone:   r.presenter_zone   || def.presenter_zone   || '',
+    camera_setup:     r.camera_setup     || def.camera_setup     || '',
+    canvas_notes:     r.canvas_notes     || def.canvas_notes     || '',
+    // equipment slots
+    key_light_equip_id:  r.key_light_equip_id  || '',
+    fill_light_equip_id: r.fill_light_equip_id || '',
+    back_light_equip_id: r.back_light_equip_id || '',
   };
 }
 
 /** Upsert scenes + shows ทั้งหมดขึ้น Supabase */
+/** Build a full DB row from a scene object */
+function _sceneToRow(s, i) {
+  return {
+    id:                    s.id,
+    title:                 s.title||'',
+    category:              s.location_type||'',
+    tags:                  [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
+    image_url:             s.filepath||'',
+    thumb_url:             s.thumb||'',
+    description:           s.notes||'',
+    sort_order:            i != null ? (i + 1) * 10 : undefined,
+    // ── fields added via migration ──────────────────────────────
+    video_url:             s.video_url||'',
+    presenter_image_url:   s.presenter_image_url||'',
+    motion_bg_url:         s.motion_bg_url||'',
+    world:                 s.world||'',
+    energy:                s.energy||'',
+    context_tags:          s.context_tags||[],
+    show_ids:              s.show_ids||[],
+    // canvas / lighting blueprint
+    key_light_dir:         s.key_light_dir||'',
+    key_light_type:        s.key_light_type||'',
+    fill_light:            s.fill_light||'',
+    back_light:            s.back_light||'',
+    lighting_ratio:        s.lighting_ratio||'',
+    presenter_zone:        s.presenter_zone||'',
+    camera_setup:          s.camera_setup||'',
+    canvas_notes:          s.canvas_notes||'',
+    // equipment slots
+    key_light_equip_id:    s.key_light_equip_id||'',
+    fill_light_equip_id:   s.fill_light_equip_id||'',
+    back_light_equip_id:   s.back_light_equip_id||'',
+  };
+}
+
+/** Remove fields that don't exist in the DB yet (graceful column fallback) */
+function _stripUnknownCols(row, knownErr) {
+  // If error mentions a specific column, remove it and retry
+  const m = knownErr.match(/column "([^"]+)" of relation/);
+  if (m) {
+    const bad = m[1];
+    const out = Object.assign({}, row);
+    delete out[bad];
+    return out;
+  }
+  // Fallback: return minimal safe set only
+  return {
+    id: row.id, title: row.title||'', category: row.category||'',
+    image_url: row.image_url||'', thumb_url: row.thumb_url||'',
+    description: row.description||'', sort_order: row.sort_order||0,
+    video_url: row.video_url||'',
+    presenter_image_url: row.presenter_image_url||'',
+    motion_bg_url: row.motion_bg_url||'',
+  };
+}
+
 async function _supaUpsertAll() {
   if (!window._supaClient) return;
-  const rows = scenes.map((s, i) => ({
-    id: s.id,
-    show_id: (Array.isArray(s.show_ids)&&s.show_ids.length>0) ? s.show_ids[0] : null,
-    title: s.title||'', category: s.location_type||'',
-    tags: [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
-    image_url: s.filepath||'', thumb_url: s.thumb||'',
-    description: s.notes||'', sort_order: (i + 1) * 10,
-    video_url: s.video_url||'',
-    presenter_image_url: s.presenter_image_url||'',
-    motion_bg_url: s.motion_bg_url||'',
-    world: s.world||'', energy: s.energy||'',
-    context_tags: s.context_tags||[],
-    show_ids: s.show_ids||[],
-  }));
-  await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
+  let rows = scenes.map((s, i) => _sceneToRow(s, i));
 
+  let { error: scenesErr } = await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
+  if (scenesErr) {
+    // Migration not run yet — strip unknown columns and retry
+    console.warn('[_supaUpsertAll] Full upsert failed:', scenesErr.message, '— retrying with safe columns');
+    const safeRows = rows.map(r => _stripUnknownCols(r, scenesErr.message));
+    const { error: retryErr } = await window._supaClient.from('scenes').upsert(safeRows, { onConflict:'id' });
+    if (retryErr) {
+      console.error('[_supaUpsertAll] Retry also failed:', retryErr.message);
+      throw new Error(retryErr.message);
+    }
+    // Show hint about running migration
+    showToast('⚠️ บันทึกสำเร็จ (บางฟิลด์ขาด) — กรุณา run supabase_migration.sql ใน Supabase ด้วย', 'red', 8000);
+    return;
+  }
+
+  // Sync shows from localStorage cache
   let shows = [];
   try { shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e) {}
   if (shows.length > 0) {
     const sr = shows.map(sh => ({ id:sh.id, name:sh.name||'', color:sh.color||'', logo_url:sh.logo_url||sh.logoUrl||'' }));
-    await window._supaClient.from('shows').upsert(sr, { onConflict:'id' });
+    const { error: showsErr } = await window._supaClient.from('shows').upsert(sr, { onConflict:'id' });
+    if (showsErr) console.warn('[_supaUpsertAll] shows error:', showsErr.message);
   }
 }
 
@@ -1311,7 +1481,7 @@ function _finishInitAdmin() {
 function saveScenes() {
   localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
   // Sync ขึ้น Supabase (background)
-  if (window._supaClient) _supaUpsertAll().catch(()=>{});
+  if (window._supaClient) _supaUpsertAll().catch(e => console.warn('[saveScenes] Supabase sync failed:', e.message));
 }
 
 
@@ -1327,18 +1497,18 @@ async function renderSidebar() {
   );
   document.getElementById('sidebarCount').textContent = scenes.length;
 
-  // Build HTML — img hidden by default, resolveThumb() fills in async
-  document.getElementById('sceneList').innerHTML = filtered.map(s => `
-    <div class="scene-list-item ${s.id === currentId ? 'active' : ''}" onclick="openEditor('${s.id}')">
-      <img class="sli-thumb" id="sli-thumb-${s.id}" src="" style="display:none">
-      <div class="sli-thumb-ph" id="sli-ph-${s.id}" style="width:48px;height:30px;border-radius:5px;background:#E5E7EB;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">🎬</div>
-      <div class="sli-info">
-        <div class="sli-id">${s.id}</div>
-        <div class="sli-title">${s.title}</div>
+  // Build HTML — compact card: thumb (16:9) + ID only; title visible on hover
+  document.getElementById('sceneList').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;padding:6px 2px">`
+    + filtered.map(s => `
+    <div class="sli-card ${s.id === currentId ? 'active' : ''}" onclick="openEditor('${s.id}')" title="${s.title||s.id}">
+      <div class="sli-card-img-wrap">
+        <div class="sli-card-ph" id="sli-ph-${s.id}">🎬</div>
+        <img class="sli-card-img" id="sli-thumb-${s.id}" src="" style="display:none">
+        <div class="sli-card-status sli-status-${s.status}"></div>
       </div>
-      <span class="sli-status sli-status-${s.status}">${s.status}</span>
+      <div class="sli-card-id">${s.id}</div>
     </div>
-  `).join('');
+  `).join('') + `</div>`;
 
   // Async: resolve images (Supabase http URLs or relative disk paths)
   for (const s of filtered) {
@@ -1348,7 +1518,7 @@ async function renderSidebar() {
     if (!url) continue;
     const el = document.getElementById(`sli-thumb-${s.id}`);
     const ph = document.getElementById(`sli-ph-${s.id}`);
-    if (el) { el.src = url; el.style.display = ''; }
+    if (el) { el.src = url; el.style.display = 'block'; }
     if (ph) ph.style.display = 'none';
   }
 }
@@ -1380,6 +1550,9 @@ async function openEditor(id) {
   const s = scenes.find(x => x.id === id);
   if (!s) return;
   renderSidebar();
+
+  // Pre-load equipment list for lighting blueprint (if not cached yet)
+  if (!EQUIPMENT_LIST.length && window._supaClient) await _loadEquipment();
 
   const ea = document.getElementById('editorArea');
   ea.innerHTML = buildEditorHTML(s);
@@ -1617,6 +1790,20 @@ function buildEditorHTML(s) {
         <div class="form-hint">เพิ่ม note สำคัญเกี่ยวกับการ match แสง ตำแหน่ง presenter หรือข้อควรระวัง</div>
       </div>
 
+      <!-- ── Lighting Blueprint ── -->
+      <div class="editor-section">
+        <div class="editor-section-title">💡 Lighting Blueprint <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">เลือกรุ่นไฟที่ใช้ในแต่ละตำแหน่ง</span></div>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px">
+          ${buildEquipSlotHtml('key_light', s)}
+          ${buildEquipSlotHtml('fill_light', s)}
+          ${buildEquipSlotHtml('back_light', s)}
+        </div>
+        ${s.canvas_notes ? `<div style="margin-top:10px;padding:10px;background:#F0FDF4;border-radius:8px;font-size:12px;color:#065F46;line-height:1.6">${escHtml(s.canvas_notes)}</div>` : ''}
+        <div style="margin-top:8px">
+          <a onclick="switchAdminTab('equipment')" style="font-size:12px;color:var(--red);cursor:pointer;text-decoration:underline">⚙️ จัดการรายการอุปกรณ์</a>
+        </div>
+      </div>
+
       <div style="height:80px"></div>
     </div>
   `;
@@ -1722,6 +1909,10 @@ function _preserveSceneFields(origId) {
     has_particles:    s.has_particles    ?? false,
     mood:             Array.isArray(s.mood)   ? [...s.mood]   : [],
     topics:           Array.isArray(s.topics) ? [...s.topics] : [],
+    // equipment slots preserved
+    key_light_equip_id:  s.key_light_equip_id  || '',
+    fill_light_equip_id: s.fill_light_equip_id || '',
+    back_light_equip_id: s.back_light_equip_id || '',
   };
 }
 
@@ -1751,18 +1942,30 @@ function collectFormData(origId) {
   };
 }
 
-function saveScene(origId) {
+async function saveScene(origId) {
   const data = collectFormData(origId);
   const idx = scenes.findIndex(x => x.id === origId);
   if (idx === -1) return;
   scenes[idx] = data;
   currentId = data.id;
-  saveScenes();
+  localStorage.setItem(DATA_KEY, JSON.stringify(scenes)); // immediate local save
   statusVal = null;
   renderSidebar();
-  showToast('💾 บันทึกแล้ว!', 'green');
   const ind = document.getElementById('saveIndicator');
   if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 2000); }
+
+  // Sync to Supabase and show result
+  if (window._supaClient) {
+    showToast('⏳ กำลังบันทึก...', 'green');
+    try {
+      await _supaUpsertAll();
+      showToast('💾 บันทึกแล้ว (Supabase ✓)', 'green');
+    } catch(e) {
+      showToast('⚠️ บันทึก local แล้ว แต่ Supabase sync ผิดพลาด: ' + e.message, 'red');
+    }
+  } else {
+    showToast('💾 บันทึกแล้ว (local เท่านั้น — Supabase offline)', 'green');
+  }
 }
 
 function resetScene(id) {
@@ -1803,6 +2006,17 @@ function doDelete(id) {
 // ══════════════════════════════════════════════
 // NEW SCENE
 // ══════════════════════════════════════════════
+function _getNextSceneId() {
+  // Find highest numeric suffix in existing scenes (VP-001 → 1, VP-012 → 12, etc.)
+  let max = 0;
+  scenes.forEach(s => {
+    const m = (s.id||'').match(/^VP-0*(\d+)/i);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  const next = max + 1;
+  return 'VP-' + String(next).padStart(3, '0');
+}
+
 function openNewSceneModal() {
   document.getElementById('newSceneOverlay').classList.add('open');
   document.getElementById('importPreviewRow').style.display = 'none';
@@ -1811,9 +2025,15 @@ function openNewSceneModal() {
   document.getElementById('importFileInput').value = '';
   setTimeout(() => {
     const ni = document.getElementById('newId');
-    if (!ni.value || ni.value === 'VP-') ni.value = 'VP-';
+    // Auto-suggest next ID and update label hint
+    const nextId = _getNextSceneId();
+    ni.value = nextId;
+    ni.placeholder = nextId;
+    // Update hint label
+    const hint = document.querySelector('#newSceneOverlay label span');
+    if (hint) hint.textContent = `ฉากล่าสุด: ${scenes.length ? scenes[scenes.length-1].id : '—'} → แนะนำ ${nextId}`;
     ni.focus();
-    ni.setSelectionRange(ni.value.length, ni.value.length);
+    ni.select();
   }, 100);
 }
 function closeNewModal() {
@@ -2115,13 +2335,19 @@ async function createNewScene() {
     platform_fit:['16:9'], resolution:'HD',
     file_format: filepath.endsWith('.webp') ? 'webp' : filepath.endsWith('.avif') ? 'avif' : 'png',
     is_loopable:false, engine:'AI-Generated', status:'draft', notes:'',
-    world, energy, context_tags:[], show_ids:[], video_url:''
+    world, energy, context_tags:[], show_ids:[], video_url:'',
+    presenter_image_url:'', motion_bg_url:'',
+    key_light_dir:'', key_light_type:'', fill_light:'', back_light:'',
+    lighting_ratio:'', presenter_zone:'', camera_setup:'', canvas_notes:'',
+    key_light_equip_id:'', fill_light_equip_id:'', back_light_equip_id:'',
   };
 
   scenes.push(newScene);
-  saveScenes();
+  // Save to localStorage immediately (instant)
+  localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
+
+  // Close modal and open editor first (UX)
   closeNewModal();
-  // Reset modal state
   document.getElementById('newId').value='VP-';
   document.getElementById('newTitle').value='';
   document.getElementById('newTitleTh').value='';
@@ -2131,13 +2357,24 @@ async function createNewScene() {
   }
   const pr = document.getElementById('importPreviewRow');
   if (pr) pr.style.display = 'none';
-  // Reset drop zone label
   const dzContent = document.getElementById('importDropContent');
   if (dzContent) dzContent.innerHTML = `<div style="font-size:24px;margin-bottom:6px">🖼</div><div style="font-size:13px;font-weight:600;color:var(--dark)">ลาก-วางไฟล์ภาพ หรือคลิกเพื่อเลือก</div><div style="font-size:11px;color:var(--muted);margin-top:3px">.webp · .avif · .png · .jpg — ระบบจะอ่านชื่อไฟล์แล้วกรอกข้อมูลให้อัตโนมัติ</div>`;
 
   renderSidebar();
   openEditor(id);
-  showToast('➕ สร้างฉากใหม่แล้ว' + (filepath ? ' + บันทึกไฟล์แล้ว' : ''), 'green');
+
+  // Now push to Supabase and confirm
+  if (window._supaClient) {
+    showToast('⏳ กำลังบันทึกฉากใหม่...', 'green');
+    try {
+      await _supaUpsertAll();
+      showToast('✅ สร้างฉากใหม่แล้ว + บันทึกขึ้น Supabase ✓', 'green');
+    } catch(e) {
+      showToast('⚠️ บันทึก local แล้ว แต่ Supabase sync ผิดพลาด: ' + e.message, 'red', 8000);
+    }
+  } else {
+    showToast('➕ สร้างฉากใหม่แล้ว (local เท่านั้น — Supabase offline)', 'green');
+  }
 }
 
 /** Generate a thumbnail Blob at targetW × targetH using Canvas */
@@ -2428,14 +2665,14 @@ let adminTab = 'scenes';
 function switchAdminTab(tab) {
   adminTab = tab;
   // sidebar panels
-  const sidebarMap = { scenes:'sidebarScenes', shows:'sidebarShows', users:'sidebarUsers', activity:'sidebarActivity', collections:'sidebarCollections' };
+  const sidebarMap = { scenes:'sidebarScenes', shows:'sidebarShows', users:'sidebarUsers', activity:'sidebarActivity', collections:'sidebarCollections', equipment:'sidebarEquipment' };
   Object.entries(sidebarMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
   // main panels
-  const mainMap = { scenes:'editorArea', shows:'showsPanel', users:'usersPanel', activity:'activityPanel', collections:'collectionsPanel' };
+  const mainMap = { scenes:'editorArea', shows:'showsPanel', users:'usersPanel', activity:'activityPanel', collections:'collectionsPanel', equipment:'equipmentPanel' };
   Object.entries(mainMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
 
   // Tab button styles
-  ['scenes','shows','collections','users','activity'].forEach(t => {
+  ['scenes','shows','collections','users','activity','equipment'].forEach(t => {
     const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (!el) return;
     const active = t === tab;
@@ -2447,6 +2684,7 @@ function switchAdminTab(tab) {
   if (tab === 'activity')    renderActivityPanel();
   if (tab === 'shows')       renderShowsPanel();
   if (tab === 'collections') renderAdminCollections();
+  if (tab === 'equipment')   renderEquipmentPanel();
 }
 
 // ══════════════════════════════════════════════
@@ -2786,6 +3024,285 @@ async function deleteCollection(colId) {
 }
 
 // ══════════════════════════════════════════════
+// EQUIPMENT MANAGEMENT (Lighting Blueprint)
+// ══════════════════════════════════════════════
+let EQUIPMENT_LIST = []; // in-memory cache
+
+async function _loadEquipment() {
+  if (!window._supaClient) return;
+  try {
+    const { data, error } = await window._supaClient.from('equipment').select('*').order('category').order('name');
+    if (!error && data) EQUIPMENT_LIST = data;
+  } catch(e) { console.warn('[equipment] load error:', e.message); }
+}
+
+async function renderEquipmentPanel() {
+  await _loadEquipment();
+  renderEquipmentGrid('equipmentPanelGrid', false);
+  renderEquipmentList();
+}
+
+function renderEquipmentGrid(containerId, compact) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const catFilter = document.getElementById('equipCatFilter')?.value || '';
+  const items = EQUIPMENT_LIST.filter(e => !catFilter || e.category === catFilter);
+  if (!items.length) {
+    el.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:13px;padding:16px">ยังไม่มีอุปกรณ์ — กด "+ เพิ่ม" เพื่อเพิ่มอุปกรณ์แรก</div>';
+    return;
+  }
+  const catLabel = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light', special:'Special', other:'อื่นๆ' };
+  el.innerHTML = items.map(e => {
+    const img = e.image_url
+      ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:90px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/16px 16px;padding:4px" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;background:#F3F4F6;border-radius:6px">💡</div>`;
+    return `<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .12s" onclick="openEquipmentModal('${e.id}')" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+      ${img}
+      <div style="padding:8px">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${catLabel[e.category]||e.category}</div>
+        <div style="font-size:12px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(e.name)}">${escHtml(e.name)}</div>
+        <div style="font-size:10px;color:var(--muted)">${escHtml(e.brand||'')}${e.model?' · '+escHtml(e.model):''}</div>
+        <div style="font-size:9px;font-family:monospace;color:var(--red);margin-top:2px">${e.id}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderEquipmentList() {
+  // For sidebar list
+  const el = document.getElementById('equipmentList');
+  if (!el) return;
+  const catFilter = document.getElementById('equipCatFilter')?.value || '';
+  const items = EQUIPMENT_LIST.filter(e => !catFilter || e.category === catFilter);
+  el.innerHTML = items.map(e => {
+    const img = e.image_url
+      ? `<img src="${escHtml(e.image_url)}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;flex-shrink:0;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/8px 8px" onerror="this.style.display='none'">`
+      : `<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:#F3F4F6;border-radius:4px">💡</div>`;
+    return `<div onclick="openEquipmentModal('${e.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background=''">
+      ${img}
+      <div style="min-width:0">
+        <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(e.name)}</div>
+        <div style="color:var(--muted);font-family:monospace">${e.id}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEquipmentModal(id) {
+  const isNew = !id;
+  const e = id ? EQUIPMENT_LIST.find(x => x.id === id) : null;
+  document.getElementById('equipModalTitle').textContent = isNew ? '➕ เพิ่มอุปกรณ์ไฟ' : '✏️ แก้ไขอุปกรณ์';
+  document.getElementById('equipModalId').value = id || '';
+  // Auto-suggest next EQ ID
+  if (isNew) {
+    const nums = EQUIPMENT_LIST.map(x => parseInt((x.id||'').replace(/[^0-9]/g,''))||0);
+    const next = (nums.length ? Math.max(...nums) : 0) + 1;
+    document.getElementById('equipId').value = 'EQ-' + String(next).padStart(3,'0');
+    document.getElementById('equipId').disabled = false;
+  } else {
+    document.getElementById('equipId').value = e?.id || '';
+    document.getElementById('equipId').disabled = true;
+  }
+  document.getElementById('equipBrand').value   = e?.brand    || '';
+  document.getElementById('equipModel').value   = e?.model    || '';
+  document.getElementById('equipName').value    = e?.name     || '';
+  document.getElementById('equipCategory').value = e?.category || 'key_light';
+  document.getElementById('equipImageUrl').value = e?.image_url || '';
+  document.getElementById('equipNotes').value   = e?.notes    || '';
+  document.getElementById('equipDeleteBtn').style.display = isNew ? 'none' : '';
+  // Show existing image preview
+  const wrap = document.getElementById('equipImgPreviewWrap');
+  const prev = document.getElementById('equipImgPreview');
+  if (e?.image_url) { prev.src = e.image_url; wrap.style.display = ''; } else { wrap.style.display = 'none'; }
+  document.getElementById('equipmentModalOverlay').classList.add('open');
+}
+
+function closeEquipmentModal() {
+  document.getElementById('equipmentModalOverlay').classList.remove('open');
+}
+
+function autoFillEquipName() {
+  // Auto-combine brand + model into name if name is empty
+}
+
+function previewEquipImgFromUrl() {
+  const url = document.getElementById('equipImageUrl').value.trim();
+  const prev = document.getElementById('equipImgPreview');
+  const wrap = document.getElementById('equipImgPreviewWrap');
+  if (url) { prev.src = url; wrap.style.display = ''; prev.onerror = ()=>{ wrap.style.display='none'; }; }
+  else wrap.style.display = 'none';
+}
+
+function handleEquipImgDrop(e) {
+  e.preventDefault();
+  document.getElementById('equipImgDropZone').style.borderColor = '';
+  handleEquipImgSelect(e.dataTransfer.files);
+}
+
+async function handleEquipImgSelect(files) {
+  if (!files || !files.length) return;
+  let file = files[0];
+  if (!file.type.startsWith('image/')) { showToast('รองรับเฉพาะไฟล์ภาพ', 'red'); return; }
+  showToast('⏳ กำลัง convert ภาพ...');
+  try {
+    // Convert PNG/JPG → WebP (preserve transparency)
+    if (file.name.match(/\.(png|jpg|jpeg)$/i)) {
+      const result = await convertImageToWebP(file, { quality: 0.90 });
+      if (result.wasConverted) file = blobToFile(result.blob, result.filename);
+    }
+    // Upload to Supabase Storage under equipment/
+    const id = document.getElementById('equipId').value.trim() || ('EQ-' + Date.now());
+    const destPath = `_equipment/${id}_${file.name}`;
+    const uploadResult = await uploadFileToDisk(file, destPath);
+    const finalUrl = (uploadResult.ok && uploadResult.url) ? uploadResult.url : '';
+    if (finalUrl) {
+      document.getElementById('equipImageUrl').value = finalUrl;
+      document.getElementById('equipImgPreview').src = finalUrl;
+      document.getElementById('equipImgPreviewWrap').style.display = '';
+      showToast('✅ ภาพขึ้น Supabase Storage แล้ว', 'green');
+    } else {
+      // Fallback: show local preview only
+      const objUrl = URL.createObjectURL(file);
+      document.getElementById('equipImgPreview').src = objUrl;
+      document.getElementById('equipImgPreviewWrap').style.display = '';
+      showToast('⚠️ Supabase offline — ภาพแสดงได้ชั่วคราวเท่านั้น', 'red');
+    }
+  } catch(err) { showToast('❌ ' + err.message, 'red'); }
+}
+
+async function saveEquipmentModal() {
+  const isNew = !document.getElementById('equipModalId').value;
+  const id     = isNew
+    ? document.getElementById('equipId').value.trim().toUpperCase()
+    : document.getElementById('equipModalId').value;
+  const name   = document.getElementById('equipName').value.trim();
+  if (!id)   { showToast('กรุณากรอก ID', 'red'); return; }
+  if (!name) { showToast('กรุณากรอกชื่ออุปกรณ์', 'red'); return; }
+
+  const row = {
+    id,
+    name,
+    brand:     document.getElementById('equipBrand').value.trim(),
+    model:     document.getElementById('equipModel').value.trim(),
+    category:  document.getElementById('equipCategory').value,
+    image_url: document.getElementById('equipImageUrl').value.trim(),
+    notes:     document.getElementById('equipNotes').value.trim(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (!window._supaClient) { showToast('⚠️ Supabase ไม่พร้อม', 'red'); return; }
+  const { error } = await window._supaClient.from('equipment').upsert(row, { onConflict:'id' });
+  if (error) { showToast('❌ ' + error.message, 'red'); return; }
+
+  // Update local cache
+  const idx = EQUIPMENT_LIST.findIndex(x => x.id === id);
+  if (idx !== -1) EQUIPMENT_LIST[idx] = row; else EQUIPMENT_LIST.push(row);
+  closeEquipmentModal();
+  renderEquipmentPanel();
+  showToast('💾 บันทึกอุปกรณ์แล้ว', 'green');
+}
+
+async function deleteEquipment(id) {
+  if (!id || !confirm(`ลบอุปกรณ์ ${id}? จะไม่สามารถกู้คืนได้`)) return;
+  if (!window._supaClient) { showToast('⚠️ Supabase ไม่พร้อม', 'red'); return; }
+  const { error } = await window._supaClient.from('equipment').delete().eq('id', id);
+  if (error) { showToast('❌ ' + error.message, 'red'); return; }
+  EQUIPMENT_LIST = EQUIPMENT_LIST.filter(x => x.id !== id);
+  closeEquipmentModal();
+  renderEquipmentPanel();
+  showToast('🗑 ลบอุปกรณ์แล้ว', 'red');
+}
+
+// ── Equipment picker for scene editor lighting blueprint ──
+let _equipPickerSlot = null; // 'key_light' | 'fill_light' | 'back_light'
+let _equipPickerSceneId = null;
+
+function openEquipmentPicker(slot, sceneId) {
+  _equipPickerSlot = slot;
+  _equipPickerSceneId = sceneId;
+  _loadEquipment().then(() => _renderEquipmentPickerModal(slot));
+}
+
+function _renderEquipmentPickerModal(slot) {
+  const catLabel = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light', special:'Special', other:'อื่นๆ' };
+  const body = document.createElement('div');
+  body.id = 'equipPickerModal';
+  body.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  body.onclick = e => { if (e.target === body) body.remove(); };
+
+  const items = EQUIPMENT_LIST.filter(e => !slot || e.category === slot || e.category === 'special' || e.category === 'other');
+  const grid = items.map(e => {
+    const img = e.image_url
+      ? `<img src="${escHtml(e.image_url)}" style="width:100%;height:70px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/12px 12px" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:28px">💡</div>`;
+    return `<div onclick="selectEquipmentForSlot('${e.id}')" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:.12s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+      ${img}
+      <div style="padding:6px 8px">
+        <div style="font-size:10px;color:var(--muted)">${catLabel[e.category]||e.category}</div>
+        <div style="font-size:11px;font-weight:700">${escHtml(e.name)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px;padding:16px">ยังไม่มีอุปกรณ์ในหมวดนี้<br><a onclick="switchAdminTab(\'equipment\')" style="cursor:pointer;color:var(--red)">ไปเพิ่มอุปกรณ์</a></div>';
+
+  body.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px">เลือกอุปกรณ์ — ${catLabel[slot]||slot}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">${grid}</div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button onclick="selectEquipmentForSlot('')" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#F9FAFB">ล้างการเลือก</button>
+      <button onclick="document.getElementById('equipPickerModal').remove()" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer">ปิด</button>
+    </div>
+  </div>`;
+  document.body.appendChild(body);
+}
+
+function selectEquipmentForSlot(equipId) {
+  const s = scenes.find(x => x.id === _equipPickerSceneId);
+  if (!s) return;
+  const fieldMap = { key_light:'key_light_equip_id', fill_light:'fill_light_equip_id', back_light:'back_light_equip_id' };
+  const field = fieldMap[_equipPickerSlot];
+  if (field) s[field] = equipId;
+  // Update UI in editor
+  _refreshEquipSlotUI(_equipPickerSlot, _equipPickerSceneId, equipId);
+  document.getElementById('equipPickerModal')?.remove();
+}
+
+function _refreshEquipSlotUI(slot, sceneId, equipId) {
+  const equip = equipId ? EQUIPMENT_LIST.find(x => x.id === equipId) : null;
+  const slotEl = document.getElementById(`equip_slot_${slot}_${sceneId}`);
+  if (!slotEl) return;
+  if (equip) {
+    slotEl.innerHTML = `
+      <img src="${escHtml(equip.image_url||'')}" onerror="this.style.display='none'" style="width:48px;height:48px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/8px 8px;border-radius:6px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(equip.name)}</div>
+        <div style="font-size:10px;color:var(--muted)">${escHtml(equip.brand||'')} ${escHtml(equip.model||'')}</div>
+        <div style="font-size:9px;font-family:monospace;color:var(--red)">${equip.id}</div>
+      </div>
+      <button onclick="openEquipmentPicker('${slot}','${sceneId}')" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;flex-shrink:0">เปลี่ยน</button>`;
+  } else {
+    slotEl.innerHTML = `<button onclick="openEquipmentPicker('${slot}','${sceneId}')" style="font-size:12px;padding:6px 12px;border:1.5px dashed var(--border);border-radius:6px;cursor:pointer;width:100%;color:var(--muted)">+ เลือก${slot==='key_light'?'Key Light':slot==='fill_light'?'Fill Light':'Back Light'}</button>`;
+  }
+}
+
+function buildEquipSlotHtml(slot, s) {
+  const fieldMap = { key_light:'key_light_equip_id', fill_light:'fill_light_equip_id', back_light:'back_light_equip_id' };
+  const equipId = s[fieldMap[slot]] || '';
+  const equip = equipId ? EQUIPMENT_LIST.find(x => x.id === equipId) : null;
+  const slotLabels = { key_light:'Key Light', fill_light:'Fill Light', back_light:'Back Light' };
+  const inner = equip
+    ? `<img src="${escHtml(equip.image_url||'')}" onerror="this.style.display='none'" style="width:48px;height:48px;object-fit:contain;background:repeating-conic-gradient(#E5E7EB 0% 25%,#fff 0% 50%) 0 0/8px 8px;border-radius:6px;flex-shrink:0">
+       <div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(equip.name)}</div>
+       <div style="font-size:10px;color:var(--muted)">${escHtml(equip.brand||'')} ${escHtml(equip.model||'')}</div>
+       <div style="font-size:9px;font-family:monospace;color:var(--red)">${equip.id}</div></div>
+       <button onclick="openEquipmentPicker('${slot}','${s.id}')" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;flex-shrink:0">เปลี่ยน</button>`
+    : `<button onclick="openEquipmentPicker('${slot}','${s.id}')" style="font-size:12px;padding:6px 12px;border:1.5px dashed var(--border);border-radius:6px;cursor:pointer;width:100%;color:var(--muted)">+ เลือก${slotLabels[slot]}</button>`;
+  return `<div style="margin-bottom:6px">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">${slotLabels[slot]}</div>
+    <div id="equip_slot_${slot}_${s.id}" style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">${inner}</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
 // SHOW PROFILE MANAGEMENT
 // ══════════════════════════════════════════════
 const SHOWS_KEY = 'vp_shows_v1';
@@ -2808,31 +3325,24 @@ function saveShows(shows) {
 }
 
 async function initShows() {
-  // Priority 1: localStorage
+  // Priority 1: Supabase (source of truth)
+  if (window._supaClient) {
+    try {
+      const { data, error } = await window._supaClient.from('shows').select('*');
+      if (!error && data && data.length > 0) {
+        const arr = data.map(r => ({ id:r.id, name:r.name||'', color:r.color||'', logo_url:r.logo_url||'', logoUrl:r.logo_url||'' }));
+        saveShows(arr);
+        renderShowsPanel();
+        return;
+      }
+    } catch(e) { console.warn('[initShows] Supabase error:', e.message); }
+  }
+
+  // Priority 2: localStorage cache (offline fallback)
   const stored = loadShows();
-  if (stored.length > 0) return;
+  if (stored.length > 0) { renderShowsPanel(); return; }
 
-  // Priority 2: _database/scenes.json (Export DB ฝัง shows ไว้ใน field "shows")
-  try {
-    const res = await fetch('_database/scenes.json?v=' + Date.now());
-    if (res.ok) {
-      const data = await res.json();
-      const arr = Array.isArray(data.shows) ? data.shows : [];
-      if (arr.length > 0) { saveShows(arr); renderShowsPanel(); showToast('📺 โหลดรายการจาก scenes.json สำเร็จ'); return; }
-    }
-  } catch(e) {}
-
-  // Priority 3: _database/shows.json (standalone export)
-  try {
-    const res = await fetch('_database/shows.json?v=' + Date.now());
-    if (res.ok) {
-      const data = await res.json();
-      const arr = Array.isArray(data.shows) ? data.shows : (Array.isArray(data) ? data : []);
-      if (arr.length > 0) { saveShows(arr); renderShowsPanel(); return; }
-    }
-  } catch(e) {}
-
-  // Priority 4: DEFAULT_SHOWS
+  // Priority 3: DEFAULT_SHOWS (first-run seed — will push to Supabase on next save)
   saveShows(DEFAULT_SHOWS);
   renderShowsPanel();
 }
@@ -2844,7 +3354,7 @@ function exportShows() {
   a.href = URL.createObjectURL(blob);
   a.download = 'shows.json';
   a.click();
-  showToast('📤 Export shows.json แล้ว — นำไปวางใน _database/ เพื่อ deploy', 'green');
+  showToast('📤 Export shows.json แล้ว', 'green');
 }
 
 function importShows(input) {
@@ -2858,6 +3368,12 @@ function importShows(input) {
       if (!arr.length) { showToast('❌ ไม่พบข้อมูล shows ในไฟล์', 'red'); return; }
       saveShows(arr);
       renderShowsPanel();
+      // Also push to Supabase
+      if (window._supaClient) {
+        const sr = arr.map(sh => ({ id:sh.id, name:sh.name||'', color:sh.color||'', logo_url:sh.logo_url||sh.logoUrl||'' }));
+        window._supaClient.from('shows').upsert(sr, { onConflict:'id' })
+          .then(({error}) => { if(error) console.warn('[importShows] Supabase:', error.message); });
+      }
       showToast(`✅ Import ${arr.length} รายการสำเร็จ`, 'green');
     } catch(err) {
       showToast('❌ ไฟล์ JSON ไม่ถูกต้อง: ' + err.message, 'red');

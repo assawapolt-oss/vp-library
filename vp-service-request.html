@@ -479,9 +479,12 @@ function setSceneOpt(opt){
 
 async function loadScenesForPicker(){
   try{
-    const{data,error}=await _sc.from('scenes').select('id,title,title_th,thumbnail_url,filepath').order('id');
-    if(!error&&data&&data.length)_allScenes=data;
-  }catch(e){}
+    // Supabase columns: thumb_url (thumbnail), image_url (full)
+    const{data,error}=await _sc.from('scenes').select('id,title,title_th,thumb_url,image_url').order('id');
+    if(!error&&data&&data.length){
+      _allScenes=data.map(s=>({...s, thumbnail_url:s.thumb_url||s.image_url||''}));
+    }
+  }catch(e){console.warn('[picker]',e);}
   renderPicker();
 }
 
