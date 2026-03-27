@@ -784,12 +784,6 @@
 <div id="modeSearch">
   <div class="search-bar">
     <input class="search-input" id="searchInput" placeholder="🔍  ค้นหา... เช่น robot, dramatic, Tech, tunnel, outdoor" oninput="onSearchInput()">
-    <button class="sem-toggle-btn" id="semanticToggleBtn" onclick="toggleSemanticMode()" title="เปิด AI Semantic Search — ค้นหาด้วยความหมาย">🧠 AI</button>
-  </div>
-  <div id="semanticStatusBar" style="display:none; background:linear-gradient(135deg,#4F46E5,#7C3AED); color:#fff; padding:8px 24px; font-size:12px; display:none; align-items:center; gap:10px; flex-wrap:wrap;">
-    <span style="font-weight:700;letter-spacing:.04em">🧠 Semantic Search</span>
-    <span id="semanticStatus" style="opacity:.85">พิมพ์ข้อความเพื่อค้นหาด้วย AI…</span>
-    <span id="semanticLoadNote" style="opacity:.65;font-size:11px">(โหลด model ครั้งแรก ~1 นาที)</span>
   </div>
   <div class="filters">
     <!-- Show filter row (populated dynamically) -->
@@ -1390,14 +1384,6 @@ function clearAll() {
   currentPage = 1;
   const btn = document.getElementById('shuffleBtn');
   if (btn) { btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
-  // Reset semantic mode
-  if (_semMode) {
-    _semMode = false; _semResults = null;
-    clearTimeout(_semTimer);
-    document.getElementById('semanticToggleBtn')?.classList.remove('active');
-    document.getElementById('semanticStatusBar').style.display = 'none';
-    document.getElementById('searchInput')?.classList.remove('semantic-active');
-  }
   renderCards();
 }
 
@@ -1539,24 +1525,19 @@ function toggleModalPresenterImg() {
 }
 
 function matchesFilters(s) {
-  // Semantic mode: filter to scenes returned by match_scenes RPC
-  if (_semMode && _semResults !== null) {
-    if (!Object.prototype.hasOwnProperty.call(_semResults, s.id)) return false;
-  } else {
-    // Keyword search (default)
-    const q = document.getElementById('searchInput').value.toLowerCase().trim();
-    if (q) {
-      const searchable = [
-        s.id, s.title, s.title_th,
-        ...(s.mood||[]), ...(s.topics||[]), ...(s.editorial_fit||[]),
-        s.environment, s.location_type, s.color_temp, s.lighting_style,
-        s.motion_type, s.style,
-        ...(s.usage_type||[]), ...(s.platform_fit||[]),
-        s.world||'', s.energy||'', ...(s.context_tags||[]),
-        s.notes||''
-      ].join(' ').toLowerCase();
-      if (!searchable.includes(q)) return false;
-    }
+  // Keyword search
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (q) {
+    const searchable = [
+      s.id, s.title, s.title_th,
+      ...(s.mood||[]), ...(s.topics||[]), ...(s.editorial_fit||[]),
+      s.environment, s.location_type, s.color_temp, s.lighting_style,
+      s.motion_type, s.style,
+      ...(s.usage_type||[]), ...(s.platform_fit||[]),
+      s.world||'', s.energy||'', ...(s.context_tags||[]),
+      s.notes||''
+    ].join(' ').toLowerCase();
+    if (!searchable.includes(q)) return false;
   }
   // Dimension filters always apply on top
   if (filters.world   !== 'all' && s.world !== filters.world) return false;
@@ -1618,14 +1599,8 @@ function renderCards() {
 
   let filtered = baseList.filter(matchesFilters);
 
-  // In semantic mode: sort results by similarity score (highest first)
-  if (_semMode && _semResults) {
-    filtered = filtered.slice().sort((a, b) => (_semResults[b.id]||0) - (_semResults[a.id]||0));
-  }
-
   // Count label
-  const semLabel = _semMode ? ` <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;margin-left:6px;vertical-align:middle">🧠 AI</span>` : '';
-  let countLabel = `แสดง ${filtered.length} จาก ${SCENES.length} scenes${semLabel}`;
+  let countLabel = `แสดง ${filtered.length} จาก ${SCENES.length} scenes`;
   if (_collectionFilter && _collectionName) countLabel = `🗂 ${_collectionName} — ${filtered.length} ฉาก <button onclick="_collectionFilter=null;_collectionName='';renderCards()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--card);font-family:inherit;">✕ ปิด</button>`;
   document.getElementById('resultCount').innerHTML = countLabel;
 
@@ -1646,8 +1621,7 @@ function renderCards() {
   grid.classList.toggle('thumb-mode', viewMode === 'thumb');
 
   if (!paged.length) {
-    const semMsg = _semMode ? `<div class="nr-semantic">🧠 ลองคำอื่นหรือลด filter เพื่อดูผล AI Search</div>` : '';
-    grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><div class="nr-text">ไม่พบ scene ที่ตรงกับ filter</div><div class="nr-sub">ลองเปลี่ยน keyword หรือล้าง filter</div>${semMsg}</div>`;
+    grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><div class="nr-text">ไม่พบ scene ที่ตรงกับ filter</div><div class="nr-sub">ลองเปลี่ยน keyword หรือล้าง filter</div></div>`;
     return;
   }
 
@@ -1668,8 +1642,6 @@ function renderCards() {
       const defaultImgPath = s.presenter_image_url || s.thumb || s.filepath;
       const _PICON = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
       const presenterBtn = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-card active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร"><img src="${_PICON}" alt="presenter"></button>` : '';
-      const simPct = (_semMode && _semResults) ? Math.round((_semResults[s.id]||0)*100) : null;
-      const simBadge = simPct !== null ? `<div style="position:absolute;top:5px;left:5px;z-index:3"><span class="sim-badge">🧠 ${simPct}%</span></div>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div class="scene-thumb-wrap" style="position:relative">
@@ -1680,7 +1652,7 @@ function renderCards() {
             <div class="thumb-overlay-title">${s.title}</div>
             <div class="thumb-overlay-title-th">${s.title_th}</div>
           </div>
-          ${simBadge}${logoHtml}${presenterBtn}
+          ${logoHtml}${presenterBtn}
         </div>
       </div>`;
     }).join('');
@@ -1696,8 +1668,6 @@ function renderCards() {
       const defaultImgPathInfo = s.presenter_image_url || s.thumb || s.filepath;
       const _PICON2 = 'https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png';
       const presenterIconInfo = hasPresenter ? `<button class="presenter-toggle-btn ptbtn-inline active" data-presenter-id="${s.id}" onclick="togglePresenter('${s.id}',event)" title="แสดงพิธีกร" style="position:absolute;top:8px;right:8px;z-index:2"><img src="${_PICON2}" alt="presenter"></button>` : '';
-      const simPct2 = (_semMode && _semResults) ? Math.round((_semResults[s.id]||0)*100) : null;
-      const simBadge2 = simPct2 !== null ? `<span class="sim-badge" style="margin-left:6px">🧠 ${simPct2}%</span>` : '';
       return `
       <div class="scene-card" onclick="openModal('${s.id}')">
         <div style="position:relative">
@@ -1708,7 +1678,7 @@ function renderCards() {
         <div class="scene-body" style="position:relative">
           ${presenterIconInfo}
           <div class="scene-id" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-            ${s.id}${simBadge2}
+            ${s.id}
             ${showDots ? `<span style="display:flex;gap:3px;align-items:center;margin-left:2px">${showDots}</span>` : ''}
           </div>
           <div class="scene-title">${s.title}</div>
@@ -1731,52 +1701,12 @@ function renderCards() {
 
 const _SEM_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
 const _SEM_MODEL  = 'Xenova/clip-vit-base-patch32';
-let _semMode    = false;               // toggle state
-let _semResults = null;                // null = not run; {id: similarity} when complete
-let _semLoading = false;
-let _semTimer   = null;
-let _semTextProc   = null;            // AutoTokenizer
-let _semTextModel  = null;            // CLIPTextModelWithProjection
+let _semTextProc   = null;            // AutoTokenizer (shared with runRec)
+let _semTextModel  = null;            // CLIPTextModelWithProjection (shared with runRec)
 let _semModelLoading = false;
 
-function toggleSemanticMode() {
-  _semMode = !_semMode;
-  const btn = document.getElementById('semanticToggleBtn');
-  const bar = document.getElementById('semanticStatusBar');
-  const inp = document.getElementById('searchInput');
-  btn?.classList.toggle('active', _semMode);
-  bar && (bar.style.display = _semMode ? 'flex' : 'none');
-  inp?.classList.toggle('semantic-active', _semMode);
-  if (_semMode) {
-    const q = inp?.value.trim();
-    _updateSemStatus('พิมพ์ข้อความเพื่อค้นหาด้วย AI…');
-    if (q) _scheduleSemSearch(q); else renderCards();
-  } else {
-    _semResults = null;
-    clearTimeout(_semTimer);
-    renderCards();
-  }
-}
-
 function onSearchInput() {
-  const q = document.getElementById('searchInput')?.value.trim();
-  if (_semMode) {
-    _scheduleSemSearch(q || '');
-  } else {
-    renderCards();
-  }
-}
-
-function _scheduleSemSearch(q) {
-  clearTimeout(_semTimer);
-  if (!q) { _semResults = null; renderCards(); _updateSemStatus('พิมพ์ข้อความเพื่อค้นหาด้วย AI…'); return; }
-  _updateSemStatus('⏳ กำลังคำนวณ…');
-  _semTimer = setTimeout(() => _runSemSearch(q), 700);
-}
-
-function _updateSemStatus(msg) {
-  const el = document.getElementById('semanticStatus');
-  if (el) el.textContent = msg;
+  renderCards();
 }
 
 async function _loadSemTextModel() {
@@ -1789,7 +1719,7 @@ async function _loadSemTextModel() {
   try {
     const { AutoTokenizer, CLIPTextModelWithProjection, env } = await import(_SEM_TX_URL);
     env.allowRemoteModels = true; env.allowLocalModels = false;
-    _updateSemStatus('📥 โหลด CLIP text model… (ครั้งแรกอาจใช้ ~1 นาที)');
+    setAIStatus('loading', '📥 โหลด CLIP model… (ครั้งแรกอาจใช้ ~1 นาที)', 20);
     _semTextProc  = await AutoTokenizer.from_pretrained(_SEM_MODEL);
     _semTextModel = await CLIPTextModelWithProjection.from_pretrained(_SEM_MODEL, { quantized: true });
     _semModelLoading = false;
@@ -1799,48 +1729,6 @@ async function _loadSemTextModel() {
     _semModelLoading = false;
     return false;
   }
-}
-
-async function _runSemSearch(q) {
-  if (!q || !_semMode) return;
-  _semLoading = true;
-  try {
-    const ok = await _loadSemTextModel();
-    if (!ok) { _updateSemStatus('❌ โหลด model ไม่สำเร็จ'); _semLoading = false; return; }
-
-    _updateSemStatus('🧠 คำนวณ text embedding…');
-    const inputs = await _semTextProc(q, { padding: true, truncation: true });
-    const { text_embeds } = await _semTextModel(inputs);
-    const raw  = Array.from(text_embeds.data);
-    const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0));
-    const embedding = norm > 0 ? raw.map(v => v / norm) : raw;
-
-    _updateSemStatus('🔍 ค้นหาใน Supabase…');
-    const sc = _getSupaClient();
-    if (!sc) throw new Error('Supabase ไม่พร้อม');
-
-    const { data, error } = await sc.rpc('match_scenes', {
-      query_embedding: embedding,
-      match_threshold: 0.10,
-      match_count: 100
-    });
-    if (error) throw new Error(error.message);
-
-    _semResults = {};
-    (data || []).forEach(r => { _semResults[r.id] = r.similarity; });
-    const count = Object.keys(_semResults).length;
-    _updateSemStatus(`✅ พบ ${count} ฉากที่เกี่ยวข้องกับ "${q}"`);
-
-    // Hide the "first load" note once model is ready
-    const note = document.getElementById('semanticLoadNote');
-    if (note) note.style.display = 'none';
-  } catch(e) {
-    console.warn('[Semantic]', e);
-    _updateSemStatus('❌ ' + e.message);
-    _semResults = {};
-  }
-  _semLoading = false;
-  renderCards();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1860,7 +1748,7 @@ function setAIStatus(state, text, pct) {
 }
 
 function initAI() {
-  setAIStatus('ready', '🏷 Tag Matching — พร้อมใช้งาน', 100);
+  setAIStatus('ready', '🧠 Semantic Search — พร้อมใช้งาน', 100);
 }
 
 // ── Rec state ─────────────────────────────────────────────────
@@ -2016,70 +1904,110 @@ function extractTopicsFromText(text) {
 }
 
 // ── Main runRec — Tag matching ────────────────────────────────
-function runRec() {
-  const text      = document.getElementById('recInput').value.trim();
-  const fromText  = extractTopicsFromText(text);
-  const allTopics = new Set([...fromText]);
-
-  const box = document.getElementById('recResults');
+async function runRec() {
+  const text = document.getElementById('recInput').value.trim();
+  const box  = document.getElementById('recResults');
   box.classList.remove('hidden');
 
-  // ── Score all scenes by tag match ─────────────────────────
-  const scored = SCENES.map(s => {
-    const ts = tagScore(s, allTopics);
-    return { s, score: ts.normalized, tagPct: Math.round(ts.normalized * 100), tMatches: ts.tMatches };
-  }).sort((a, b) => b.score - a.score);
-
-  const top  = scored.slice(0, 5);
-  const maxS = top.length ? top[0].score : 1;
-  const rankLabel = ['🥇 อันดับ 1 — แนะนำสูงสุด','🥈 อันดับ 2','🥉 อันดับ 3','อันดับ 4','อันดับ 5'];
-  const rankCls   = ['rank-1','rank-2','rank-3','rank-2','rank-3'];
-
-  if (!top.length) {
-    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">🔍</div><div style="font-size:15px;font-weight:600;color:var(--muted)">ไม่พบฉากที่ match — ลองพิมพ์เนื้อหาหรือเลือก Mood</div></div>`;
-    box.scrollIntoView({behavior:'smooth', block:'start'});
+  if (!text) {
+    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">✏️</div><div style="font-size:15px;font-weight:600;color:var(--muted)">กรุณาพิมพ์คำอธิบายเนื้อหาก่อน</div></div>`;
     return;
   }
 
-  const modeBadge = `<span class="ai-badge" style="background:#F9FAFB;color:#6B7280;border-color:#E5E7EB">🏷 Tag Match</span>`;
+  // Show loading
+  setAIStatus('loading', '🧠 กำลังวิเคราะห์ข้อความ…', 10);
+  box.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">🧠 กำลังค้นหาด้วย AI Semantic Search…</div>`;
 
-  box.innerHTML = `<div class="rec-results-header">พบ <strong>${scored.length}</strong> ฉากที่เข้ากัน — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
-    top.map((r, i) => {
-      const pct = Math.round(r.score / maxS * 100);
-      const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
-      return `<div class="rcard" onclick="openModal('${r.s.id}')">
-        <div class="rcard-inner">
-          <img class="rcard-thumb" src="${r.s.thumb}" alt="${r.s.title}"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="rcard-thumb-ph" style="display:none">🎬</div>
-          <div class="rcard-body">
-            <div class="rcard-top">
-              <span class="rank-badge ${rankCls[i]}">${rankLabel[i]}</span>
-              <span class="rcard-id">${r.s.id}</span>
-            </div>
-            <div class="rcard-title">${r.s.title}</div>
-            <div class="rcard-title-th">${r.s.title_th}</div>
-            <div class="score-row">
-              <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
-              <span class="score-pct">${pct}%</span>
-            </div>
-            <div class="match-tags">
-              ${r.tMatches.map(t=>`<span class="mtag mtag-topic">🎯 ${t}</span>`).join('')}
+  const rankLabel = ['🥇 อันดับ 1 — แนะนำสูงสุด','🥈 อันดับ 2','🥉 อันดับ 3','อันดับ 4','อันดับ 5'];
+  const rankCls   = ['rank-1','rank-2','rank-3','rank-2','rank-3'];
+  const modeBadge = `<span class="ai-badge" style="background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border-color:transparent">🧠 Semantic AI</span>`;
+
+  try {
+    // 1. Load text model
+    const ok = await _loadSemTextModel();
+    if (!ok) {
+      setAIStatus('error', '❌ โหลด model ไม่สำเร็จ — ลองใหม่', 0);
+      box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">โหลด AI model ไม่สำเร็จ กรุณาลองใหม่</div></div>`;
+      return;
+    }
+
+    // 2. Encode text → embedding
+    setAIStatus('loading', '🧠 คำนวณ text embedding…', 50);
+    const inputs = await _semTextProc(text, { padding: true, truncation: true });
+    const { text_embeds } = await _semTextModel(inputs);
+    const raw  = Array.from(text_embeds.data);
+    const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0));
+    const embedding = norm > 0 ? raw.map(v => v / norm) : raw;
+
+    // 3. Query Supabase match_scenes RPC
+    setAIStatus('loading', '🔍 ค้นหาฉากที่ใกล้เคียงที่สุด…', 80);
+    const sc = _getSupaClient();
+    if (!sc) throw new Error('Supabase ไม่พร้อม');
+
+    const { data, error } = await sc.rpc('match_scenes', {
+      query_embedding: embedding,
+      match_threshold: 0.10,
+      match_count: 100
+    });
+    if (error) throw new Error(error.message);
+
+    // 4. Build score map + merge with SCENES data
+    const scores = {};
+    (data || []).forEach(r => { scores[r.id] = r.similarity; });
+
+    const ranked = SCENES
+      .filter(s => scores[s.id] !== undefined)
+      .sort((a, b) => scores[b.id] - scores[a.id]);
+
+    setAIStatus('ready', `✅ พบ ${ranked.length} ฉากที่เกี่ยวข้อง`, 100);
+
+    if (!ranked.length) {
+      box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">🔍</div><div style="font-size:15px;font-weight:600;color:var(--muted)">ไม่พบฉากที่ตรงกับเนื้อหานี้ — ลองใช้คำอธิบายอื่น</div></div>`;
+      box.scrollIntoView({behavior:'smooth', block:'start'});
+      return;
+    }
+
+    // 5. Render top 5
+    const top = ranked.slice(0, 5);
+    box.innerHTML = `<div class="rec-results-header">พบ <strong>${ranked.length}</strong> ฉากที่เกี่ยวข้อง — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
+      top.map((s, i) => {
+        const pct = Math.round(scores[s.id] * 100);
+        const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
+        return `<div class="rcard" onclick="openModal('${s.id}')">
+          <div class="rcard-inner">
+            <img class="rcard-thumb" src="${s.thumb}" alt="${s.title}"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="rcard-thumb-ph" style="display:none">🎬</div>
+            <div class="rcard-body">
+              <div class="rcard-top">
+                <span class="rank-badge ${rankCls[i]}">${rankLabel[i]}</span>
+                <span class="rcard-id">${s.id}</span>
+              </div>
+              <div class="rcard-title">${s.title}</div>
+              <div class="rcard-title-th">${s.title_th}</div>
+              <div class="score-row">
+                <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
+                <span class="score-pct">${pct}%</span>
+              </div>
             </div>
           </div>
-        </div>
-        ${r.s.notes?`<div class="rcard-notes"><strong>📝 Production Note:</strong> ${r.s.notes}</div>`:''}
-      </div>`;
-    }).join('');
+          ${s.notes?`<div class="rcard-notes"><strong>📝 Production Note:</strong> ${s.notes}</div>`:''}
+        </div>`;
+      }).join('');
 
-  // Log recommend event
-  logActivity('recommend', {
-    query: text,
-    topics: [...allTopics],
-    top_results: top.map(r => ({ id: r.s.id, score: Math.round(r.hybrid * 100) }))
-  });
+    logActivity('recommend', {
+      query: text,
+      mode: 'semantic',
+      top_results: top.map(s => ({ id: s.id, score: Math.round(scores[s.id] * 100) }))
+    });
 
-  box.scrollIntoView({behavior:'smooth', block:'start'});
+    box.scrollIntoView({behavior:'smooth', block:'start'});
+
+  } catch(e) {
+    console.error('[runRec]', e);
+    setAIStatus('error', '❌ ' + e.message, 0);
+    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">เกิดข้อผิดพลาด: ${e.message}</div></div>`;
+  }
 }
 
 // ══════════ MODAL (shared) ══════════
