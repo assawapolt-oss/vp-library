@@ -882,19 +882,6 @@
         oninput="document.getElementById('recCharCount').textContent=this.value.length"></textarea>
       <div class="char-hint"><span id="recCharCount">0</span>/400</div>
 
-      <div class="rec-section-title" style="margin-top:18px">📰 Editorial Fit <span style="font-weight:400;text-transform:none;letter-spacing:0">(เลือกได้หลายหัวข้อ)</span></div>
-      <div class="topic-pills" id="editorialPills">
-        <button class="tpill" onclick="toggleTopic(this,'News')">📰 News</button>
-        <button class="tpill" onclick="toggleTopic(this,'Business')">💰 Business</button>
-        <button class="tpill" onclick="toggleTopic(this,'Politics')">🗳 Politics</button>
-        <button class="tpill" onclick="toggleTopic(this,'Tech')">⚡ Tech</button>
-        <button class="tpill" onclick="toggleTopic(this,'Entertainment')">🎬 Entertainment</button>
-        <button class="tpill" onclick="toggleTopic(this,'Climate')">🌿 Climate</button>
-        <button class="tpill" onclick="toggleTopic(this,'Health')">🏥 Health</button>
-        <button class="tpill" onclick="toggleTopic(this,'Lifestyle')">✨ Lifestyle</button>
-        <button class="tpill" onclick="toggleTopic(this,'Culture')">🎭 Culture</button>
-      </div>
-
       <!-- AI Status -->
       <div id="aiStatusBar" class="ai-status-bar loading" style="margin-top:18px">
         <div class="ai-spinner" id="aiSpinner"></div>
@@ -1877,9 +1864,8 @@ function initAI() {
 }
 
 // ── Rec state ─────────────────────────────────────────────────
-const recState = { topics: new Set(), moods: new Set() };
+const recState = { moods: new Set() };
 
-function toggleTopic(btn, t) { btn.classList.toggle('active'); recState.topics[btn.classList.contains('active')?'add':'delete'](t); }
 function toggleMood(btn, m)  { btn.classList.toggle('active'); recState.moods[btn.classList.contains('active')?'add':'delete'](m); }
 function pickOpt(btn, groupId) {
   document.querySelectorAll('#'+groupId+' .obtn').forEach(b=>b.classList.remove('active'));
@@ -2033,7 +2019,7 @@ function extractTopicsFromText(text) {
 function runRec() {
   const text      = document.getElementById('recInput').value.trim();
   const fromText  = extractTopicsFromText(text);
-  const allTopics = new Set([...fromText, ...recState.topics]);
+  const allTopics = new Set([...fromText]);
 
   const box = document.getElementById('recResults');
   box.classList.remove('hidden');
