@@ -362,8 +362,6 @@
     </div>
     <div class="topbar-right">
       <a href="vp-search.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">🔍 ค้นหาฉาก ↗</a>
-<a href="generate_topic_embeddings.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">🧠 Generate Embeddings ↗</a>
-      <a href="VP-Library-System-Guide.html" target="_blank" style="color:#fff;opacity:.8;font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:7px;transition:opacity .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">📖 คู่มือ ↗</a>
       <span class="topbar-user" id="topbarUser"></span>
       <button class="logout-btn" onclick="doLogout()">ออกจากระบบ</button>
     </div>
@@ -2417,6 +2415,10 @@ async function createNewScene() {
     try {
       await _supaUpsertAll();
       showToast('✅ สร้างฉากใหม่แล้ว + บันทึกขึ้น Supabase ✓', 'green');
+      // Auto-generate CLIP embedding if an image was uploaded
+      if (filepath?.startsWith('http')) {
+        setTimeout(() => _autoEmbedScene(id, filepath), 1000);
+      }
     } catch(e) {
       showToast('⚠️ บันทึก local แล้ว แต่ Supabase sync ผิดพลาด: ' + e.message, 'red', 8000);
     }
@@ -2525,6 +2527,65 @@ function downloadFile(name, content, type) {
   a.href = URL.createObjectURL(blob);
   a.download = name;
   a.click();
+}
+
+// ══════════════════════════════════════════════
+// CLIP Auto-Embed — runs silently after full-image upload
+// Uses Xenova/clip-vit-base-patch32 via transformers.js v2.17.2
+// Saves 512-dim L2-normalized embedding to scenes.embedding in Supabase
+// ══════════════════════════════════════════════
+const _CLIP_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+const _CLIP_MODEL  = 'Xenova/clip-vit-base-patch32';
+let _clipAdminProc = null, _clipAdminVision = null, _clipAdminLoading = false;
+
+async function _loadAdminClip() {
+  if (_clipAdminProc && _clipAdminVision) return true;
+  if (_clipAdminLoading) {
+    while (_clipAdminLoading) await new Promise(r => setTimeout(r, 250));
+    return !!(_clipAdminProc && _clipAdminVision);
+  }
+  _clipAdminLoading = true;
+  try {
+    const { AutoProcessor, CLIPVisionModelWithProjection, env } = await import(_CLIP_TX_URL);
+    env.allowRemoteModels = true; env.allowLocalModels = false;
+    _clipAdminProc   = await AutoProcessor.from_pretrained(_CLIP_MODEL, { quantized: true });
+    _clipAdminVision = await CLIPVisionModelWithProjection.from_pretrained(_CLIP_MODEL, { quantized: true });
+    _clipAdminLoading = false;
+    return true;
+  } catch(e) {
+    console.warn('[CLIP-admin] Model load failed:', e.message);
+    _clipAdminLoading = false;
+    return false;
+  }
+}
+
+/**
+ * Fire-and-forget: generate CLIP image embedding for a scene and save to Supabase.
+ * Does NOT block the UI. Shows a subtle toast on success.
+ * @param {string} sceneId  e.g. "VP-001"
+ * @param {string} imageUrl Full public URL of the uploaded image
+ */
+async function _autoEmbedScene(sceneId, imageUrl) {
+  if (!window._supaClient || !imageUrl || !sceneId) return;
+  try {
+    console.log(`[CLIP-admin] Loading model for ${sceneId}…`);
+    const ok = await _loadAdminClip();
+    if (!ok) { console.warn('[CLIP-admin] Skipping embed — model unavailable'); return; }
+    const { RawImage } = await import(_CLIP_TX_URL);
+    const url = imageUrl.includes('?') ? imageUrl : imageUrl + '?embed=1';
+    const img = await RawImage.fromURL(url);
+    const inputs = await _clipAdminProc(img);
+    const { image_embeds } = await _clipAdminVision(inputs);
+    const raw = Array.from(image_embeds.data);
+    const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0));
+    const embedding = norm > 0 ? raw.map(v => v / norm) : raw;
+    const { error } = await window._supaClient.from('scenes').update({ embedding }).eq('id', sceneId);
+    if (error) throw new Error(error.message);
+    console.log(`[CLIP-admin] ✅ ${sceneId}: embedding saved (dim=${embedding.length})`);
+    showToast(`🧠 Embedding บันทึกแล้ว (${sceneId})`, 'green');
+  } catch(e) {
+    console.warn(`[CLIP-admin] ⚠️ ${sceneId}:`, e.message);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -4415,6 +4476,10 @@ async function handleEditorFileSelect(files, role, sceneId) {
       // Auto-save to scenes array + Supabase so no-presenter toggle shows updated image
       const _sAutoIdx = scenes.findIndex(x => x.id === sceneId);
       if (_sAutoIdx !== -1) { scenes[_sAutoIdx].filepath = finalPath; saveScenes(); }
+      // Auto-generate CLIP embedding in background (non-blocking)
+      if (uploadResult.ok && finalPath?.startsWith('http')) {
+        setTimeout(() => _autoEmbedScene(sceneId, finalPath), 600);
+      }
     } else if (role === 'presenter') {
       const presEl = document.getElementById('f_presenter_image_url');
       if (presEl) presEl.value = finalPath;
