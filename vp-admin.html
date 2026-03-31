@@ -1818,17 +1818,6 @@ function buildEditorHTML(s) {
               ${opt(['','urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'], s.world||'')}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">L2 · ENERGY — พลังงานของฉาก</label>
-            <select class="form-select" id="f_energy">
-              ${opt(['','intense','balanced','open'], s.energy||'')}
-            </select>
-          </div>
-        </div>
-        <div class="form-row-1 form-group" style="margin-top:10px">
-          <label class="form-label">L3 · CONTEXT — ใช้กับอะไร <span>กด Enter หรือ , เพื่อเพิ่ม</span></label>
-          <div class="tag-editor" id="te_context_tags" onclick="focusTagInput('te_context_tags')"></div>
-          <div class="form-hint" style="margin-top:4px">ค่าที่รองรับ: news-report · talk-interview · analysis-data · field-onsite · opener-drama · social-short · event-special</div>
         </div>
         <div class="form-row-1 form-group" style="margin-top:10px">
           <label class="form-label">📺 รายการที่ฉากนี้ใช้ <span style="font-weight:400">(เลือกได้หลายรายการ)</span></label>
@@ -1880,9 +1869,7 @@ function buildEditorHTML(s) {
 // ══════════════════════════════════════════════
 // TAG EDITORS
 // ══════════════════════════════════════════════
-const tagDefs = {
-  te_context_tags: { field:'context_tags', cls:'chip-editorial' },
-};
+const tagDefs = {};
 
 let tagState = {}; // teId -> string[]
 
@@ -2021,6 +2008,9 @@ function _preserveSceneFields(origId) {
     has_particles:    s.has_particles    ?? false,
     mood:             Array.isArray(s.mood)   ? [...s.mood]   : [],
     topics:           Array.isArray(s.topics) ? [...s.topics] : [],
+    // preserve L2/L3 data (UI removed but keep DB values intact)
+    energy:       s.energy       || '',
+    context_tags: Array.isArray(s.context_tags) ? [...s.context_tags] : [],
     // equipment slots preserved
     key_light_equip_id:  s.key_light_equip_id  || '',
     fill_light_equip_id: s.fill_light_equip_id || '',
@@ -2050,13 +2040,11 @@ function collectFormData(origId) {
     notes:        document.getElementById('f_notes').value.trim(),
     status:       newStatus,
     world:        document.getElementById('f_world')?.value || '',
-    energy:       document.getElementById('f_energy')?.value || '',
     show_ids:     getCheckedShowIds(),
-    context_tags: [...(tagState['te_context_tags']||[])],
     posture:      document.getElementById('f_posture')?.value || '',
     prod_format:  document.getElementById('f_prod_format')?.value || '',
     sort_order:   parseInt(document.getElementById('f_sort_order')?.value||'0')||0,
-    // preserve existing lighting/location data that's no longer editable in UI
+    // preserve existing fields (lighting, legacy L2/L3) that are no longer in UI
     ..._preserveSceneFields(origId),
   };
 }
@@ -4804,31 +4792,43 @@ function refreshThumbPreview(sceneId) {
 
 function openTagGuideModal(sceneId) {
   const s = sceneId ? scenes.find(x => x.id === sceneId) : null;
-  const imgUrl = s ? (s.filepath || s.image_url || s.thumb_url || '') : '';
+  const imgUrl = s ? (s.filepath || s.image_url || s.thumb_url || s.thumb || '') : '';
   const cleanImg = imgUrl.split('?')[0];
   const sid = sceneId || 'VP-0XX';
 
-  const prompt = `Tag ฉาก ${sid} ใน VP Admin editor ที่เปิดอยู่ใน browser
-
-${cleanImg ? `🖼 ภาพ: ${cleanImg}\n` : ''}
-แต่ละฉากต้องมี: ชื่อ EN, ชื่อไทย, world, energy, context_tags, production note
+  const prompt = `Auto Tag ฉาก ${sid} จากภาพ
+${cleanImg ? `\n🖼 ภาพ: ${cleanImg}\n` : ''}
+แต่ละฉากต้องมี: ชื่อ EN, ชื่อไทย, production note
 
 ─── Taxonomy ───
-WORLD (เลือก 1 ที่ตรงที่สุด จาก list ปัจจุบันทั้งหมด):
+WORLD (เลือก 1):
   urban-city · interior-office · nature-outdoor · industrial · scifi-future · stylized-abstract · heritage-culture
 
-ENERGY (เลือก 1):
-  intense · balanced · open
+POSTURE (เลือก 1):
+  sitting · standing · special
 
-CONTEXT TAGS (เลือกจาก list ปัจจุบันทั้งหมด 1–3 ที่เหมาะสม):
-  news-report · talk-interview · analysis-data · field-onsite · opener-drama · social-short · event-special
+FORMAT (เลือก 1):
+  solo-host · news-desk · interview · round-table · vertical
+
+─── JSON PROMPT — สำหรับ vector DB ───
+ตอบกลับในรูปแบบ JSON ดังนี้:
+{
+  "title_en": "Scene Title in English",
+  "title_th": "ชื่อฉากภาษาไทย",
+  "world": "urban-city",
+  "posture": "standing",
+  "prod_format": "solo-host",
+  "production_note": "คำอธิบายฉากภาษาไทย สั้น กระชับ บอก visual + use case",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "semantic_description": "A detailed English description of the scene for semantic embedding — describe visual style, lighting mood, background elements, and suitable broadcast use cases."
+}
 
 ─── เติมทุกช่องด้วย javascript_tool บน tab VP Admin ───
 document.getElementById('f_title').value = 'Scene Title EN';
 document.getElementById('f_title_th').value = 'ชื่อฉากภาษาไทย';
 document.getElementById('f_world').value = 'urban-city';
-document.getElementById('f_energy').value = 'balanced';
-tagState['te_context_tags'] = ['news-report','talk-interview']; renderTagEditor('te_context_tags');
+setPostureField('standing');
+document.getElementById('f_prod_format').value = 'solo-host';
 document.getElementById('f_notes').value = 'production note ภาษาไทย';
 saveSceneEditor();`;
 
@@ -4958,11 +4958,6 @@ function buildThaiNotes(t) {
     'stylized-abstract': 'ฉาก Abstract / กราฟิก',
     'heritage-culture':  'ฉากวัฒนธรรม / ประวัติศาสตร์',
   };
-  const energyDesc = {
-    'intense':  'บรรยากาศเข้มข้น ดราม่า',
-    'balanced': 'บรรยากาศ professional สมดุล',
-    'open':     'บรรยากาศเปิดโล่ง อบอุ่น',
-  };
   const colorDesc = {
     'cool': 'โทนแสงเย็น', 'warm': 'โทนแสงอุ่น',
     'neutral': 'โทนแสงกลาง', 'mixed': 'แสงผสม warm-cool',
@@ -4982,7 +4977,7 @@ function buildThaiNotes(t) {
 
   // ประโยคหลัก — บรรยายฉาก + บรรยากาศ + สีแสง + ความสว่าง
   let main = worldDesc[t.world] || t.world || 'ฉาก VP';
-  const vibes = [energyDesc[t.energy], colorDesc[t.color_temp], brightDesc[t.brightness]]
+  const vibes = [colorDesc[t.color_temp], brightDesc[t.brightness]]
     .filter(Boolean);
   if (vibes.length) main += ' — ' + vibes.join(', ');
   if (t.has_particles) main += ' มีควัน/particle เพิ่มความลึก';
@@ -4990,10 +4985,7 @@ function buildThaiNotes(t) {
   parts.push(main + '.');
 
   // ประโยค use case
-  const ctxLabels = (t.context_tags || []).map(c => ctxDesc[c] || c).join(', ');
-  if (ctxLabels) {
-    parts.push(`เหมาะสำหรับ ${ctxLabels} — ใช้เป็น background หลักหรือ bumper ในรายการของ THE STANDARD.`);
-  }
+  parts.push(`ใช้เป็น background หลักหรือ bumper ในรายการของ THE STANDARD.`);
 
   return parts.join(' ');
 }
@@ -5065,16 +5057,6 @@ function applyAiTagToForm(tagged, modelName) {
 
   // ── Taxonomy ──────────────────────────────────────────
   setSelect('f_world',  tagged.world);
-  setSelect('f_energy', tagged.energy);
-
-  if (Array.isArray(tagged.context_tags) && tagged.context_tags.length > 0) {
-    if (!tagState['te_context_tags']) tagState['te_context_tags'] = [];
-    tagged.context_tags.forEach(t => {
-      if (!tagState['te_context_tags'].includes(t)) tagState['te_context_tags'].push(t);
-    });
-    renderTagEditor('te_context_tags');
-    flashEl('te_context_tags');
-  }
 
   // ── Titles ────────────────────────────────────────────
   set('f_title',    tagged.title_en);

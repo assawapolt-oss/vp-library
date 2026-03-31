@@ -806,30 +806,6 @@
         <button class="ftag" data-dim="world" data-val="heritage-culture" onclick="setFilter('world','heritage-culture',this)">🏛 Heritage &amp; Culture</button>
       </div>
     </div>
-    <!-- Layer 2: ENERGY -->
-    <div class="filter-group">
-      <div class="filter-label filter-layer-label"><span class="layer-badge">L2</span> ENERGY — บรรยากาศและพลังงานของฉาก</div>
-      <div class="filter-tags">
-        <button class="ftag active" data-dim="energy" data-val="all" onclick="setFilter('energy','all',this)">ทั้งหมด</button>
-        <button class="ftag" data-dim="energy" data-val="intense" onclick="setFilter('energy','intense',this)">⚡ Intense</button>
-        <button class="ftag" data-dim="energy" data-val="balanced" onclick="setFilter('energy','balanced',this)">🌤 Balanced</button>
-        <button class="ftag" data-dim="energy" data-val="open" onclick="setFilter('energy','open',this)">✨ Open</button>
-      </div>
-    </div>
-    <!-- Layer 3: CONTEXT -->
-    <div class="filter-group">
-      <div class="filter-label filter-layer-label"><span class="layer-badge">L3</span> CONTEXT — ฉากนี้ใช้กับอะไร</div>
-      <div class="filter-tags">
-        <button class="ftag active" data-dim="context" data-val="all" onclick="setFilter('context','all',this)">ทั้งหมด</button>
-        <button class="ftag" data-dim="context" data-val="news-report" onclick="setFilter('context','news-report',this)">📰 News &amp; Report</button>
-        <button class="ftag" data-dim="context" data-val="talk-interview" onclick="setFilter('context','talk-interview',this)">🎙 Talk &amp; Interview</button>
-        <button class="ftag" data-dim="context" data-val="analysis-data" onclick="setFilter('context','analysis-data',this)">📊 Analysis &amp; Data</button>
-        <button class="ftag" data-dim="context" data-val="field-onsite" onclick="setFilter('context','field-onsite',this)">🌍 Field &amp; On-Site</button>
-        <button class="ftag" data-dim="context" data-val="opener-drama" onclick="setFilter('context','opener-drama',this)">🎬 Opener &amp; Drama</button>
-        <button class="ftag" data-dim="context" data-val="social-short" onclick="setFilter('context','social-short',this)">📱 Social &amp; Short</button>
-        <button class="ftag" data-dim="context" data-val="event-special" onclick="setFilter('context','event-special',this)">🏆 Event &amp; Special</button>
-      </div>
-    </div>
     <!-- Layer 4: POSTURE -->
     <div class="filter-group">
       <div class="filter-label filter-layer-label"><span class="layer-badge">L4</span> POSTURE — ท่าทางผู้นำเสนอ</div>
@@ -1390,7 +1366,7 @@ function setView(mode) {
 }
 
 // ══════════ SEARCH LOGIC ══════════
-const filters = {world:'all', energy:'all', context:'all', show:'all', posture:'all', prod_format:'all'};
+const filters = {world:'all', show:'all', posture:'all', prod_format:'all'};
 
 function setFilter(dim, val, btn) {
   filters[dim] = val;
@@ -1559,16 +1535,13 @@ function matchesFilters(s) {
       s.environment, s.location_type, s.color_temp, s.lighting_style,
       s.motion_type, s.style,
       ...(s.usage_type||[]), ...(s.platform_fit||[]),
-      s.world||'', s.energy||'', ...(s.context_tags||[]),
-      s.posture||'', s.prod_format||'',
+      s.world||'', s.posture||'', s.prod_format||'',
       s.notes||''
     ].join(' ').toLowerCase();
     if (!searchable.includes(q)) return false;
   }
   // Dimension filters always apply on top
   if (filters.world      !== 'all' && s.world !== filters.world) return false;
-  if (filters.energy     !== 'all' && s.energy !== filters.energy) return false;
-  if (filters.context    !== 'all' && !(s.context_tags||[]).includes(filters.context)) return false;
   if (filters.show       !== 'all' && !(s.show_ids||[]).includes(filters.show)) return false;
   if (filters.posture    !== 'all' && s.posture !== filters.posture) return false;
   if (filters.prod_format !== 'all' && s.prod_format !== filters.prod_format) return false;
@@ -1658,8 +1631,6 @@ function renderCards() {
     grid.classList.toggle('thumb-mode', viewMode === 'thumb');
     let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
     const WORLD_LBL   = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
-    const ENERGY_LBL  = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
-    const CTX_LBL     = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
     const POSTURE_LBL = {'sitting':'🪑','standing':'🧍','special':'✨'};
     const FORMAT_LBL  = {'solo-host':'🎤 Solo','news-desk':'📺 News Desk','interview':'🎙 Interview','round-table':'⭕ Round','vertical':'📱 Vertical'};
 
@@ -1689,8 +1660,6 @@ function renderCards() {
   } else {
     grid.innerHTML = paged.map(s => {
       const worldTag    = s.world      ? `<span class="stag stag-env">${WORLD_LBL[s.world]||s.world}</span>` : '';
-      const energyTag   = s.energy     ? `<span class="stag stag-mood">${ENERGY_LBL[s.energy]||s.energy}</span>` : '';
-      const ctxTags     = (s.context_tags||[]).slice(0,2).map(c=>`<span class="stag stag-editorial">${CTX_LBL[c]||c}</span>`).join('');
       const postureTag  = s.posture    ? `<span class="stag" style="background:#FEF9C3;color:#713F12">${POSTURE_LBL[s.posture]||s.posture}</span>` : '';
       const formatTag   = s.prod_format? `<span class="stag" style="background:#F5F3FF;color:#6D28D9">${FORMAT_LBL[s.prod_format]||s.prod_format}</span>` : '';
       const showDots  = _shows.filter(sh=>(s.show_ids||[]).includes(sh.id)).map(sh=>`<span title="${sh.name}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color||'#9ca3af'};flex-shrink:0"></span>`).join('');
@@ -1715,7 +1684,7 @@ function renderCards() {
           </div>
           <div class="scene-title">${s.title}</div>
           <div class="scene-title-th">${s.title_th}</div>
-          <div class="tag-row">${worldTag}${energyTag}${ctxTags}${postureTag}${formatTag}</div>
+          <div class="tag-row">${worldTag}${postureTag}${formatTag}</div>
         </div>
       </div>`;
     }).join('');
@@ -2102,8 +2071,6 @@ function openModal(id) {
 
   // ── World / Energy / Context label maps ──
   const WORLD_LABEL   = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
-  const ENERGY_LABEL  = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'}
-  const CTX_LABEL     = {'news-report':'📰 News & Report','talk-interview':'🎙 Talk & Interview','analysis-data':'📊 Analysis & Data','field-onsite':'🌍 Field & On-Site','opener-drama':'🎬 Opener & Drama','social-short':'📱 Social & Short','event-special':'🏆 Event & Special'}
   const POSTURE_LABEL = {'sitting':'🪑 นั่ง','standing':'🧍 ยืน','special':'✨ Special'}
   const FORMAT_LABEL  = {'solo-host':'🎤 พิธีกรเดี่ยว','news-desk':'📺 News Desk 1-2 คน','interview':'🎙 สัมภาษณ์ 1+1','round-table':'⭕ Round Table','vertical':'📱 Vertical Content'}
 
@@ -2123,14 +2090,6 @@ function openModal(id) {
         <div>
           <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L1</span>WORLD</div>
           <div>${s.world?`<span class="stag stag-env">${WORLD_LABEL[s.world]||s.world}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
-        </div>
-        <div>
-          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L2</span>ENERGY</div>
-          <div>${s.energy?`<span class="stag stag-mood">${ENERGY_LABEL[s.energy]||s.energy}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
-        </div>
-        <div>
-          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L3</span>CONTEXT</div>
-          <div class="modal-tags" style="flex-wrap:wrap;gap:4px">${(s.context_tags||[]).length?(s.context_tags.map(c=>`<span class="stag stag-editorial">${CTX_LABEL[c]||c}</span>`).join('')):`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
         </div>
         <div>
           <div class="modal-section-title" style="margin-bottom:6px"><span style="background:#F59E0B;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L4</span>POSTURE</div>
