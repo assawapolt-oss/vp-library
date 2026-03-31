@@ -1384,6 +1384,10 @@ function _supaRowToScene(r) {
     key_light_equip_id:  r.key_light_equip_id  || '',
     fill_light_equip_id: r.fill_light_equip_id || '',
     back_light_equip_id: r.back_light_equip_id || '',
+    // L4 posture + production format
+    posture:     r.posture     || '',
+    prod_format: r.prod_format || '',
+    sort_order:  r.sort_order  || 0,
   };
 }
 
@@ -1414,7 +1418,7 @@ function _sceneToRow(s, i) {
     image_url:             _cleanUrl(s.filepath)||'',
     thumb_url:             _cleanUrl(s.thumb)||'',
     description:           s.notes||'',
-    sort_order:            i != null ? (i + 1) * 10 : undefined,
+    sort_order:            (s.sort_order && s.sort_order > 0) ? s.sort_order : (i != null ? (i + 1) * 10 : undefined),
     // ── fields added via migration ──────────────────────────────
     video_url:             _cleanUrl(s.video_url)||'',
     presenter_image_url:   _cleanUrl(s.presenter_image_url)||'',
@@ -1436,6 +1440,9 @@ function _sceneToRow(s, i) {
     key_light_equip_id:    s.key_light_equip_id||'',
     fill_light_equip_id:   s.fill_light_equip_id||'',
     back_light_equip_id:   s.back_light_equip_id||'',
+    // L4 posture + production format
+    posture:               s.posture||'',
+    prod_format:           s.prod_format||'',
   };
 }
 
@@ -1513,6 +1520,11 @@ function _finishInitAdmin() {
   }
   // Init shows
   initShows();
+  // Auto-open scene from URL param ?scene=VP-001
+  const _urlScene = new URLSearchParams(window.location.search).get('scene');
+  if (_urlScene && scenes.find(x => x.id === _urlScene)) {
+    setTimeout(() => openEditor(_urlScene), 100);
+  }
 }
 
 function saveScenes() {
@@ -1723,10 +1735,18 @@ function buildEditorHTML(s) {
             <input class="form-input" id="f_thumb" value="${s.thumb}" placeholder="_thumbnails/VP-011_thumb.webp" style="font-family:monospace;font-size:12px" oninput="refreshThumbPreview('${s.id}')">
           </div>
         </div>
-        <div class="form-row-1" style="margin-top:0">
+        <div class="form-row" style="margin-top:0">
           <div class="form-group">
             <label class="form-label">วันที่เพิ่ม</label>
             <input class="form-input" id="f_added_date" type="date" value="${s.added_date||''}" style="max-width:180px">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ลำดับแสดง (sort_order) <span style="font-weight:400;color:var(--muted)">— น้อย = ขึ้นก่อน</span></label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input class="form-input" id="f_sort_order" type="number" value="${s.sort_order||0}" min="0" style="max-width:100px;font-family:monospace">
+              <button type="button" onclick="renumberAllScenes()" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="คำนวณเลขลำดับใหม่ทั้งหมด">🔢 Re-number All</button>
+            </div>
+            <div class="form-hint" style="margin-top:3px">ตั้งเลขแล้วกด บันทึก — หรือกด Re-number All เพื่อเรียง 10, 20, 30... ตามลำดับปัจจุบัน</div>
           </div>
         </div>
       </div>
@@ -1817,6 +1837,33 @@ function buildEditorHTML(s) {
         </div>
       </div>
 
+      <!-- L4 POSTURE + FORMAT -->
+      <div class="editor-section">
+        <div class="editor-section-title">🎭 L4 · POSTURE &amp; Production FORMAT</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">L4 · POSTURE — ท่าทางผู้นำเสนอ <span style="color:var(--red)">(Admin only)</span></label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+              ${['','sitting','standing','special'].map(v => {
+                const icons = {'':'— ไม่ระบุ','sitting':'🪑 นั่ง','standing':'🧍 ยืน','special':'✨ Special'};
+                const isActive = (s.posture||'') === v;
+                return `<button type="button" class="posture-toggle-btn${isActive?' active':''}" id="posture-btn-${v||'none'}"
+                  onclick="setPostureField('${v}')"
+                  style="padding:6px 13px;border-radius:20px;border:1.5px solid ${isActive?'var(--red)':'var(--border)'};background:${isActive?'var(--red)':'var(--card)'};color:${isActive?'#fff':'var(--dark)'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s">${icons[v]}</button>`;
+              }).join('')}
+            </div>
+            <input type="hidden" id="f_posture" value="${escHtml(s.posture||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">FORMAT — รูปแบบการถ่ายทำ <span style="color:var(--red)">(Admin only)</span></label>
+            <select class="form-select" id="f_prod_format">
+              ${opt(['','solo-host','news-desk','interview','round-table','vertical'], s.prod_format||'')}
+            </select>
+            <div class="form-hint" style="margin-top:4px">solo-host · news-desk · interview · round-table · vertical</div>
+          </div>
+        </div>
+      </div>
+
 
       <!-- Notes -->
       <div class="editor-section">
@@ -1889,6 +1936,50 @@ function focusTagInput(teId) {
 }
 
 // ══════════════════════════════════════════════
+// L4 POSTURE TOGGLE HELPER
+// ══════════════════════════════════════════════
+function setPostureField(val) {
+  const hidden = document.getElementById('f_posture');
+  if (hidden) hidden.value = val;
+  // Update button states
+  ['','sitting','standing','special'].forEach(v => {
+    const btn = document.getElementById(`posture-btn-${v||'none'}`);
+    if (!btn) return;
+    const isActive = v === val;
+    btn.classList.toggle('active', isActive);
+    btn.style.border    = `1.5px solid ${isActive ? 'var(--red)' : 'var(--border)'}`;
+    btn.style.background = isActive ? 'var(--red)' : 'var(--card)';
+    btn.style.color      = isActive ? '#fff'        : 'var(--dark)';
+  });
+}
+
+// ══════════════════════════════════════════════
+// SORT ORDER — RENUMBER ALL SCENES
+// ══════════════════════════════════════════════
+async function renumberAllScenes() {
+  // Re-assign sort_order as 10, 20, 30... based on current array order
+  scenes.forEach((s, i) => { s.sort_order = (i + 1) * 10; });
+  // Update the current editor field if open
+  const inp = document.getElementById('f_sort_order');
+  if (inp && currentId) {
+    const cur = scenes.find(x => x.id === currentId);
+    if (cur) inp.value = cur.sort_order;
+  }
+  localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
+  // Save to Supabase
+  if (window._supaClient) {
+    try {
+      await _supaUpsertAll();
+      showToast('🔢 เรียงลำดับใหม่แล้ว (Supabase ✓)', 'green');
+    } catch(e) {
+      showToast('⚠️ Renumber local OK แต่ Supabase error: ' + e.message, 'red');
+    }
+  } else {
+    showToast('🔢 เรียงลำดับใหม่แล้ว (local)', 'green');
+  }
+}
+
+// ══════════════════════════════════════════════
 // SAVE / RESET / DELETE
 // ══════════════════════════════════════════════
 let statusVal = null;
@@ -1934,6 +2025,10 @@ function _preserveSceneFields(origId) {
     key_light_equip_id:  s.key_light_equip_id  || '',
     fill_light_equip_id: s.fill_light_equip_id || '',
     back_light_equip_id: s.back_light_equip_id || '',
+    // preserve posture/format (these are in the editor but keep them safe)
+    posture:     s.posture     || '',
+    prod_format: s.prod_format || '',
+    sort_order:  s.sort_order  || 0,
   };
 }
 
@@ -1958,6 +2053,9 @@ function collectFormData(origId) {
     energy:       document.getElementById('f_energy')?.value || '',
     show_ids:     getCheckedShowIds(),
     context_tags: [...(tagState['te_context_tags']||[])],
+    posture:      document.getElementById('f_posture')?.value || '',
+    prod_format:  document.getElementById('f_prod_format')?.value || '',
+    sort_order:   parseInt(document.getElementById('f_sort_order')?.value||'0')||0,
     // preserve existing lighting/location data that's no longer editable in UI
     ..._preserveSceneFields(origId),
   };
@@ -2507,6 +2605,9 @@ const OPT_LABELS = {
   'scifi-future':'🚀 Sci-Fi & Future', 'stylized-abstract':'🎭 Stylized & Abstract',
   'heritage-culture':'🏛 Heritage & Culture',
   'intense':'⚡ Intense', 'balanced':'🌤 Balanced', 'open':'✨ Open',
+  // prod_format
+  'solo-host':'🎤 พิธีกรเดี่ยว', 'news-desk':'📺 News Desk (1-2 คน)',
+  'interview':'🎙 สัมภาษณ์ 1+1', 'round-table':'⭕ Round Table', 'vertical':'📱 Vertical Content',
 };
 function opt(vals, current) {
   return vals.map(v => `<option value="${v}" ${v===current?'selected':''}>${OPT_LABELS[v]||v}</option>`).join('');

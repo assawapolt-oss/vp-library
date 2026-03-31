@@ -751,6 +751,7 @@
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
     <button onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
+    <a href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 เช็คเวลา</a>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
       <span id="themeIcon">☀️</span>
     </button>
@@ -827,6 +828,28 @@
         <button class="ftag" data-dim="context" data-val="opener-drama" onclick="setFilter('context','opener-drama',this)">🎬 Opener &amp; Drama</button>
         <button class="ftag" data-dim="context" data-val="social-short" onclick="setFilter('context','social-short',this)">📱 Social &amp; Short</button>
         <button class="ftag" data-dim="context" data-val="event-special" onclick="setFilter('context','event-special',this)">🏆 Event &amp; Special</button>
+      </div>
+    </div>
+    <!-- Layer 4: POSTURE -->
+    <div class="filter-group">
+      <div class="filter-label filter-layer-label"><span class="layer-badge">L4</span> POSTURE — ท่าทางผู้นำเสนอ</div>
+      <div class="filter-tags">
+        <button class="ftag active" data-dim="posture" data-val="all" onclick="setFilter('posture','all',this)">ทั้งหมด</button>
+        <button class="ftag" data-dim="posture" data-val="sitting" onclick="setFilter('posture','sitting',this)">🪑 นั่ง</button>
+        <button class="ftag" data-dim="posture" data-val="standing" onclick="setFilter('posture','standing',this)">🧍 ยืน</button>
+        <button class="ftag" data-dim="posture" data-val="special" onclick="setFilter('posture','special',this)">✨ Special</button>
+      </div>
+    </div>
+    <!-- FORMAT: รูปแบบการถ่ายทำ -->
+    <div class="filter-group">
+      <div class="filter-label filter-layer-label"><span class="layer-badge" style="background:#7C3AED">FMT</span> FORMAT — รูปแบบการถ่ายทำ</div>
+      <div class="filter-tags">
+        <button class="ftag active" data-dim="prod_format" data-val="all" onclick="setFilter('prod_format','all',this)">ทั้งหมด</button>
+        <button class="ftag" data-dim="prod_format" data-val="solo-host" onclick="setFilter('prod_format','solo-host',this)">🎤 พิธีกรเดี่ยว</button>
+        <button class="ftag" data-dim="prod_format" data-val="news-desk" onclick="setFilter('prod_format','news-desk',this)">📺 News Desk</button>
+        <button class="ftag" data-dim="prod_format" data-val="interview" onclick="setFilter('prod_format','interview',this)">🎙 สัมภาษณ์</button>
+        <button class="ftag" data-dim="prod_format" data-val="round-table" onclick="setFilter('prod_format','round-table',this)">⭕ Round Table</button>
+        <button class="ftag" data-dim="prod_format" data-val="vertical" onclick="setFilter('prod_format','vertical',this)">📱 Vertical</button>
       </div>
     </div>
   </div>
@@ -1216,7 +1239,7 @@ function migrateScene(s) {
   const NEW_FIELDS = ['world','energy','context_tags','show_ids','video_url',
     'presenter_image_url','motion_bg_url',
     'key_light_dir','key_light_type','fill_light','back_light','lighting_ratio',
-    'presenter_zone','camera_setup','canvas_notes'];
+    'presenter_zone','camera_setup','canvas_notes','posture','prod_format'];
   const ARRAY_FIELDS = new Set(['context_tags','show_ids']);
   const out = Object.assign({}, s);
   NEW_FIELDS.forEach(field => {
@@ -1241,7 +1264,7 @@ async function _loadScenes() {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
       );
       const { data: sceneRows, error } = await _sc
-        .from('scenes').select('*').order('sort_order', { ascending: true });
+        .from('scenes').select('*').order('created_at', { ascending: false });
       const { data: showRows } = await _sc.from('shows').select('*').order('sort_order', {ascending:true});
 
       if (!error && sceneRows && sceneRows.length > 0) {
@@ -1275,6 +1298,8 @@ async function _loadScenes() {
             video_url: r.video_url||def.video_url||'',
             presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
             notes: r.description||def.notes||'',
+            posture: r.posture||'',
+            prod_format: r.prod_format||'',
             key_light_equip_id:  r.key_light_equip_id||'',
             fill_light_equip_id: r.fill_light_equip_id||'',
             back_light_equip_id: r.back_light_equip_id||'',
@@ -1365,7 +1390,7 @@ function setView(mode) {
 }
 
 // ══════════ SEARCH LOGIC ══════════
-const filters = {world:'all', energy:'all', context:'all', show:'all'};
+const filters = {world:'all', energy:'all', context:'all', show:'all', posture:'all', prod_format:'all'};
 
 function setFilter(dim, val, btn) {
   filters[dim] = val;
@@ -1535,15 +1560,18 @@ function matchesFilters(s) {
       s.motion_type, s.style,
       ...(s.usage_type||[]), ...(s.platform_fit||[]),
       s.world||'', s.energy||'', ...(s.context_tags||[]),
+      s.posture||'', s.prod_format||'',
       s.notes||''
     ].join(' ').toLowerCase();
     if (!searchable.includes(q)) return false;
   }
   // Dimension filters always apply on top
-  if (filters.world   !== 'all' && s.world !== filters.world) return false;
-  if (filters.energy  !== 'all' && s.energy !== filters.energy) return false;
-  if (filters.context !== 'all' && !(s.context_tags||[]).includes(filters.context)) return false;
-  if (filters.show    !== 'all' && !(s.show_ids||[]).includes(filters.show)) return false;
+  if (filters.world      !== 'all' && s.world !== filters.world) return false;
+  if (filters.energy     !== 'all' && s.energy !== filters.energy) return false;
+  if (filters.context    !== 'all' && !(s.context_tags||[]).includes(filters.context)) return false;
+  if (filters.show       !== 'all' && !(s.show_ids||[]).includes(filters.show)) return false;
+  if (filters.posture    !== 'all' && s.posture !== filters.posture) return false;
+  if (filters.prod_format !== 'all' && s.prod_format !== filters.prod_format) return false;
   return true;
 }
 
@@ -1629,9 +1657,11 @@ function renderCards() {
   setTimeout(() => {
     grid.classList.toggle('thumb-mode', viewMode === 'thumb');
     let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
-    const WORLD_LBL  = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
-    const ENERGY_LBL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
-    const CTX_LBL    = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
+    const WORLD_LBL   = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
+    const ENERGY_LBL  = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'};
+    const CTX_LBL     = {'news-report':'📰 News','talk-interview':'🎙 Talk','analysis-data':'📊 Analysis','field-onsite':'🌍 Field','opener-drama':'🎬 Opener','social-short':'📱 Social','event-special':'🏆 Event'};
+    const POSTURE_LBL = {'sitting':'🪑','standing':'🧍','special':'✨'};
+    const FORMAT_LBL  = {'solo-host':'🎤 Solo','news-desk':'📺 News Desk','interview':'🎙 Interview','round-table':'⭕ Round','vertical':'📱 Vertical'};
 
   if (viewMode === 'thumb') {
     grid.innerHTML = paged.map(s => {
@@ -1648,9 +1678,9 @@ function renderCards() {
           <img class="thumb-img" src="" data-vp-path="${defaultImgPath}" data-vp-fallback="${s.thumb||''}" data-vp-fallback2="${s.filepath||''}" alt="${s.title}" style="display:none">
           <div class="scene-thumb-placeholder" style="display:flex">🎬</div>
           <div class="thumb-overlay">
-            <div class="thumb-overlay-id">${s.id}</div>
+            <div class="thumb-overlay-id">${s.id}${s.posture?` <span style="background:rgba(255,255,255,.18);border-radius:4px;padding:0 4px;font-size:10px">${POSTURE_LBL[s.posture]||''}</span>`:''}</div>
             <div class="thumb-overlay-title">${s.title}</div>
-            <div class="thumb-overlay-title-th">${s.title_th}</div>
+            <div class="thumb-overlay-title-th">${s.title_th}${s.prod_format?` · <span style="opacity:.7;font-size:9px">${FORMAT_LBL[s.prod_format]||s.prod_format}</span>`:''}</div>
           </div>
           ${logoHtml}${presenterBtn}
         </div>
@@ -1658,9 +1688,11 @@ function renderCards() {
     }).join('');
   } else {
     grid.innerHTML = paged.map(s => {
-      const worldTag  = s.world  ? `<span class="stag stag-env">${WORLD_LBL[s.world]||s.world}</span>` : '';
-      const energyTag = s.energy ? `<span class="stag stag-mood">${ENERGY_LBL[s.energy]||s.energy}</span>` : '';
-      const ctxTags   = (s.context_tags||[]).slice(0,2).map(c=>`<span class="stag stag-editorial">${CTX_LBL[c]||c}</span>`).join('');
+      const worldTag    = s.world      ? `<span class="stag stag-env">${WORLD_LBL[s.world]||s.world}</span>` : '';
+      const energyTag   = s.energy     ? `<span class="stag stag-mood">${ENERGY_LBL[s.energy]||s.energy}</span>` : '';
+      const ctxTags     = (s.context_tags||[]).slice(0,2).map(c=>`<span class="stag stag-editorial">${CTX_LBL[c]||c}</span>`).join('');
+      const postureTag  = s.posture    ? `<span class="stag" style="background:#FEF9C3;color:#713F12">${POSTURE_LBL[s.posture]||s.posture}</span>` : '';
+      const formatTag   = s.prod_format? `<span class="stag" style="background:#F5F3FF;color:#6D28D9">${FORMAT_LBL[s.prod_format]||s.prod_format}</span>` : '';
       const showDots  = _shows.filter(sh=>(s.show_ids||[]).includes(sh.id)).map(sh=>`<span title="${sh.name}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color||'#9ca3af'};flex-shrink:0"></span>`).join('');
       const logoShow = _shows.find(sh=>(s.show_ids||[]).includes(sh.id)&&sh.logo_url);
       const logoHtml = logoShow ? `<div class="card-show-logo" title="${logoShow.name}"><img src="${logoShow.logo_url}" alt="${logoShow.name}" onerror="this.parentElement.style.display='none'"></div>` : '';
@@ -1683,7 +1715,7 @@ function renderCards() {
           </div>
           <div class="scene-title">${s.title}</div>
           <div class="scene-title-th">${s.title_th}</div>
-          <div class="tag-row">${worldTag}${energyTag}${ctxTags}</div>
+          <div class="tag-row">${worldTag}${energyTag}${ctxTags}${postureTag}${formatTag}</div>
         </div>
       </div>`;
     }).join('');
@@ -2069,14 +2101,17 @@ function openModal(id) {
   }).join('')
 
   // ── World / Energy / Context label maps ──
-  const WORLD_LABEL  = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
-  const ENERGY_LABEL = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'}
-  const CTX_LABEL    = {'news-report':'📰 News & Report','talk-interview':'🎙 Talk & Interview','analysis-data':'📊 Analysis & Data','field-onsite':'🌍 Field & On-Site','opener-drama':'🎬 Opener & Drama','social-short':'📱 Social & Short','event-special':'🏆 Event & Special'}
+  const WORLD_LABEL   = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
+  const ENERGY_LABEL  = {'intense':'⚡ Intense','balanced':'🌤 Balanced','open':'✨ Open'}
+  const CTX_LABEL     = {'news-report':'📰 News & Report','talk-interview':'🎙 Talk & Interview','analysis-data':'📊 Analysis & Data','field-onsite':'🌍 Field & On-Site','opener-drama':'🎬 Opener & Drama','social-short':'📱 Social & Short','event-special':'🏆 Event & Special'}
+  const POSTURE_LABEL = {'sitting':'🪑 นั่ง','standing':'🧍 ยืน','special':'✨ Special'}
+  const FORMAT_LABEL  = {'solo-host':'🎤 พิธีกรเดี่ยว','news-desk':'📺 News Desk 1-2 คน','interview':'🎙 สัมภาษณ์ 1+1','round-table':'⭕ Round Table','vertical':'📱 Vertical Content'}
 
   document.getElementById('modalBody').innerHTML = `
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:2px">
       <div class="modal-id">${s.id}</div>
       ${s.presenter_image_url ? `<button id="modalPresenterBtn" class="presenter-toggle-btn ptbtn-modal active" onclick="toggleModalPresenterImg()" title="แสดงพิธีกร"><img src="https://pgaqdqbjyewwckpslyvx.supabase.co/storage/v1/object/public/vp-images/_graphics/61488d0302608a0c57a3b726_800x0xcover__DnVrxY0.png" alt="presenter"></button>` : ''}
+      ${isAdmin() ? `<a href="vp-admin.html?scene=${id}" target="_blank" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#FFF0F0;border:1.5px solid #FCA5A5;border-radius:7px;color:#B91C1C;font-size:12px;font-weight:700;text-decoration:none;transition:background .12s;flex-shrink:0" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='#FFF0F0'">✏️ แก้ไขฉาก</a>` : ''}
     </div>
     <div class="modal-title">${s.title}</div>
     <div class="modal-title-th">${s.title_th}</div>
@@ -2096,6 +2131,14 @@ function openModal(id) {
         <div>
           <div class="modal-section-title" style="margin-bottom:6px"><span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L3</span>CONTEXT</div>
           <div class="modal-tags" style="flex-wrap:wrap;gap:4px">${(s.context_tags||[]).length?(s.context_tags.map(c=>`<span class="stag stag-editorial">${CTX_LABEL[c]||c}</span>`).join('')):`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
+        </div>
+        <div>
+          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:#F59E0B;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L4</span>POSTURE</div>
+          <div>${s.posture?`<span class="stag" style="background:#FEF9C3;color:#713F12;font-size:13px">${POSTURE_LABEL[s.posture]||s.posture}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
+        </div>
+        <div>
+          <div class="modal-section-title" style="margin-bottom:6px"><span style="background:#7C3AED;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">FMT</span>FORMAT</div>
+          <div>${s.prod_format?`<span class="stag stag-mood">${FORMAT_LABEL[s.prod_format]||s.prod_format}</span>`:`<span style="font-size:11px;color:var(--muted)">—</span>`}</div>
         </div>
       </div>
     </div>

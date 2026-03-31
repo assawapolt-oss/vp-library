@@ -76,7 +76,20 @@ ALTER TABLE public.service_requests
   ADD COLUMN IF NOT EXISTS time_slot text DEFAULT '';
 
 -- ──────────────────────────────────────────────────────────────────
--- 5. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
+-- 5. LAYER 4 POSTURE + PRODUCTION FORMAT (v2 — 2026-03-31)
+-- ──────────────────────────────────────────────────────────────────
+ALTER TABLE public.scenes
+  ADD COLUMN IF NOT EXISTS posture     text DEFAULT '',   -- 'sitting' | 'standing' | 'special'
+  ADD COLUMN IF NOT EXISTS prod_format text DEFAULT '';   -- 'solo-host' | 'news-desk' | 'interview' | 'round-table' | 'vertical'
+
+-- เพิ่ม equipment slots เพิ่มเติม (rim + ambient)
+ALTER TABLE public.scenes
+  ADD COLUMN IF NOT EXISTS rim_l_equip_id   text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS rim_r_equip_id   text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS ambient_equip_id text DEFAULT '';
+
+-- ──────────────────────────────────────────────────────────────────
+-- 6. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
 -- ──────────────────────────────────────────────────────────────────
 SELECT column_name, data_type, column_default
 FROM   information_schema.columns

@@ -1008,6 +1008,17 @@ function toast(msg,type=''){
   el.textContent=msg;el.className='toast show'+(type?' toast-'+type:'');
   clearTimeout(_toastT);_toastT=setTimeout(()=>{el.className='toast';},3500);
 }
+
+// Auto-switch to calendar tab if URL has #calendar or ?tab=calendar
+(function(){
+  const hash = window.location.hash;
+  const params = new URLSearchParams(window.location.search);
+  if (hash === '#calendar' || params.get('tab') === 'calendar') {
+    const doSwitch = () => { if (typeof switchTab === 'function') switchTab('calendar'); };
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', doSwitch);
+    else doSwitch();
+  }
+})();
 </script>
 </body>
 </html>
