@@ -751,7 +751,7 @@
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
     <button onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
-    <a href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 เช็คเวลา</a>
+    <a href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 Queue Check</a>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
       <span id="themeIcon">☀️</span>
     </button>
@@ -801,6 +801,9 @@
         <button class="ftag" data-dim="world" data-val="interior-office" onclick="setFilter('world','interior-office',this)">🏢 Interior &amp; Office</button>
         <button class="ftag" data-dim="world" data-val="nature-outdoor" onclick="setFilter('world','nature-outdoor',this)">🌿 Nature &amp; Outdoor</button>
         <button class="ftag" data-dim="world" data-val="industrial" onclick="setFilter('world','industrial',this)">🏭 Industrial</button>
+        <button class="ftag" data-dim="world" data-val="commercial-retail" onclick="setFilter('world','commercial-retail',this)">🛒 Commercial &amp; Retail</button>
+        <button class="ftag" data-dim="world" data-val="transportation" onclick="setFilter('world','transportation',this)">🚉 Transportation</button>
+        <button class="ftag" data-dim="world" data-val="luxury-premium" onclick="setFilter('world','luxury-premium',this)">💎 Luxury &amp; Premium</button>
         <button class="ftag" data-dim="world" data-val="scifi-future" onclick="setFilter('world','scifi-future',this)">🚀 Sci-Fi &amp; Future</button>
         <button class="ftag" data-dim="world" data-val="stylized-abstract" onclick="setFilter('world','stylized-abstract',this)">🎭 Stylized &amp; Abstract</button>
         <button class="ftag" data-dim="world" data-val="heritage-culture" onclick="setFilter('world','heritage-culture',this)">🏛 Heritage &amp; Culture</button>
@@ -1538,7 +1541,19 @@ function matchesFilters(s) {
       s.world||'', s.posture||'', s.prod_format||'',
       s.notes||''
     ].join(' ').toLowerCase();
-    if (!searchable.includes(q)) return false;
+    // Direct text match
+    if (searchable.includes(q)) return true;
+    // Thai keyword expansion — check if any KEYWORD_MAP tags match scene topics/mood
+    const expandedTags = extractFromText(q);
+    if (expandedTags.size > 0) {
+      const sceneTags = [
+        ...(s.topics||[]), ...(s.mood||[]), ...(s.editorial_fit||[]),
+        ...(s.usage_type||[])
+      ].map(t => t.toLowerCase());
+      const hasTagMatch = [...expandedTags].some(tag => sceneTags.some(st => st.includes(tag) || tag.includes(st)));
+      if (hasTagMatch) return true;
+    }
+    return false;
   }
   // Dimension filters always apply on top
   if (filters.world      !== 'all' && s.world !== filters.world) return false;
@@ -1630,7 +1645,7 @@ function renderCards() {
   setTimeout(() => {
     grid.classList.toggle('thumb-mode', viewMode === 'thumb');
     let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
-    const WORLD_LBL   = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
+    const WORLD_LBL   = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial','transportation':'🚉 Transport','luxury-premium':'💎 Luxury','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
     const POSTURE_LBL = {'sitting':'🪑','standing':'🧍','special':'✨'};
     const FORMAT_LBL  = {'solo-host':'🎤 Solo','news-desk':'📺 News Desk','interview':'🎙 Interview','round-table':'⭕ Round','vertical':'📱 Vertical'};
 
@@ -1795,6 +1810,49 @@ const KEYWORD_MAP = {
   'เหมือง':['mining','resources','industry','environment'],
   'สกายไลน์':['city','news','politics','business'],'วิวเมือง':['city','urban'],
   'ไซไฟ':['AI','technology','futuristic','sci-fi'],'sci-fi':['AI','futuristic','technology'],
+  // ── สถานที่เพิ่มเติม ──
+  'ปั๊มน้ำมัน':['gas station','petroleum','fuel','commercial','outdoor','industrial'],
+  'ปั๊ม':['gas station','petroleum','commercial','outdoor'],
+  'น้ำมัน':['petroleum','oil','fuel','resources','energy'],
+  'เชื้อเพลิง':['fuel','petroleum','energy','resources'],
+  'ถนน':['road','highway','street','urban','city','outdoor'],
+  'ไฮเวย์':['highway','road','outdoor','transportation'],
+  'สนามบิน':['airport','transportation','modern','urban'],
+  'สถานี':['station','transportation','urban','infrastructure'],
+  'รถไฟ':['train','railway','transportation','urban'],
+  'รถยนต์':['car','vehicle','automotive','urban','outdoor'],
+  'ร้านค้า':['shop','store','retail','commercial','indoor'],
+  'ห้าง':['mall','shopping','commercial','urban','modern'],
+  'ตลาด':['market','commercial','authentic','outdoor'],
+  'ร้านอาหาร':['restaurant','food','commercial','indoor'],
+  'โรงพยาบาล':['hospital','medical','health','indoor'],
+  'โรงเรียน':['school','education','indoor','urban'],
+  'มหาวิทยาลัย':['university','education','campus','outdoor'],
+  'วัด':['temple','heritage','culture','outdoor','religion'],
+  'วัง':['palace','heritage','culture','historic','architecture'],
+  'สวน':['park','garden','outdoor','nature','green'],
+  'ชายหาด':['beach','coast','sea','outdoor','nature'],
+  'ทะเล':['sea','ocean','coastal','outdoor','nature'],
+  'ภูเขา':['mountain','highland','nature','outdoor'],
+  'ท้องฟ้า':['sky','clouds','aerial','outdoor','wide'],
+  'ตึกระฟ้า':['skyscraper','highrise','city','urban','modern'],
+  'อาคาร':['building','architecture','urban','city'],
+  'ทุ่งนา':['rice field','rural','agricultural','outdoor','nature'],
+  'ชนบท':['rural','countryside','authentic','outdoor','documentary'],
+  'ป่า':['forest','jungle','nature','outdoor','green'],
+  'ซอย':['alley','street','urban','authentic','outdoor'],
+  // ── สถานที่ commercial ──
+  'commercial-retail':['commercial','retail','shop','store'],
+  'ห้างสรรพสินค้า':['mall','commercial','retail','indoor'],
+  'luxury':['luxury','premium','upscale','hotel','elegant'],
+  'หรู':['luxury','premium','upscale','elegant'],
+  'โรงแรม':['hotel','luxury','premium','indoor'],
+  'สปา':['spa','luxury','premium','wellness'],
+  // ── transportation ──
+  'transportation':['transportation','transit','travel'],
+  'คมนาคม':['transportation','transit','infrastructure'],
+  'เดินทาง':['travel','transportation','journey'],
+  'พาหนะ':['vehicle','transportation','automotive'],
 
   // ── หัวข้อข่าว / content ──
   'หุ่นยนต์':['robot','AI','automation'],'หุ่น':['robot','automation'],
@@ -1932,27 +1990,37 @@ async function runRec() {
       return;
     }
 
-    // 2. Encode text → embedding
+    // 2. Translate Thai keywords → English for CLIP (CLIP is English-only)
+    const extractedTags = extractFromText(text);
+    let queryForCLIP = text;
+    if (extractedTags.size > 0) {
+      // Build English query from extracted semantic tags for better CLIP matching
+      const englishTerms = Array.from(extractedTags).join(' ');
+      queryForCLIP = englishTerms;
+      setAIStatus('loading', `🔤 แปลคำค้น: ${englishTerms}`, 40);
+    }
+
+    // 3. Encode text → embedding
     setAIStatus('loading', '🧠 คำนวณ text embedding…', 50);
-    const inputs = await _semTextProc(text, { padding: true, truncation: true });
+    const inputs = await _semTextProc(queryForCLIP, { padding: true, truncation: true });
     const { text_embeds } = await _semTextModel(inputs);
     const raw  = Array.from(text_embeds.data);
     const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0));
     const embedding = norm > 0 ? raw.map(v => v / norm) : raw;
 
-    // 3. Query Supabase match_scenes RPC
+    // 4. Query Supabase match_scenes RPC
     setAIStatus('loading', '🔍 ค้นหาฉากที่ใกล้เคียงที่สุด…', 80);
     const sc = _getSupaClient();
     if (!sc) throw new Error('Supabase ไม่พร้อม');
 
     const { data, error } = await sc.rpc('match_scenes', {
       query_embedding: embedding,
-      match_threshold: 0.10,
+      match_threshold: 0.05,
       match_count: 100
     });
     if (error) throw new Error(error.message);
 
-    // 4. Build score map + merge with SCENES data
+    // 5. Build score map + merge with SCENES data
     const scores = {};
     (data || []).forEach(r => { scores[r.id] = r.similarity; });
 
@@ -1960,7 +2028,8 @@ async function runRec() {
       .filter(s => scores[s.id] !== undefined)
       .sort((a, b) => scores[b.id] - scores[a.id]);
 
-    setAIStatus('ready', `✅ พบ ${ranked.length} ฉากที่เกี่ยวข้อง`, 100);
+    const queryInfo = (queryForCLIP !== text) ? ` [ค้นด้วย: "${queryForCLIP}"]` : '';
+    setAIStatus('ready', `✅ พบ ${ranked.length} ฉากที่เกี่ยวข้อง${queryInfo}`, 100);
 
     if (!ranked.length) {
       box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">🔍</div><div style="font-size:15px;font-weight:600;color:var(--muted)">ไม่พบฉากที่ตรงกับเนื้อหานี้ — ลองใช้คำอธิบายอื่น</div></div>`;
@@ -2070,7 +2139,7 @@ function openModal(id) {
   }).join('')
 
   // ── World / Energy / Context label maps ──
-  const WORLD_LABEL   = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
+  const WORLD_LABEL   = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial & Retail','transportation':'🚉 Transportation','luxury-premium':'💎 Luxury & Premium','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
   const POSTURE_LABEL = {'sitting':'🪑 นั่ง','standing':'🧍 ยืน','special':'✨ Special'}
   const FORMAT_LABEL  = {'solo-host':'🎤 พิธีกรเดี่ยว','news-desk':'📺 News Desk 1-2 คน','interview':'🎙 สัมภาษณ์ 1+1','round-table':'⭕ Round Table','vertical':'📱 Vertical Content'}
 

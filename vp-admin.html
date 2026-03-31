@@ -67,7 +67,8 @@
   .sli-card-id { font-size:9px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; padding:2px 4px; background:var(--card); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .sli-card-status { position:absolute; bottom:3px; right:3px; width:6px; height:6px; border-radius:50%; }
   .sli-status-active { background:#10B981; }
-  .sli-status-draft { background:#F59E0B; }
+  .sli-status-inactive { background:#9CA3AF; }
+  .sli-status-draft { background:#9CA3AF; }
   .sli-status-archived { background:#9CA3AF; }
   /* keep old class names in case used elsewhere */
   .sli-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
@@ -242,8 +243,7 @@
   .sbtn { padding:7px 14px; border-radius:8px; border:1.5px solid var(--border); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .12s; }
   .sbtn:hover { border-color:var(--dark); }
   .sbtn.active-status-active { background:#D1FAE5; border-color:#6EE7B7; color:#065F46; }
-  .sbtn.active-status-draft { background:#FEF3C7; border-color:#FDE68A; color:#92400E; }
-  .sbtn.active-status-archived { background:#F3F4F6; border-color:#D1D5DB; color:#4B5563; }
+  .sbtn.active-status-inactive { background:#F3F4F6; border-color:#D1D5DB; color:#4B5563; }
 
   /* export panel */
   .export-bar { background:#fff; border-top:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -1553,7 +1553,7 @@ async function renderSidebar() {
       <div class="sli-card-img-wrap">
         <div class="sli-card-ph" id="sli-ph-${s.id}">🎬</div>
         <img class="sli-card-img" id="sli-thumb-${s.id}" src="" style="display:none">
-        <div class="sli-card-status sli-status-${s.status}"></div>
+        <div class="sli-card-status sli-status-${s.status==='active'?'active':'inactive'}"></div>
       </div>
       <div class="sli-card-id">${s.id}</div>
     </div>
@@ -1792,8 +1792,7 @@ function buildEditorHTML(s) {
             <label class="form-label">Status</label>
             <div class="status-select-wrap">
               <button class="sbtn ${s.status==='active'?'active-status-active':''}" onclick="setStatus('active',this)">✅ Active</button>
-              <button class="sbtn ${s.status==='draft'?'active-status-draft':''}" onclick="setStatus('draft',this)">📝 Draft</button>
-              <button class="sbtn ${s.status==='archived'?'active-status-archived':''}" onclick="setStatus('archived',this)">📦 Archived</button>
+              <button class="sbtn ${['inactive','draft','archived'].includes(s.status)?'active-status-inactive':''}" onclick="setStatus('inactive',this)">🔕 Inactive</button>
             </div>
           </div>
         </div>
@@ -1815,7 +1814,7 @@ function buildEditorHTML(s) {
           <div class="form-group">
             <label class="form-label">L1 · WORLD — ฉากอยู่ที่ไหน</label>
             <select class="form-select" id="f_world">
-              ${opt(['','urban-city','interior-office','nature-outdoor','industrial','scifi-future','stylized-abstract','heritage-culture'], s.world||'')}
+              ${opt(['','urban-city','interior-office','nature-outdoor','industrial','commercial-retail','transportation','luxury-premium','scifi-future','stylized-abstract','heritage-culture'], s.world||'')}
             </select>
           </div>
         </div>
@@ -2466,7 +2465,7 @@ async function createNewScene() {
     usage_type:[], subject_placement:'center', background_complexity:'medium',
     platform_fit:['16:9'], resolution:'HD',
     file_format: filepath.endsWith('.webp') ? 'webp' : filepath.endsWith('.avif') ? 'avif' : 'png',
-    is_loopable:false, engine:'AI-Generated', status:'draft', notes:'',
+    is_loopable:false, engine:'AI-Generated', status:'active', notes:'',
     world, energy, context_tags:[], show_ids:[], video_url:'',
     presenter_image_url:'', motion_bg_url:'',
     key_light_dir:'', key_light_type:'', fill_light:'', back_light:'',
@@ -2590,6 +2589,8 @@ const OPT_LABELS = {
   '': '— ยังไม่ได้เลือก —',
   'urban-city':'🌆 Urban & City', 'interior-office':'🏢 Interior & Office',
   'nature-outdoor':'🌿 Nature & Outdoor', 'industrial':'🏭 Industrial',
+  'commercial-retail':'🛒 Commercial & Retail', 'transportation':'🚉 Transportation',
+  'luxury-premium':'💎 Luxury & Premium',
   'scifi-future':'🚀 Sci-Fi & Future', 'stylized-abstract':'🎭 Stylized & Abstract',
   'heritage-culture':'🏛 Heritage & Culture',
   'intense':'⚡ Intense', 'balanced':'🌤 Balanced', 'open':'✨ Open',
@@ -4802,7 +4803,7 @@ ${cleanImg ? `\n🖼 ภาพ: ${cleanImg}\n` : ''}
 
 ─── Taxonomy ───
 WORLD (เลือก 1):
-  urban-city · interior-office · nature-outdoor · industrial · scifi-future · stylized-abstract · heritage-culture
+  urban-city · interior-office · nature-outdoor · industrial · commercial-retail · transportation · luxury-premium · scifi-future · stylized-abstract · heritage-culture
 
 POSTURE (เลือก 1):
   sitting · standing · special
@@ -4859,6 +4860,9 @@ const _TH = {
     'interior-office':   'ฉากในร่ม / ห้องทำงาน',
     'nature-outdoor':    'ฉากธรรมชาติกลางแจ้ง',
     'industrial':        'ฉากโรงงาน / อุตสาหกรรม',
+    'commercial-retail': 'ฉากพาณิชย์ / ร้านค้า',
+    'transportation':    'ฉากคมนาคม / การเดินทาง',
+    'luxury-premium':    'ฉาก Luxury / premium',
     'scifi-future':      'ฉากอนาคต / เทคโนโลยี',
     'stylized-abstract': 'ฉากกราฟิก / abstract',
     'heritage-culture':  'ฉากวัฒนธรรม / ประวัติศาสตร์',
@@ -4954,6 +4958,9 @@ function buildThaiNotes(t) {
     'interior-office':   'ฉากในร่ม',
     'nature-outdoor':    'ฉากธรรมชาติ',
     'industrial':        'ฉากอุตสาหกรรม',
+    'commercial-retail': 'ฉากพาณิชย์ / ร้านค้า',
+    'transportation':    'ฉากคมนาคม',
+    'luxury-premium':    'ฉาก Luxury',
     'scifi-future':      'ฉาก Sci-Fi / เทคโนโลยี',
     'stylized-abstract': 'ฉาก Abstract / กราฟิก',
     'heritage-culture':  'ฉากวัฒนธรรม / ประวัติศาสตร์',
