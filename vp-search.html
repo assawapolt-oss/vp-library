@@ -1625,6 +1625,15 @@ function renderCards() {
 
   let filtered = baseList.filter(matchesFilters);
 
+  // Default sort: presenter scenes (posture set) first, then no-presenter — only when not shuffling
+  if (!_shuffleActive) {
+    filtered = filtered.slice().sort((a, b) => {
+      const aHas = a.posture ? 1 : 0;
+      const bHas = b.posture ? 1 : 0;
+      return bHas - aHas; // presenter first; stable within group (preserves original order)
+    });
+  }
+
   // Count label
   let countLabel = `แสดง ${filtered.length} จาก ${baseList.length} scenes`;
   if (_collectionFilter && _collectionName) countLabel = `🗂 ${_collectionName} — ${filtered.length} ฉาก <button onclick="_collectionFilter=null;_collectionName='';renderCards()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--card);font-family:inherit;">✕ ปิด</button>`;
@@ -2082,7 +2091,16 @@ async function runRec() {
 
     const ranked = SCENES
       .filter(s => scores[s.id] !== undefined)
-      .sort((a, b) => scores[b.id] - scores[a.id]);
+      .sort((a, b) => {
+        // Presenter-first: scenes with posture set rank higher at equal score tier
+        const aHas = a.posture ? 1 : 0;
+        const bHas = b.posture ? 1 : 0;
+        const scoreDiff = scores[b.id] - scores[a.id];
+        // Use score as primary, but within 10% band boost presenter scenes
+        const scoreBand = Math.abs(scoreDiff) < 0.10;
+        if (scoreBand && bHas !== aHas) return bHas - aHas;
+        return scoreDiff;
+      });
 
     const queryInfo = (queryForCLIP !== text) ? ` [ค้นด้วย: "${queryForCLIP}"]` : '';
     setAIStatus('ready', `✅ พบ ${ranked.length} ฉากที่เกี่ยวข้อง${queryInfo}`, 100);
