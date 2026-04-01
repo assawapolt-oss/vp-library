@@ -1618,10 +1618,8 @@ function renderCards() {
     baseList = SCENES;
   }
 
-  // Hide inactive scenes from non-admin/editor users
-  if (!isAdmin() && !isEditor()) {
-    baseList = baseList.filter(s => (s.status||'active') === 'active');
-  }
+  // Always hide inactive scenes in search view (manage via vp-admin.html)
+  baseList = baseList.filter(s => (s.status||'active') === 'active');
 
   let filtered = baseList.filter(matchesFilters);
 
