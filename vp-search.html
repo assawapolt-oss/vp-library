@@ -21,8 +21,8 @@
   }
   [data-theme="dark"] {
     --dark:#DDE4F0; --bg:#07080E; --card:#0C0D15;
-    --border:rgba(255,255,255,0.07); --muted:#3E4A65;
-    --nav-bg:#09090F; --nav-border:rgba(255,255,255,0.05);
+    --border:rgba(255,255,255,0.09); --muted:#5A6B8A;
+    --nav-bg:#09090F; --nav-border:rgba(255,255,255,0.06);
     --input-bg:#0C0D15; --tag-bg:#10111A;
     color-scheme: dark;
   }
@@ -759,20 +759,20 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #2A3450;
+  color: #4E5E80;
 }
 [data-theme="dark"] .mode-tab:hover,
-[data-theme="dim"] .mode-tab:hover { color: rgba(255,255,255,0.55); }
+[data-theme="dim"] .mode-tab:hover { color: rgba(255,255,255,0.7); }
 [data-theme="dark"] .mode-tab.active,
 [data-theme="dim"] .mode-tab.active { color: #fff; border-bottom-color: var(--red); }
 
 /* ── Nav ext links ── */
 [data-theme="dark"] .nav-ext-link.outline,
 [data-theme="dim"] .nav-ext-link.outline {
-  background: transparent; border-color: rgba(255,255,255,0.07); color: #2A3450;
+  background: transparent; border-color: rgba(255,255,255,0.09); color: #4A5870;
 }
 [data-theme="dark"] .nav-ext-link.outline:hover,
-[data-theme="dim"] .nav-ext-link.outline:hover { border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.04); }
+[data-theme="dim"] .nav-ext-link.outline:hover { border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
 [data-theme="dark"] .nav-ext-link.admin,
 [data-theme="dim"] .nav-ext-link.admin { background: rgba(204,34,41,0.08); border-color: rgba(204,34,41,0.3); color: #E05560; }
 [data-theme="dark"] .nav-ext-link.admin:hover,
@@ -802,15 +802,15 @@
   background: var(--nav-bg); border-bottom: 1px solid var(--nav-border);
 }
 [data-theme="dark"] .filter-label,
-[data-theme="dim"] .filter-label { color: #252E45; font-size: 9px; letter-spacing: 0.12em; }
+[data-theme="dim"] .filter-label { color: #5A6B8A; font-size: 9px; letter-spacing: 0.12em; }
 [data-theme="dark"] .layer-badge,
 [data-theme="dim"] .layer-badge { font-size: 8px; padding: 1px 4px; border-radius: 3px; opacity: 0.85; }
 
 [data-theme="dark"] .ftag,
 [data-theme="dim"] .ftag {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #2E3850;
+  border: 1px solid rgba(255,255,255,0.09);
+  color: #6A7B9A;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -820,15 +820,15 @@
 }
 [data-theme="dark"] .ftag:hover,
 [data-theme="dim"] .ftag:hover {
-  border-color: rgba(204,34,41,0.35);
-  color: rgba(255,255,255,0.65);
-  background: rgba(204,34,41,0.05);
+  border-color: rgba(204,34,41,0.4);
+  color: rgba(255,255,255,0.8);
+  background: rgba(204,34,41,0.06);
 }
 [data-theme="dark"] .ftag.active,
 [data-theme="dim"] .ftag.active {
-  background: rgba(204,34,41,0.14);
-  border-color: rgba(204,34,41,0.45);
-  color: #FF7A85;
+  background: rgba(204,34,41,0.16);
+  border-color: rgba(204,34,41,0.5);
+  color: #FF8A94;
   font-weight: 600;
 }
 
@@ -837,12 +837,12 @@
 [data-theme="dim"] .results-bar { padding: 9px 24px; }
 [data-theme="dark"] .clear-btn,
 [data-theme="dim"] .clear-btn {
-  background: transparent; border-color: rgba(255,255,255,0.07);
-  color: #252E45; font-size: 11px; letter-spacing: 0.04em;
+  background: transparent; border-color: rgba(255,255,255,0.09);
+  color: #4A5870; font-size: 11px; letter-spacing: 0.04em;
 }
 [data-theme="dark"] .clear-btn:hover,
 [data-theme="dim"] .clear-btn:hover {
-  border-color: rgba(204,34,41,0.35); color: rgba(204,34,41,0.85); background: rgba(204,34,41,0.04);
+  border-color: rgba(204,34,41,0.4); color: rgba(204,34,41,0.9); background: rgba(204,34,41,0.05);
 }
 
 /* ── View toggle ── */
@@ -1126,6 +1126,7 @@
   <div style="display:flex;align-items:center;gap:14px">
     <a href="index.html" style="display:flex;align-items:center;text-decoration:none"><img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo"></a>
     <div class="vp-header-title" id="vp-header-title">Virtual Production Library<span class="vp-cursor">|</span></div>
+    <span id="vp-version-badge" style="font-size:9px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:3px;padding:1px 6px;white-space:nowrap"></span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
@@ -1612,6 +1613,9 @@ function migrateScene(s) {
 }
 
 // SCENES โหลดจาก Supabase — source of truth สำหรับทุก deploy
+// ── System Version (auto-bumped by GitHub Actions on every push) ──
+const VP_VERSION = 'v2026.04.02-dev';
+
 let SCENES = [];
 let _scenesReady = false;
 
@@ -4175,7 +4179,9 @@ function exportUsedIn(id) {
 // ── Init ──
 // โหลด scenes จาก Supabase แล้วค่อย render ทุกอย่าง
 _loadScenes().then(() => {
-  document.getElementById('totalCount').textContent = `${SCENES.length} scenes · v2.5`;
+  document.getElementById('totalCount').textContent = `${SCENES.length} scenes`;
+  const vbadge = document.getElementById('vp-version-badge');
+  if (vbadge) vbadge.textContent = VP_VERSION;
   document.getElementById('vtInfo')?.classList.toggle('active', viewMode==='info');
   document.getElementById('vtThumb')?.classList.toggle('active', viewMode==='thumb');
   renderShowFilter();
