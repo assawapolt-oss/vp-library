@@ -761,9 +761,13 @@
       <button onclick="copyText('tg_tag',this)" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;font-weight:700;background:#6366F1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Copy</button>
     </div>
 
-    <div style="margin-top:12px;text-align:right;">
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button id="detectObjBtn" onclick="runObjectDetection()" style="padding:7px 14px;background:#0EA5E9;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">🔍 Detect Objects (DETR)</button>
+      <span id="detectObjStatus" style="font-size:11px;color:#6B7280"></span>
+      <div style="flex:1"></div>
       <button class="btn-secondary" onclick="closeTagGuideModal()">ปิด</button>
     </div>
+    <div id="detectObjResults" style="display:none;margin-top:8px;padding:8px 12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;font-size:11px;color:#0369A1"></div>
   </div>
 </div>
 
@@ -1343,7 +1347,7 @@ async function initAdmin() {
 function _supaRowToScene(r) {
   const def = DEFAULT_SCENES.find(d => d.id === r.id) || {};
   return {
-    id: r.id, title: r.title||def.title||'', title_th: def.title_th||'',
+    id: r.id, title: r.title||def.title||'', title_th: r.title_th||def.title_th||'',
     filepath: r.image_url||def.filepath||'', thumb: r.thumb_url||def.thumb||'',
     added_date: r.created_at ? r.created_at.slice(0,10) : (def.added_date||''),
     environment: def.environment||'', location_type: r.category||def.location_type||'',
@@ -1413,6 +1417,8 @@ function _sceneToRow(s, i) {
   return {
     id:                    s.id,
     title:                 s.title||'',
+    title_th:              s.title_th||'',
+    status:                s.status||'active',
     category:              s.location_type||'',
     tags:                  [...(s.mood||[]),...(s.topics||[]),...(s.context_tags||[])],
     image_url:             _cleanUrl(s.filepath)||'',
@@ -4838,6 +4844,64 @@ saveSceneEditor();`;
 }
 function closeTagGuideModal() {
   document.getElementById('tagGuideOverlay').style.display = 'none';
+}
+
+// ── Object Detection (DETR via transformers.js) ──────────────────
+const _DETR_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+let _detrPipeline = null;
+let _detrLoading  = false;
+
+async function runObjectDetection() {
+  const s = currentId ? scenes.find(x => x.id === currentId) : null;
+  if (!s) { alert('เปิดฉากก่อนแล้วค่อย Detect'); return; }
+  const imgUrl = s.filepath || s.thumb || '';
+  if (!imgUrl) { alert('ฉากนี้ไม่มีรูปภาพ'); return; }
+
+  const statusEl  = document.getElementById('detectObjStatus');
+  const resultsEl = document.getElementById('detectObjResults');
+  const btn       = document.getElementById('detectObjBtn');
+  btn.disabled = true;
+  statusEl.textContent = '⏳ โหลด DETR model… (ครั้งแรกอาจใช้ ~30 วินาที)';
+  resultsEl.style.display = 'none';
+
+  try {
+    if (!_detrPipeline) {
+      if (_detrLoading) { statusEl.textContent = '⏳ กำลังโหลด…'; while(_detrLoading) await new Promise(r=>setTimeout(r,300)); }
+      else {
+        _detrLoading = true;
+        const { pipeline, env } = await import(_DETR_TX_URL);
+        env.allowRemoteModels = true; env.allowLocalModels = false;
+        _detrPipeline = await pipeline('object-detection', 'Xenova/detr-resnet-50', { quantized: true });
+        _detrLoading = false;
+      }
+    }
+    statusEl.textContent = '🔍 กำลัง detect…';
+    const cleanUrl = imgUrl.split('?')[0];
+    const output = await _detrPipeline(cleanUrl, { threshold: 0.4 });
+
+    if (!output || output.length === 0) {
+      statusEl.textContent = '⚠️ ไม่พบ object ที่ชัดเจน (threshold 0.4)';
+    } else {
+      const labels = [...new Set(output.map(o => o.label))];
+      const labelStr = labels.join(', ');
+      statusEl.textContent = `✅ พบ ${output.length} objects`;
+      resultsEl.style.display = '';
+      resultsEl.innerHTML = `<strong>🏷️ Detected:</strong> ${output.map(o=>`<span style="background:#E0F2FE;border-radius:4px;padding:1px 6px;margin:2px;display:inline-block">${o.label} <span style="opacity:.6">${Math.round(o.score*100)}%</span></span>`).join('')}
+        <br><br><strong>เพิ่มลงใน prompt:</strong><br>
+        <code style="display:block;margin-top:4px;background:#fff;padding:6px;border-radius:4px;font-size:10.5px">Detected objects in scene: ${labelStr}<br>Use these to improve keywords[] and semantic_description.</code>
+        <button onclick="appendDetectedToPrompt('${labelStr.replace(/'/g,"\\'")}');this.textContent='✅ Added!'" style="margin-top:8px;padding:5px 12px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⬆️ Append to Prompt</button>`;
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message;
+    console.error('[DETR]', e);
+  }
+  btn.disabled = false;
+}
+
+function appendDetectedToPrompt(labelStr) {
+  const ta = document.getElementById('tg_tag');
+  if (!ta) return;
+  ta.value = ta.value + `\n\n// Object Detection (DETR):\nDetected objects: ${labelStr}\nรวม objects เหล่านี้ใน keywords[] และ semantic_description ด้วย`;
 }
 function copyText(id, btn) {
   const el = document.getElementById(id);

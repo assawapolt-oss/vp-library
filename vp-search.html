@@ -600,11 +600,13 @@
 @media (max-width:640px) {
 
   /* ── Topbar ── */
-  .topbar { padding:0 14px; height:46px; }
+  .topbar { padding:0 10px; height:46px; }
   .topbar-logo { height:22px; }
   .vp-header-title { display:none; }
   .topbar-title { font-size:13px; }
   .topbar-count { display:none; }
+  #topbar-service-btn { display:none; }
+  #topbar-queue-btn { display:none; }
   #userPill { padding:3px 8px 3px 5px !important; font-size:11px !important; }
 
   /* ── Nav bar ── */
@@ -750,14 +752,15 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
-    <button onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
-    <a href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 Queue Check</a>
+    <button id="topbar-service-btn" onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
+    <a id="topbar-queue-btn" href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 Queue Check</a>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
       <span id="themeIcon">☀️</span>
     </button>
     <div style="position:relative" id="userPillWrap">
       <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="toggleUserMenu()" title="คลิกเพื่อดูเมนู">
-        <span style="font-size:14px">👤</span>
+        <img id="userAvatarImg" src="" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;display:none;border:1.5px solid rgba(255,255,255,.4)" onerror="this.style.display='none';document.getElementById('userAvatarIcon').style.display='inline'">
+        <span id="userAvatarIcon" style="font-size:14px">👤</span>
         <span id="userLabel">ไม่ได้ login</span>
         <span style="font-size:10px;opacity:.7">▾</span>
       </div>
@@ -765,6 +768,7 @@
         <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
         <a id="userMenuAdmin" href="vp-admin.html" target="_blank" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:#B91C1C;text-decoration:none;gap:8px;align-items:center;border-bottom:1px solid var(--border)" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">⚙️ เข้าหลังบ้าน Admin</a>
         <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">🔑 เข้าสู่ระบบ</div>
+        <div id="userMenuAvatar" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer;border-bottom:1px solid var(--border)" onclick="closeUserMenu();uploadAvatar()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">📸 เปลี่ยนรูป Avatar</div>
         <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">↩ ออกจากระบบ / เปลี่ยน User</div>
       </div>
     </div>
@@ -1713,13 +1717,61 @@ function renderCards() {
 // SEMANTIC SEARCH — pgvector + CLIP text encoder
 // Uses match_scenes RPC in Supabase (vector cosine similarity)
 // Text encoder: Xenova/clip-vit-base-patch32 via transformers.js
+// Thai→English: Helsinki-NLP/opus-mt-th-en via transformers.js
 // ══════════════════════════════════════════════════════════════
 
 const _SEM_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
 const _SEM_MODEL  = 'Xenova/clip-vit-base-patch32';
+const _MT_MODEL   = 'Xenova/opus-mt-th-en';      // Thai→EN MT (Helsinki-NLP, ~120MB quantized)
 let _semTextProc   = null;            // AutoTokenizer (shared with runRec)
 let _semTextModel  = null;            // CLIPTextModelWithProjection (shared with runRec)
 let _semModelLoading = false;
+let _mtPipeline    = null;            // Translation pipeline (lazy-loaded)
+let _mtLoading     = false;
+
+// Detect if text is mostly Thai (has Thai Unicode chars)
+function _isThai(text) {
+  const thaiChars = (text.match(/[\u0E00-\u0E7F]/g) || []).length;
+  return thaiChars / text.length > 0.3;
+}
+
+async function _loadMTModel() {
+  if (_mtPipeline) return _mtPipeline;
+  if (_mtLoading) {
+    while (_mtLoading) await new Promise(r => setTimeout(r, 300));
+    return _mtPipeline;
+  }
+  _mtLoading = true;
+  try {
+    const { pipeline, env } = await import(_SEM_TX_URL);
+    env.allowRemoteModels = true; env.allowLocalModels = false;
+    setAIStatus('loading', '📥 โหลด Thai→EN translator… (~120MB ครั้งแรก)', 15);
+    _mtPipeline = await pipeline('translation', _MT_MODEL, { quantized: true });
+    _mtLoading = false;
+    return _mtPipeline;
+  } catch(e) {
+    console.warn('[MT] Load failed:', e.message);
+    _mtLoading = false;
+    return null;
+  }
+}
+
+async function _translateThai(text) {
+  // Fast path: keyword expansion (always available, instant)
+  const expanded = extractFromText(text);
+  if (expanded.size > 0) {
+    return Array.from(expanded).join(' ');
+  }
+  // Slow path: MT model (lazy-loaded, 120MB)
+  const mt = await _loadMTModel();
+  if (!mt) return text; // fallback to raw (CLIP won't understand but we tried)
+  try {
+    const result = await mt(text, { max_new_tokens: 64 });
+    return result[0]?.translation_text || text;
+  } catch(e) {
+    return text;
+  }
+}
 
 function onSearchInput() {
   renderCards();
@@ -1990,14 +2042,12 @@ async function runRec() {
       return;
     }
 
-    // 2. Translate Thai keywords → English for CLIP (CLIP is English-only)
-    const extractedTags = extractFromText(text);
+    // 2. Translate Thai → English for CLIP (CLIP is English-only model)
     let queryForCLIP = text;
-    if (extractedTags.size > 0) {
-      // Build English query from extracted semantic tags for better CLIP matching
-      const englishTerms = Array.from(extractedTags).join(' ');
-      queryForCLIP = englishTerms;
-      setAIStatus('loading', `🔤 แปลคำค้น: ${englishTerms}`, 40);
+    if (_isThai(text)) {
+      setAIStatus('loading', '🔤 แปลภาษาไทย → English…', 35);
+      queryForCLIP = await _translateThai(text);
+      setAIStatus('loading', `🔤 แปลแล้ว: "${queryForCLIP}"`, 45);
     }
 
     // 3. Encode text → embedding
@@ -3762,7 +3812,7 @@ async function loadUsers() {
       const { data, error } = await _sc.from('users').select('*');
       if (!error && data && data.length > 0) {
         USERS_DB = {};
-        data.forEach(u => { USERS_DB[u.username] = { role: u.role||'viewer', hash: u.password_hash||'', name: u.display_name||u.username }; });
+        data.forEach(u => { USERS_DB[u.username] = { role: u.role||'viewer', hash: u.password_hash||'', name: u.display_name||u.username, avatar: u.avatar_url||'' }; });
         console.log('[Auth] Loaded', data.length, 'users from Supabase');
         return;
       }
@@ -3805,12 +3855,18 @@ function initUser() {
   const menuAdmin = document.getElementById('userMenuAdmin');
   const menuLogin = document.getElementById('userMenuLogin');
   const menuLogout = document.getElementById('userMenuLogout');
+  const menuAvatar = document.getElementById('userMenuAvatar');
+  const avatarImg  = document.getElementById('userAvatarImg');
+  const avatarIcon = document.getElementById('userAvatarIcon');
   if (!saved) {
     el.textContent = 'ไม่ได้ login';
     if (menuName) menuName.textContent = 'ไม่ได้ login';
     if (menuAdmin) menuAdmin.style.display = 'none';
     if (menuLogin) menuLogin.style.display = '';
     if (menuLogout) menuLogout.style.display = 'none';
+    if (menuAvatar) menuAvatar.style.display = 'none';
+    if (avatarImg) { avatarImg.src = ''; avatarImg.style.display = 'none'; }
+    if (avatarIcon) avatarIcon.style.display = 'inline';
     showAuthOverlay();
   } else {
     const role = localStorage.getItem(USER_ROLE_KEY) || '';
@@ -3821,7 +3877,51 @@ function initUser() {
     if (menuAdmin) { menuAdmin.style.display = isAdminOrEd ? 'flex' : 'none'; }
     if (menuLogin) menuLogin.style.display = 'none';
     if (menuLogout) menuLogout.style.display = '';
+    if (menuAvatar) menuAvatar.style.display = '';
+    // Avatar display
+    const avatarUrl = localStorage.getItem('vp_user_avatar') || '';
+    if (avatarImg && avatarUrl) {
+      avatarImg.src = avatarUrl;
+      avatarImg.style.display = 'inline-block';
+      if (avatarIcon) avatarIcon.style.display = 'none';
+    } else {
+      if (avatarImg) { avatarImg.src = ''; avatarImg.style.display = 'none'; }
+      if (avatarIcon) avatarIcon.style.display = 'inline';
+    }
   }
+}
+
+// ── Avatar upload ──────────────────────────────────────────────
+async function uploadAvatar() {
+  const username = localStorage.getItem(USER_KEY);
+  if (!username) return;
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('❌ รูปต้องไม่เกิน 2MB', 2500); return; }
+    try {
+      const _sc = supabase.createClient(
+        'https://pgaqdqbjyewwckpslyvx.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
+      );
+      const ext = file.type.includes('png') ? 'png' : file.type.includes('webp') ? 'webp' : 'jpg';
+      const path = `avatars/${username}.${ext}`;
+      showToast('⏳ กำลังอัปโหลด…', 2000);
+      const { error: upErr } = await _sc.storage.from('vp-images').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw new Error(upErr.message);
+      const { data: urlData } = _sc.storage.from('vp-images').getPublicUrl(path);
+      const avatarUrl = urlData.publicUrl;
+      await _sc.from('users').update({ avatar_url: avatarUrl }).eq('username', username);
+      localStorage.setItem('vp_user_avatar', avatarUrl);
+      initUser();
+      showToast('✅ อัปเดต Avatar แล้ว!', 2500);
+    } catch(err) {
+      showToast('❌ ' + err.message, 3000);
+    }
+  };
+  input.click();
 }
 
 function showAuthOverlay() {
@@ -3887,6 +3987,9 @@ async function doLogin() {
   if (authenticated) {
     localStorage.setItem(USER_KEY, username);
     localStorage.setItem(USER_ROLE_KEY, role);
+    const avatarUrl = (USERS_DB && USERS_DB[username] && USERS_DB[username].avatar) || '';
+    if (avatarUrl) localStorage.setItem('vp_user_avatar', avatarUrl);
+    else localStorage.removeItem('vp_user_avatar');
     document.getElementById('authOverlay').classList.remove('open');
     passEl.value = '';
     userEl.value = '';

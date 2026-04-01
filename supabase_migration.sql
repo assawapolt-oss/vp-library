@@ -89,7 +89,23 @@ ALTER TABLE public.scenes
   ADD COLUMN IF NOT EXISTS ambient_equip_id text DEFAULT '';
 
 -- ──────────────────────────────────────────────────────────────────
--- 6. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
+-- 6. STATUS + TITLE_TH columns (v3 — 2026-04-01)
+-- ──────────────────────────────────────────────────────────────────
+ALTER TABLE public.scenes
+  ADD COLUMN IF NOT EXISTS status    text DEFAULT 'active',  -- 'active' | 'inactive'
+  ADD COLUMN IF NOT EXISTS title_th  text DEFAULT '';        -- ชื่อฉากภาษาไทย
+
+-- Backfill: any legacy draft/archived → inactive
+UPDATE public.scenes SET status = 'inactive' WHERE status IN ('draft','archived');
+
+-- ──────────────────────────────────────────────────────────────────
+-- 7. USER AVATARS (v3 — 2026-04-01)
+-- ──────────────────────────────────────────────────────────────────
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS avatar_url text DEFAULT '';
+
+-- ──────────────────────────────────────────────────────────────────
+-- 8. VERIFY — ดู columns ที่มีใน scenes ตอนนี้
 -- ──────────────────────────────────────────────────────────────────
 SELECT column_name, data_type, column_default
 FROM   information_schema.columns
@@ -98,7 +114,7 @@ WHERE  table_schema = 'public'
 ORDER BY ordinal_position;
 
 -- ──────────────────────────────────────────────────────────────────
--- 6. VERIFY — service_requests columns
+-- 9. VERIFY — service_requests columns
 -- ──────────────────────────────────────────────────────────────────
 SELECT column_name, data_type
 FROM   information_schema.columns
