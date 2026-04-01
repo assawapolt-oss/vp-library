@@ -20,10 +20,10 @@
     --input-bg:#fff; --tag-bg:#F3F4F6;
   }
   [data-theme="dark"] {
-    --dark:#F1F5F9; --bg:#0F1117; --card:#1E2130;
-    --border:#2D3148; --muted:#94A3B8;
-    --nav-bg:#161825; --nav-border:#2D3148;
-    --input-bg:#1E2130; --tag-bg:#252840;
+    --dark:#DDE4F0; --bg:#07080E; --card:#0C0D15;
+    --border:rgba(255,255,255,0.07); --muted:#3E4A65;
+    --nav-bg:#09090F; --nav-border:rgba(255,255,255,0.05);
+    --input-bg:#0C0D15; --tag-bg:#10111A;
     color-scheme: dark;
   }
   [data-theme="dim"] {
@@ -733,15 +733,392 @@
   /* On small screens, stack presenter row + sidebar into topbar nicely */
   #lb-fs-sidebar-row { order:3; width:100%; }
 }
+
+/* ═══════════════════════════════════════════════════
+   DARK PREMIUM REDESIGN — visual override layer
+   All DB/logic untouched. CSS only.
+═══════════════════════════════════════════════════ */
+
+/* ── Topbar: deep cinematic red ── */
+[data-theme="dark"] .topbar,
+[data-theme="dim"] .topbar {
+  background: linear-gradient(110deg, #0E0203 0%, #1C0507 40%, #8B1218 75%, #CC2229 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 32px rgba(0,0,0,0.7);
+  border-bottom: 1px solid rgba(204,34,41,0.25);
+}
+
+/* ── Nav bar ── */
+[data-theme="dark"] .nav-bar,
+[data-theme="dim"] .nav-bar {
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+}
+[data-theme="dark"] .mode-tab,
+[data-theme="dim"] .mode-tab {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #2A3450;
+}
+[data-theme="dark"] .mode-tab:hover,
+[data-theme="dim"] .mode-tab:hover { color: rgba(255,255,255,0.55); }
+[data-theme="dark"] .mode-tab.active,
+[data-theme="dim"] .mode-tab.active { color: #fff; border-bottom-color: var(--red); }
+
+/* ── Nav ext links ── */
+[data-theme="dark"] .nav-ext-link.outline,
+[data-theme="dim"] .nav-ext-link.outline {
+  background: transparent; border-color: rgba(255,255,255,0.07); color: #2A3450;
+}
+[data-theme="dark"] .nav-ext-link.outline:hover,
+[data-theme="dim"] .nav-ext-link.outline:hover { border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .nav-ext-link.admin,
+[data-theme="dim"] .nav-ext-link.admin { background: rgba(204,34,41,0.08); border-color: rgba(204,34,41,0.3); color: #E05560; }
+[data-theme="dark"] .nav-ext-link.admin:hover,
+[data-theme="dim"] .nav-ext-link.admin:hover { background: rgba(204,34,41,0.15); }
+
+/* ── Search bar ── */
+[data-theme="dark"] .search-bar,
+[data-theme="dim"] .search-bar {
+  background: var(--nav-bg); border-bottom: 1px solid var(--nav-border);
+}
+[data-theme="dark"] .search-input,
+[data-theme="dim"] .search-input {
+  background: var(--input-bg); border-color: rgba(255,255,255,0.07);
+  color: var(--dark); border-radius: 8px;
+}
+[data-theme="dark"] .search-input::placeholder,
+[data-theme="dim"] .search-input::placeholder { color: #1E2840; }
+[data-theme="dark"] .search-input:focus,
+[data-theme="dim"] .search-input:focus {
+  border-color: rgba(204,34,41,0.45);
+  box-shadow: 0 0 0 3px rgba(204,34,41,0.07);
+}
+
+/* ── Filter bar ── */
+[data-theme="dark"] .filters,
+[data-theme="dim"] .filters {
+  background: var(--nav-bg); border-bottom: 1px solid var(--nav-border);
+}
+[data-theme="dark"] .filter-label,
+[data-theme="dim"] .filter-label { color: #252E45; font-size: 9px; letter-spacing: 0.12em; }
+[data-theme="dark"] .layer-badge,
+[data-theme="dim"] .layer-badge { font-size: 8px; padding: 1px 4px; border-radius: 3px; opacity: 0.85; }
+
+[data-theme="dark"] .ftag,
+[data-theme="dim"] .ftag {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #2E3850;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 4px 11px;
+  transition: all 0.15s;
+}
+[data-theme="dark"] .ftag:hover,
+[data-theme="dim"] .ftag:hover {
+  border-color: rgba(204,34,41,0.35);
+  color: rgba(255,255,255,0.65);
+  background: rgba(204,34,41,0.05);
+}
+[data-theme="dark"] .ftag.active,
+[data-theme="dim"] .ftag.active {
+  background: rgba(204,34,41,0.14);
+  border-color: rgba(204,34,41,0.45);
+  color: #FF7A85;
+  font-weight: 600;
+}
+
+/* ── Results bar ── */
+[data-theme="dark"] .results-bar,
+[data-theme="dim"] .results-bar { padding: 9px 24px; }
+[data-theme="dark"] .clear-btn,
+[data-theme="dim"] .clear-btn {
+  background: transparent; border-color: rgba(255,255,255,0.07);
+  color: #252E45; font-size: 11px; letter-spacing: 0.04em;
+}
+[data-theme="dark"] .clear-btn:hover,
+[data-theme="dim"] .clear-btn:hover {
+  border-color: rgba(204,34,41,0.35); color: rgba(204,34,41,0.85); background: rgba(204,34,41,0.04);
+}
+
+/* ── View toggle ── */
+[data-theme="dark"] .view-toggle,
+[data-theme="dim"] .view-toggle {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px; padding: 2px;
+}
+[data-theme="dark"] .vtbtn,
+[data-theme="dim"] .vtbtn { color: #252E45; }
+[data-theme="dark"] .vtbtn.active,
+[data-theme="dim"] .vtbtn.active {
+  background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); box-shadow: none;
+}
+
+/* ── Scene Cards: dark glass ── */
+[data-theme="dark"] .scene-card,
+[data-theme="dim"] .scene-card {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+[data-theme="dark"] .scene-card:hover,
+[data-theme="dim"] .scene-card:hover {
+  transform: translateY(-5px) scale(1.008);
+  box-shadow: 0 24px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(204,34,41,0.28);
+  border-color: rgba(204,34,41,0.28);
+}
+[data-theme="dark"] .scene-card:hover .thumb-img,
+[data-theme="dim"] .scene-card:hover .thumb-img { transform: scale(1.05); }
+
+/* Card thumbnail area */
+[data-theme="dark"] .scene-thumb,
+[data-theme="dim"] .scene-thumb { background: #08090F; }
+[data-theme="dark"] .scene-thumb-placeholder,
+[data-theme="dim"] .scene-thumb-placeholder {
+  background: linear-gradient(135deg, #08090F, #10111A);
+  color: #14192A; font-size: 26px;
+}
+
+/* Card body typography */
+[data-theme="dark"] .scene-body,
+[data-theme="dim"] .scene-body { padding: 12px 14px 14px; }
+[data-theme="dark"] .scene-id,
+[data-theme="dim"] .scene-id { font-size: 9.5px; letter-spacing: 0.14em; opacity: 0.85; }
+[data-theme="dark"] .scene-title,
+[data-theme="dim"] .scene-title {
+  color: rgba(220,230,255,0.85);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em; line-height: 1.45;
+}
+[data-theme="dark"] .scene-title-th,
+[data-theme="dim"] .scene-title-th { color: #2A3450; font-size: 11px; }
+
+/* Card tags */
+[data-theme="dark"] .stag,
+[data-theme="dim"] .stag { font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; border-radius: 3px; padding: 2px 6px; }
+[data-theme="dark"] .stag-env,
+[data-theme="dim"] .stag-env { background: rgba(29,78,216,0.11); color: #4B7BF5; border: 1px solid rgba(29,78,216,0.18); }
+[data-theme="dark"] .stag-mood,
+[data-theme="dim"] .stag-mood { background: rgba(109,40,217,0.11); color: #9B72F5; border: 1px solid rgba(109,40,217,0.18); }
+[data-theme="dark"] .stag-editorial,
+[data-theme="dim"] .stag-editorial { background: rgba(204,34,41,0.11); color: #E25560; border: 1px solid rgba(204,34,41,0.18); }
+[data-theme="dark"] .stag-motion,
+[data-theme="dim"] .stag-motion { background: rgba(16,185,129,0.11); color: #34D399; border: 1px solid rgba(16,185,129,0.18); }
+[data-theme="dark"] .stag-usage,
+[data-theme="dim"] .stag-usage { background: rgba(245,158,11,0.09); color: #FBBF24; border: 1px solid rgba(245,158,11,0.16); }
+
+/* Meta pills */
+[data-theme="dark"] .meta-pill,
+[data-theme="dim"] .meta-pill {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: #2A3450; border-radius: 3px;
+}
+[data-theme="dark"] .notes-box,
+[data-theme="dim"] .notes-box {
+  background: rgba(245,158,11,0.05); border-left: 2px solid rgba(245,158,11,0.38);
+  color: rgba(245,158,11,0.65); border-radius: 0 4px 4px 0;
+}
+
+/* Skeleton dark */
+[data-theme="dark"] .skeleton,
+[data-theme="dim"] .skeleton {
+  background: linear-gradient(90deg, #0C0D15 25%, #10111A 50%, #0C0D15 75%);
+  background-size: 600px 100%;
+}
+
+/* ── Pagination ── */
+[data-theme="dark"] .pg-btn,
+[data-theme="dim"] .pg-btn {
+  background: var(--card); border-color: rgba(255,255,255,0.07); color: #2A3450; border-radius: 6px;
+}
+[data-theme="dark"] .pg-btn:hover,
+[data-theme="dim"] .pg-btn:hover {
+  border-color: rgba(204,34,41,0.35); color: rgba(204,34,41,0.85); background: rgba(204,34,41,0.04);
+}
+[data-theme="dark"] .pg-btn.active,
+[data-theme="dim"] .pg-btn.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* ── Theme toggle ── */
+[data-theme="dark"] .theme-toggle,
+[data-theme="dim"] .theme-toggle {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); font-size: 11px;
+}
+[data-theme="dark"] .theme-toggle:hover,
+[data-theme="dim"] .theme-toggle:hover { background: rgba(255,255,255,0.1); }
+[data-theme="dark"] .theme-menu,
+[data-theme="dim"] .theme-menu {
+  background: #0D0F18; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+[data-theme="dark"] .theme-opt,
+[data-theme="dim"] .theme-opt { color: #3A4865; font-size: 12px; }
+[data-theme="dark"] .theme-opt:hover,
+[data-theme="dim"] .theme-opt:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); }
+[data-theme="dark"] .theme-opt.active,
+[data-theme="dim"] .theme-opt.active { color: var(--red); }
+
+/* ── Recommend mode ── */
+[data-theme="dark"] .rec-card,
+[data-theme="dim"] .rec-card { background: var(--card); border-color: rgba(255,255,255,0.07); border-radius: 12px; }
+[data-theme="dark"] .rec-section-title,
+[data-theme="dim"] .rec-section-title { color: #252E45; letter-spacing: 0.1em; }
+[data-theme="dark"] .rec-textarea,
+[data-theme="dim"] .rec-textarea {
+  background: var(--input-bg); border-color: rgba(255,255,255,0.07); color: rgba(220,230,255,0.85);
+}
+[data-theme="dark"] .rec-textarea:focus,
+[data-theme="dim"] .rec-textarea:focus { border-color: rgba(204,34,41,0.4); box-shadow: 0 0 0 3px rgba(204,34,41,0.07); }
+[data-theme="dark"] .rec-textarea::placeholder,
+[data-theme="dim"] .rec-textarea::placeholder { color: #1E2840; }
+
+[data-theme="dark"] .tpill,
+[data-theme="dim"] .tpill { background: transparent; border-color: rgba(255,255,255,0.07); color: #2E3850; }
+[data-theme="dark"] .tpill:hover,
+[data-theme="dim"] .tpill:hover { border-color: rgba(204,34,41,0.35); color: rgba(255,255,255,0.7); background: rgba(204,34,41,0.05); }
+[data-theme="dark"] .tpill.active,
+[data-theme="dim"] .tpill.active { background: rgba(204,34,41,0.14); border-color: rgba(204,34,41,0.45); color: #FF7A85; }
+
+[data-theme="dark"] .obtn,
+[data-theme="dim"] .obtn { background: transparent; border-color: rgba(255,255,255,0.07); color: #2E3850; }
+[data-theme="dark"] .obtn:hover,
+[data-theme="dim"] .obtn:hover { border-color: rgba(204,34,41,0.35); color: rgba(255,255,255,0.7); }
+[data-theme="dark"] .obtn.active,
+[data-theme="dim"] .obtn.active { background: rgba(204,34,41,0.14); border-color: rgba(204,34,41,0.45); color: #FF7A85; }
+
+[data-theme="dark"] .mbtn,
+[data-theme="dim"] .mbtn { background: transparent; border-color: rgba(255,255,255,0.07); color: #2E3850; }
+[data-theme="dark"] .mbtn:hover,
+[data-theme="dim"] .mbtn:hover { border-color: rgba(204,34,41,0.3); background: rgba(204,34,41,0.05); color: rgba(255,255,255,0.7); }
+[data-theme="dark"] .mbtn.active,
+[data-theme="dim"] .mbtn.active { background: rgba(204,34,41,0.12); border-color: rgba(204,34,41,0.4); color: rgba(204,34,41,0.9); }
+
+/* Recommend result cards */
+[data-theme="dark"] .rcard,
+[data-theme="dim"] .rcard { background: var(--card); border-color: rgba(255,255,255,0.07); border-radius: 12px; }
+[data-theme="dark"] .rcard:hover,
+[data-theme="dim"] .rcard:hover {
+  border-color: rgba(204,34,41,0.28);
+  box-shadow: 0 16px 44px rgba(0,0,0,0.5), 0 0 0 1px rgba(204,34,41,0.14);
+}
+[data-theme="dark"] .rcard-thumb-ph,
+[data-theme="dim"] .rcard-thumb-ph { background: linear-gradient(135deg, #08090F, #10111A); }
+[data-theme="dark"] .rcard-title,
+[data-theme="dim"] .rcard-title { color: rgba(220,230,255,0.85); }
+[data-theme="dark"] .rcard-title-th,
+[data-theme="dim"] .rcard-title-th { color: #2A3450; }
+[data-theme="dark"] .rcard-notes,
+[data-theme="dim"] .rcard-notes {
+  background: rgba(245,158,11,0.04); border-top-color: rgba(255,255,255,0.05); color: rgba(245,158,11,0.6);
+}
+[data-theme="dark"] .rcard-notes strong,
+[data-theme="dim"] .rcard-notes strong { color: rgba(255,255,255,0.65); }
+[data-theme="dark"] .rec-results-header,
+[data-theme="dim"] .rec-results-header { color: #2A3450; border-bottom-color: rgba(255,255,255,0.05); }
+[data-theme="dark"] .score-track,
+[data-theme="dim"] .score-track { background: rgba(255,255,255,0.06); }
+[data-theme="dark"] .no-rec,
+[data-theme="dim"] .no-rec { color: #1E2840; }
+
+/* AI status bars */
+[data-theme="dark"] .ai-status-bar.loading,
+[data-theme="dim"] .ai-status-bar.loading { background: rgba(29,78,216,0.07); border-color: rgba(29,78,216,0.2); color: #4B7BF5; }
+[data-theme="dark"] .ai-status-bar.ready,
+[data-theme="dim"] .ai-status-bar.ready { background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.2); color: #34D399; }
+[data-theme="dark"] .ai-status-bar.error,
+[data-theme="dim"] .ai-status-bar.error { background: rgba(204,34,41,0.07); border-color: rgba(204,34,41,0.2); color: #E05560; }
+[data-theme="dark"] .ai-spinner,
+[data-theme="dim"] .ai-spinner { border-color: rgba(75,123,245,0.18); border-top-color: #4B7BF5; }
+[data-theme="dark"] .ai-progress,
+[data-theme="dim"] .ai-progress { background: rgba(29,78,216,0.12); }
+
+/* ── Modal ── */
+[data-theme="dark"] .modal,
+[data-theme="dim"] .modal {
+  background: #0D0F18; border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+}
+[data-theme="dark"] .modal-title,
+[data-theme="dim"] .modal-title { color: rgba(220,230,255,0.92); }
+[data-theme="dark"] .modal-title-th,
+[data-theme="dim"] .modal-title-th { color: #2A3450; }
+[data-theme="dark"] .modal-section-title,
+[data-theme="dim"] .modal-section-title { color: #252E45; letter-spacing: 0.1em; }
+[data-theme="dark"] .modal-notes,
+[data-theme="dim"] .modal-notes {
+  background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.38); color: rgba(245,158,11,0.65);
+}
+[data-theme="dark"] .path-box,
+[data-theme="dim"] .path-box { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); color: #2A3450; }
+[data-theme="dark"] .modal-close,
+[data-theme="dim"] .modal-close {
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
+}
+
+/* ── Auth box ── */
+[data-theme="dark"] .auth-box,
+[data-theme="dim"] .auth-box {
+  background: #0D0F18; border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 28px 80px rgba(0,0,0,0.7);
+}
+[data-theme="dark"] .auth-title,
+[data-theme="dim"] .auth-title { color: rgba(220,230,255,0.9); }
+[data-theme="dark"] .auth-sub,
+[data-theme="dim"] .auth-sub { color: #2A3450; }
+[data-theme="dark"] .auth-field label,
+[data-theme="dim"] .auth-field label { color: rgba(255,255,255,0.4); }
+[data-theme="dark"] .auth-field input,
+[data-theme="dim"] .auth-field input { background: #10111A; border-color: rgba(255,255,255,0.07); color: rgba(220,230,255,0.85); }
+[data-theme="dark"] .auth-field input:focus,
+[data-theme="dim"] .auth-field input:focus { border-color: rgba(204,34,41,0.4); }
+[data-theme="dark"] .auth-error,
+[data-theme="dim"] .auth-error { background: rgba(204,34,41,0.07); border-color: rgba(204,34,41,0.25); color: #E05560; }
+
+/* ── No results ── */
+[data-theme="dark"] .no-results,
+[data-theme="dim"] .no-results { color: #1E2840; }
+[data-theme="dark"] .nr-icon,
+[data-theme="dim"] .nr-icon { opacity: 0.25; filter: grayscale(1); }
+
+/* ── Collection cards ── */
+[data-theme="dark"] .col-card,
+[data-theme="dim"] .col-card {
+  background: var(--card); border-color: rgba(255,255,255,0.06); border-radius: 12px;
+}
+[data-theme="dark"] .col-card:hover,
+[data-theme="dim"] .col-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+
+/* ── User menu ── */
+[data-theme="dark"] #userMenu,
+[data-theme="dim"] #userMenu {
+  background: #0D0F18; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+
+/* ── Sem toggle btn ── */
+[data-theme="dark"] .sem-toggle-btn,
+[data-theme="dim"] .sem-toggle-btn {
+  background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); color: #2E3850;
+}
+[data-theme="dark"] .sem-toggle-btn:hover,
+[data-theme="dim"] .sem-toggle-btn:hover { border-color: rgba(109,40,217,0.4); color: #8B72E5; }
+
+/* ── Grid spacing ── */
+[data-theme="dark"] .grid,
+[data-theme="dim"] .grid { gap: 14px; }
+
+/* ── Smooth fade for dark background ── */
+[data-theme="dark"] body,
+[data-theme="dim"] body { background: var(--bg); }
 </style>
 </head>
 <body>
 
 <!-- Theme dropdown (positioned absolute from topbar) -->
 <div class="theme-menu" id="themeMenu">
-  <div class="theme-opt" id="themeOptLight" onclick="setTheme('light')">☀️ Light</div>
-  <div class="theme-opt" id="themeOptDim"   onclick="setTheme('dim')">🌙 Dim</div>
-  <div class="theme-opt" id="themeOptDark"  onclick="setTheme('dark')">⬛ Dark</div>
+  <div class="theme-opt" id="themeOptLight" onclick="setTheme('light')">Light</div>
+  <div class="theme-opt" id="themeOptDim"   onclick="setTheme('dim')">Dim</div>
+  <div class="theme-opt" id="themeOptDark"  onclick="setTheme('dark')">Dark</div>
 </div>
 
 <!-- Topbar -->
@@ -752,24 +1129,24 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="topbar-count" id="totalCount"></div>
-    <button id="topbar-service-btn" onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">📋 Service Request</button>
-    <a id="topbar-queue-btn" href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">🗓 Queue Check</a>
-    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme">
-      <span id="themeIcon">☀️</span>
+    <button id="topbar-service-btn" onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">Service Request</button>
+    <a id="topbar-queue-btn" href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">Queue Check</a>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleThemeMenu()" title="เปลี่ยน Theme" style="font-size:11px;letter-spacing:0.06em;font-weight:700">
+      <span id="themeIcon">Theme</span>
     </button>
     <div style="position:relative" id="userPillWrap">
       <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="toggleUserMenu()" title="คลิกเพื่อดูเมนู">
         <img id="userAvatarImg" src="" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;display:none;border:1.5px solid rgba(255,255,255,.4)" onerror="this.style.display='none';document.getElementById('userAvatarIcon').style.display='inline'">
-        <span id="userAvatarIcon" style="font-size:14px">👤</span>
+        <span id="userAvatarIcon" style="font-size:11px;opacity:0.6;letter-spacing:0.02em">USER</span>
         <span id="userLabel">ไม่ได้ login</span>
         <span style="font-size:10px;opacity:.7">▾</span>
       </div>
       <div id="userMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:160px;z-index:999;overflow:hidden">
         <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
-        <a id="userMenuAdmin" href="vp-admin.html" target="_blank" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:#B91C1C;text-decoration:none;gap:8px;align-items:center;border-bottom:1px solid var(--border)" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">⚙️ เข้าหลังบ้าน Admin</a>
-        <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">🔑 เข้าสู่ระบบ</div>
-        <div id="userMenuAvatar" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer;border-bottom:1px solid var(--border)" onclick="closeUserMenu();uploadAvatar()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">📸 เปลี่ยนรูป Avatar</div>
-        <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">↩ ออกจากระบบ / เปลี่ยน User</div>
+        <a id="userMenuAdmin" href="vp-admin.html" target="_blank" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:#B91C1C;text-decoration:none;gap:8px;align-items:center;border-bottom:1px solid var(--border)" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">Admin Panel</a>
+        <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เข้าสู่ระบบ</div>
+        <div id="userMenuAvatar" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer;border-bottom:1px solid var(--border)" onclick="closeUserMenu();uploadAvatar()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เปลี่ยนรูป Avatar</div>
+        <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">ออกจากระบบ</div>
       </div>
     </div>
   </div>
@@ -778,9 +1155,9 @@
 <!-- Unified Nav Bar -->
 <div class="nav-bar">
   <div class="nav-left">
-    <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">🔍 ค้นหาฉาก</button>
-    <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">✨ แนะนำฉาก</button>
-    <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">🗂 Collection</button>
+    <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">ค้นหาฉาก</button>
+    <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">AI แนะนำ</button>
+    <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">Collection</button>
   </div>
   <div class="nav-right"></div>
 </div>
@@ -788,12 +1165,12 @@
 <!-- ══════════════ SEARCH MODE ══════════════ -->
 <div id="modeSearch">
   <div class="search-bar">
-    <input class="search-input" id="searchInput" placeholder="🔍  ค้นหา... เช่น robot, dramatic, Tech, tunnel, outdoor" oninput="onSearchInput()">
+    <input class="search-input" id="searchInput" placeholder="ค้นหา... เช่น robot, dramatic, ปั๊มน้ำมัน, outdoor, มีพิธีกร" oninput="onSearchInput()">
   </div>
   <div class="filters">
     <!-- Show filter row (populated dynamically) -->
     <div class="filter-group" id="showFilterGroup" style="display:none">
-      <div class="filter-label">📺 รายการ</div>
+      <div class="filter-label">รายการ</div>
       <div class="filter-tags" id="f-show"></div>
     </div>
     <!-- Layer 1: WORLD -->
@@ -801,16 +1178,16 @@
       <div class="filter-label filter-layer-label"><span class="layer-badge">L1</span> WORLD — ฉากอยู่ที่ไหน</div>
       <div class="filter-tags">
         <button class="ftag active" data-dim="world" data-val="all" onclick="setFilter('world','all',this)">ทั้งหมด</button>
-        <button class="ftag" data-dim="world" data-val="urban-city" onclick="setFilter('world','urban-city',this)">🌆 Urban &amp; City</button>
-        <button class="ftag" data-dim="world" data-val="interior-office" onclick="setFilter('world','interior-office',this)">🏢 Interior &amp; Office</button>
-        <button class="ftag" data-dim="world" data-val="nature-outdoor" onclick="setFilter('world','nature-outdoor',this)">🌿 Nature &amp; Outdoor</button>
-        <button class="ftag" data-dim="world" data-val="industrial" onclick="setFilter('world','industrial',this)">🏭 Industrial</button>
-        <button class="ftag" data-dim="world" data-val="commercial-retail" onclick="setFilter('world','commercial-retail',this)">🛒 Commercial &amp; Retail</button>
-        <button class="ftag" data-dim="world" data-val="transportation" onclick="setFilter('world','transportation',this)">🚉 Transportation</button>
-        <button class="ftag" data-dim="world" data-val="luxury-premium" onclick="setFilter('world','luxury-premium',this)">💎 Luxury &amp; Premium</button>
-        <button class="ftag" data-dim="world" data-val="scifi-future" onclick="setFilter('world','scifi-future',this)">🚀 Sci-Fi &amp; Future</button>
-        <button class="ftag" data-dim="world" data-val="stylized-abstract" onclick="setFilter('world','stylized-abstract',this)">🎭 Stylized &amp; Abstract</button>
-        <button class="ftag" data-dim="world" data-val="heritage-culture" onclick="setFilter('world','heritage-culture',this)">🏛 Heritage &amp; Culture</button>
+        <button class="ftag" data-dim="world" data-val="urban-city" onclick="setFilter('world','urban-city',this)">Urban &amp; City</button>
+        <button class="ftag" data-dim="world" data-val="interior-office" onclick="setFilter('world','interior-office',this)">Interior &amp; Office</button>
+        <button class="ftag" data-dim="world" data-val="nature-outdoor" onclick="setFilter('world','nature-outdoor',this)">Nature &amp; Outdoor</button>
+        <button class="ftag" data-dim="world" data-val="industrial" onclick="setFilter('world','industrial',this)">Industrial</button>
+        <button class="ftag" data-dim="world" data-val="commercial-retail" onclick="setFilter('world','commercial-retail',this)">Commercial &amp; Retail</button>
+        <button class="ftag" data-dim="world" data-val="transportation" onclick="setFilter('world','transportation',this)">Transportation</button>
+        <button class="ftag" data-dim="world" data-val="luxury-premium" onclick="setFilter('world','luxury-premium',this)">Luxury &amp; Premium</button>
+        <button class="ftag" data-dim="world" data-val="scifi-future" onclick="setFilter('world','scifi-future',this)">Sci-Fi &amp; Future</button>
+        <button class="ftag" data-dim="world" data-val="stylized-abstract" onclick="setFilter('world','stylized-abstract',this)">Stylized &amp; Abstract</button>
+        <button class="ftag" data-dim="world" data-val="heritage-culture" onclick="setFilter('world','heritage-culture',this)">Heritage &amp; Culture</button>
       </div>
     </div>
     <!-- Layer 4: POSTURE -->
@@ -818,9 +1195,9 @@
       <div class="filter-label filter-layer-label"><span class="layer-badge">L4</span> POSTURE — ท่าทางผู้นำเสนอ</div>
       <div class="filter-tags">
         <button class="ftag active" data-dim="posture" data-val="all" onclick="setFilter('posture','all',this)">ทั้งหมด</button>
-        <button class="ftag" data-dim="posture" data-val="sitting" onclick="setFilter('posture','sitting',this)">🪑 นั่ง</button>
-        <button class="ftag" data-dim="posture" data-val="standing" onclick="setFilter('posture','standing',this)">🧍 ยืน</button>
-        <button class="ftag" data-dim="posture" data-val="special" onclick="setFilter('posture','special',this)">✨ Special</button>
+        <button class="ftag" data-dim="posture" data-val="sitting" onclick="setFilter('posture','sitting',this)">นั่ง</button>
+        <button class="ftag" data-dim="posture" data-val="standing" onclick="setFilter('posture','standing',this)">ยืน</button>
+        <button class="ftag" data-dim="posture" data-val="special" onclick="setFilter('posture','special',this)">Special</button>
       </div>
     </div>
     <!-- FORMAT: รูปแบบการถ่ายทำ -->
@@ -828,11 +1205,11 @@
       <div class="filter-label filter-layer-label"><span class="layer-badge" style="background:#7C3AED">FMT</span> FORMAT — รูปแบบการถ่ายทำ</div>
       <div class="filter-tags">
         <button class="ftag active" data-dim="prod_format" data-val="all" onclick="setFilter('prod_format','all',this)">ทั้งหมด</button>
-        <button class="ftag" data-dim="prod_format" data-val="solo-host" onclick="setFilter('prod_format','solo-host',this)">🎤 พิธีกรเดี่ยว</button>
-        <button class="ftag" data-dim="prod_format" data-val="news-desk" onclick="setFilter('prod_format','news-desk',this)">📺 News Desk</button>
-        <button class="ftag" data-dim="prod_format" data-val="interview" onclick="setFilter('prod_format','interview',this)">🎙 สัมภาษณ์</button>
-        <button class="ftag" data-dim="prod_format" data-val="round-table" onclick="setFilter('prod_format','round-table',this)">⭕ Round Table</button>
-        <button class="ftag" data-dim="prod_format" data-val="vertical" onclick="setFilter('prod_format','vertical',this)">📱 Vertical</button>
+        <button class="ftag" data-dim="prod_format" data-val="solo-host" onclick="setFilter('prod_format','solo-host',this)">พิธีกรเดี่ยว</button>
+        <button class="ftag" data-dim="prod_format" data-val="news-desk" onclick="setFilter('prod_format','news-desk',this)">News Desk</button>
+        <button class="ftag" data-dim="prod_format" data-val="interview" onclick="setFilter('prod_format','interview',this)">สัมภาษณ์</button>
+        <button class="ftag" data-dim="prod_format" data-val="round-table" onclick="setFilter('prod_format','round-table',this)">Round Table</button>
+        <button class="ftag" data-dim="prod_format" data-val="vertical" onclick="setFilter('prod_format','vertical',this)">Vertical</button>
       </div>
     </div>
   </div>
@@ -4061,7 +4438,7 @@ function logActivity(type, data = {}) {
 // ══════════════════════════════════════════════════════════════
 // THEME SYSTEM
 // ══════════════════════════════════════════════════════════════
-const THEME_ICONS = { light:'☀️', dim:'🌙', dark:'⬛' };
+const THEME_ICONS = { light:'Light', dim:'Dim', dark:'Dark' };
 const THEME_KEY   = 'vp_theme';
 
 function setTheme(t) {
@@ -4092,9 +4469,9 @@ document.addEventListener('click', e => {
 
 // Load saved theme
 (function() {
-  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  const saved = localStorage.getItem(THEME_KEY) || 'dark';
   if (saved !== 'light') setTheme(saved);
-  else document.getElementById('themeIcon').textContent = '☀️';
+  else document.getElementById('themeIcon').textContent = 'Light';
   document.getElementById('themeOptLight')?.classList.toggle('active', saved === 'light');
 })();
 
