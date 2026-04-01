@@ -1270,8 +1270,9 @@ async function _loadScenes() {
             background_complexity: def.background_complexity||'medium',
             platform_fit: def.platform_fit||['16:9'], resolution: def.resolution||'HD',
             file_format: def.file_format||'webp', is_loopable: def.is_loopable||false,
-            engine: def.engine||'AI-Generated', status: 'active',
-            world: def.world||'', energy: def.energy||'',
+            engine: def.engine||'AI-Generated', status: r.status||'active',
+            world: r.world||def.world||'', energy: r.energy||def.energy||'',
+            title_th: r.title_th||def.title_th||'',
             // ── Read from DB row FIRST; fall back to def only when truly missing ──
             context_tags: (Array.isArray(r.context_tags)&&r.context_tags.length>0) ? r.context_tags
                           : (Array.isArray(r.tags)&&r.tags.length>0) ? r.tags
@@ -1617,10 +1618,15 @@ function renderCards() {
     baseList = SCENES;
   }
 
+  // Hide inactive scenes from non-admin/editor users
+  if (!isAdmin() && !isEditor()) {
+    baseList = baseList.filter(s => (s.status||'active') === 'active');
+  }
+
   let filtered = baseList.filter(matchesFilters);
 
   // Count label
-  let countLabel = `แสดง ${filtered.length} จาก ${SCENES.length} scenes`;
+  let countLabel = `แสดง ${filtered.length} จาก ${baseList.length} scenes`;
   if (_collectionFilter && _collectionName) countLabel = `🗂 ${_collectionName} — ${filtered.length} ฉาก <button onclick="_collectionFilter=null;_collectionName='';renderCards()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--card);font-family:inherit;">✕ ปิด</button>`;
   document.getElementById('resultCount').innerHTML = countLabel;
 
