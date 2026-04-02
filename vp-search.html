@@ -1124,9 +1124,9 @@
   <div style="display:flex;align-items:center;gap:14px">
     <a href="index.html" style="display:flex;align-items:center;text-decoration:none"><img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo"></a>
     <div class="vp-header-title" id="vp-header-title">Virtual Production Library<span class="vp-cursor">|</span></div>
-    <span id="vp-version-badge" style="font-size:9px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:3px;padding:1px 6px;white-space:nowrap"></span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
+    <span id="vp-version-badge" style="font-size:9px;font-weight:700;letter-spacing:0.07em;color:rgba(255,255,255,0.28);background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:2px 7px;white-space:nowrap;flex-shrink:0"></span>
     <div class="topbar-count" id="totalCount"></div>
     <button id="topbar-service-btn" onclick="switchMode('service')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Service Request">Service Request</button>
     <a id="topbar-queue-btn" href="vp-service-request.html#calendar" target="_blank" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.72);border:1px solid rgba(255,255,255,0.28);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.background='rgba(255,255,255,0.20)'" onmouseout="this.style.background='rgba(255,255,255,0.10)'" title="เช็คตารางเวลาถ่ายทำ">Queue Check</a>
@@ -1608,7 +1608,7 @@ function migrateScene(s) {
 
 // SCENES โหลดจาก Supabase — source of truth สำหรับทุก deploy
 // ── System Version (auto-bumped by GitHub Actions on every push) ──
-const VP_VERSION = 'v2026.04.02-dev';
+const VP_VERSION = 'Version 3.1';
 
 let SCENES = [];
 let _scenesReady = false;
