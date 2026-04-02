@@ -4376,13 +4376,17 @@ async function handleAuthSession(session) {
 }
 
 // Listen for auth state changes (OAuth redirect callback)
+// _supaAuthReady prevents race condition: if onAuthStateChange fires first
+// (e.g. from URL hash after OAuth), skip the getSession null callback
+let _supaAuthReady = false;
 _SB.auth.onAuthStateChange((_event, session) => {
+  _supaAuthReady = true;
   handleAuthSession(session);
 });
 
-// Check existing session on page load
+// Check existing session on page load — skip if onAuthStateChange already handled it
 _SB.auth.getSession().then(({ data: { session } }) => {
-  handleAuthSession(session);
+  if (!_supaAuthReady) handleAuthSession(session);
 });
 
 // ── Viewer-mode UI restrictions ──
