@@ -434,7 +434,7 @@
   /* ══ LOGIN MODAL ══ */
   .auth-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
   .auth-overlay.open { display:flex; }
-  .auth-box { background:var(--card); border-radius:20px; padding:40px 36px 32px; width:100%; max-width:360px; box-shadow:0 32px 80px rgba(0,0,0,.45); text-align:center; }
+  .auth-box { background:var(--card); border-radius:20px; padding:40px 36px 32px; width:100%; max-width:360px; box-shadow:0 32px 80px rgba(0,0,0,.45); text-align:center; position:relative; }
   .auth-logo-wrap { display:flex; justify-content:center; margin-bottom:14px; }
   .auth-logo-icon { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#8B1218,#CC2229); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff; letter-spacing:.05em; box-shadow:0 4px 20px rgba(204,34,41,.4); }
   .auth-title { font-size:20px; font-weight:800; color:var(--dark); margin-bottom:4px; letter-spacing:-.01em; }
@@ -442,7 +442,19 @@
   .auth-google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px 20px; background:#fff; color:#3c4043; border:1.5px solid #dadce0; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s, box-shadow .15s; box-shadow:0 1px 3px rgba(0,0,0,.08); }
   .auth-google-btn:hover { background:#f8f9fa; box-shadow:0 2px 8px rgba(0,0,0,.12); }
   .auth-google-btn:disabled { opacity:.6; cursor:not-allowed; }
-  .auth-hint { font-size:11px; color:var(--muted); margin-top:16px; opacity:.7; }
+  .auth-hint { font-size:11px; color:var(--muted); margin-top:8px; opacity:.7; margin-bottom:0; }
+  .auth-divider { display:flex; align-items:center; gap:10px; margin:14px 0; }
+  .auth-divider-line { flex:1; height:1px; background:var(--border); }
+  .auth-divider-text { font-size:11px; color:var(--muted); font-weight:600; }
+  .auth-field { margin-bottom:12px; }
+  .auth-field label { display:block; font-size:11px; font-weight:700; color:var(--dark); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+  .auth-field input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; outline:none; box-sizing:border-box; }
+  .auth-field input:focus { border-color:var(--red); }
+  .auth-submit { width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; transition:background .15s; }
+  .auth-submit:hover { background:#B91C1C; }
+  .auth-submit:disabled { background:#D1D5DB; cursor:not-allowed; }
+  .auth-close-btn { position:absolute; top:12px; right:14px; background:none; border:none; font-size:18px; color:var(--muted); cursor:pointer; padding:4px 8px; border-radius:6px; line-height:1; }
+  .auth-close-btn:hover { background:var(--bg); color:var(--dark); }
   .auth-error { background:#FFF5F5; border:1px solid #FCA5A5; color:#B91C1C; border-radius:8px; padding:9px 13px; font-size:12px; font-weight:600; margin-bottom:16px; display:none; }
   .auth-error.show { display:block; }
 
@@ -1278,17 +1290,40 @@
 <!-- LOGIN MODAL -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
+    <button class="auth-close-btn" onclick="closeAuthOverlay()" title="ปิด / Browse as guest">✕</button>
     <div class="auth-logo-wrap">
       <div class="auth-logo-icon">VP</div>
     </div>
     <div class="auth-title">VP Library</div>
     <div class="auth-sub">THE STANDARD — Virtual Production Scene Library</div>
-    <div class="auth-error" id="authError">เฉพาะอีเมล @thestandard.co เท่านั้น</div>
+    <div class="auth-error" id="authError">Username หรือ Password ไม่ถูกต้อง</div>
+
+    <!-- Google OAuth (primary) -->
     <button class="auth-google-btn" id="authGoogleBtn" onclick="doGoogleLogin()">
       <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Sign in with Google
     </button>
-    <div class="auth-hint">เฉพาะบัญชี @thestandard.co เท่านั้น</div>
+    <div class="auth-hint">บัญชี @thestandard.co (Google) ใช้สำหรับ Admin / Editor</div>
+
+    <!-- Divider -->
+    <div class="auth-divider">
+      <div class="auth-divider-line"></div>
+      <span class="auth-divider-text">หรือ</span>
+      <div class="auth-divider-line"></div>
+    </div>
+
+    <!-- Username / Password (fallback) -->
+    <div class="auth-field">
+      <label>Username</label>
+      <input type="text" id="authUser" placeholder="กรอก username" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('authPass').focus()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="authPass" placeholder="กรอก password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="auth-submit" id="authSubmit" onclick="doLogin()">เข้าสู่ระบบ</button>
   </div>
 </div>
 
@@ -4182,7 +4217,7 @@ _loadScenes().then(() => {
   initAI();
 });
 
-// ── Auth system (Google OAuth via Supabase) ────────────────────
+// ── Auth system ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
 const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -4190,6 +4225,72 @@ const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const USER_KEY      = 'vp_user_id';
 const USER_ROLE_KEY = 'vp_user_role';
 const ALLOWED_DOMAIN = 'thestandard.co';
+
+// ── Username/Password fallback system ─────────────────────────
+let USERS_DB = null;
+const FALLBACK_USERS_DB = {
+  "admin":  { role:"admin",  hash:"ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name:"Administrator" },
+  "viewer": { role:"viewer", hash:"65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name:"Viewer" }
+};
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function loadUsers() {
+  try {
+    const { data, error } = await _SB.from('users').select('*');
+    if (!error && data && data.length > 0) {
+      USERS_DB = {};
+      data.forEach(u => { USERS_DB[u.username] = { role: u.role||'viewer', hash: u.password_hash||'', name: u.display_name||u.username, avatar: u.avatar_url||'' }; });
+      return;
+    }
+  } catch(e) { console.warn('[Auth] loadUsers failed:', e.message); }
+  try {
+    const cached = localStorage.getItem('vp_users_cache');
+    if (cached) { USERS_DB = JSON.parse(cached); return; }
+  } catch(e) {}
+  USERS_DB = JSON.parse(JSON.stringify(FALLBACK_USERS_DB));
+}
+
+async function doLogin() {
+  const userEl = document.getElementById('authUser');
+  const passEl = document.getElementById('authPass');
+  const errEl  = document.getElementById('authError');
+  const btnEl  = document.getElementById('authSubmit');
+  const username = userEl.value.trim().toLowerCase();
+  const password  = passEl.value;
+  if (!username || !password) { errEl.textContent='กรุณากรอก Username และ Password'; errEl.classList.add('show'); return; }
+  btnEl.disabled = true; btnEl.textContent = 'กำลังตรวจสอบ...';
+  errEl.classList.remove('show');
+  if (!USERS_DB) await loadUsers();
+  let authenticated = false, role = 'viewer', displayName = username;
+  if (USERS_DB && USERS_DB[username]) {
+    const stored = USERS_DB[username];
+    const hashed = await sha256(password);
+    if (hashed === stored.hash) { authenticated = true; role = stored.role||'viewer'; displayName = stored.name||username; }
+  }
+  btnEl.disabled = false; btnEl.textContent = 'เข้าสู่ระบบ';
+  if (authenticated) {
+    localStorage.setItem(USER_KEY, username);
+    localStorage.setItem(USER_ROLE_KEY, role);
+    const av = (USERS_DB[username]?.avatar) || '';
+    if (av) localStorage.setItem('vp_user_avatar', av); else localStorage.removeItem('vp_user_avatar');
+    document.getElementById('authOverlay').classList.remove('open');
+    passEl.value = ''; userEl.value = '';
+    logActivity('login', { username, role });
+    initUser();
+  } else {
+    errEl.textContent = 'Username หรือ Password ไม่ถูกต้อง';
+    errEl.classList.add('show');
+    passEl.value = ''; passEl.focus();
+  }
+}
+
+function closeAuthOverlay() {
+  document.getElementById('authOverlay').classList.remove('open');
+}
 
 function isViewer() {
   return (localStorage.getItem(USER_ROLE_KEY) || '') === 'viewer';
@@ -4274,6 +4375,7 @@ function initUser() {
 
 function showAuthOverlay() {
   document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => { const el = document.getElementById('authUser'); if (el) el.focus(); }, 80);
 }
 
 function promptLogin() {
@@ -4361,6 +4463,9 @@ _SB.auth.onAuthStateChange((_event, session) => {
 _SB.auth.getSession().then(({ data: { session } }) => {
   if (!_supaAuthReady) handleAuthSession(session);
 });
+
+// Preload username/password DB for fallback login
+loadUsers();
 
 // ── Viewer-mode UI restrictions ──
 // Hide edit controls for viewer role (called after login + after renderCards)
