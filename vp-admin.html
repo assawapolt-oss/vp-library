@@ -342,6 +342,22 @@
   <div class="login-box">
     <div class="login-logo" style="font-size:22px;font-weight:900;letter-spacing:.08em;line-height:1.1;margin-bottom:2px;">THE<br>STANDARD</div>
     <div class="login-sub">VP Admin — Virtual Production Library</div>
+
+    <!-- Google OAuth (primary) -->
+    <button id="adminGoogleBtn" onclick="doGoogleLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 20px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:box-shadow .15s;margin-bottom:4px" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.15)'" onmouseout="this.style.boxShadow='none'">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px">เฉพาะบัญชี @thestandard.co ที่มีสิทธิ์ Admin</div>
+
+    <!-- Divider -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--muted);font-weight:600">หรือ</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- Username/Password (secondary) -->
     <label class="login-label">Username</label>
     <input class="login-input" id="loginUser" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
     <label class="login-label">Password</label>
@@ -904,7 +920,103 @@
 
 <script>
 // ══════════════════════════════════════════════
-// AUTH — SHA-256 + users.json
+// SUPABASE SHARED CLIENT + GOOGLE OAUTH
+// ══════════════════════════════════════════════
+const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _SB = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
+
+// Admin emails ที่ bypass users table check (hardcoded safety net)
+const ADMIN_EMAILS   = ['assawapol.t@thestandard.co'];
+const ALLOWED_DOMAIN = 'thestandard.co';
+
+async function doGoogleLogin() {
+  if (!_SB) { alert('Supabase not loaded'); return; }
+  const btn = document.getElementById('adminGoogleBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลัง redirect…'; }
+  const { error } = await _SB.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+  if (error) {
+    alert('Google login error: ' + error.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in with Google'; }
+  }
+}
+
+async function _getAdminRoleByEmail(email) {
+  // 1. Hardcoded admin list
+  if (ADMIN_EMAILS.includes(email)) return 'admin';
+  // 2. Supabase users table
+  if (_SB) {
+    try {
+      const { data } = await _SB.from('users').select('role').eq('email', email).maybeSingle();
+      if (data?.role) return data.role;
+      // fallback: try username prefix (e.g. assawapol.t)
+      const prefix = email.split('@')[0];
+      const { data: d2 } = await _SB.from('users').select('role').eq('username', prefix).maybeSingle();
+      if (d2?.role) return d2.role;
+    } catch(e) { console.warn('[admin auth] users lookup failed:', e.message); }
+  }
+  return null; // not admin
+}
+
+async function handleAdminAuthSession(session) {
+  if (!session?.user) return; // no session → stay on login screen (handled by DOMContentLoaded)
+  const email = session.user.email || '';
+  const errEl = document.getElementById('loginError');
+
+  // Domain check
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    if (_SB) await _SB.auth.signOut();
+    if (errEl) { errEl.textContent = '❌ เฉพาะบัญชี @' + ALLOWED_DOMAIN + ' เท่านั้น'; errEl.classList.add('show'); }
+    return;
+  }
+
+  // Role check
+  const role = await _getAdminRoleByEmail(email);
+  if (role !== 'admin') {
+    if (_SB) await _SB.auth.signOut();
+    if (errEl) { errEl.textContent = `❌ ${email} ไม่มีสิทธิ์ Admin — ติดต่อ Admin เพื่อขอสิทธิ์`; errEl.classList.add('show'); }
+    return;
+  }
+
+  // ✅ Authorized
+  const displayName = session.user.user_metadata?.full_name || email.split('@')[0];
+  const avatarUrl   = session.user.user_metadata?.avatar_url || '';
+  localStorage.setItem(SESSION_KEY, email);
+  _showAdminUI('🌐 ' + displayName, avatarUrl);
+}
+
+function _showAdminUI(displayLabel, avatarUrl) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('adminUI').classList.remove('hidden');
+  document.getElementById('exportBar').classList.remove('hidden');
+  const tu = document.getElementById('topbarUser');
+  if (tu) {
+    if (avatarUrl) {
+      tu.innerHTML = `<img src="${avatarUrl}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.4);vertical-align:middle;margin-right:5px"> ${displayLabel}`;
+    } else {
+      tu.textContent = displayLabel;
+    }
+  }
+  initAdmin();
+}
+
+// Listen for OAuth redirect callback
+if (_SB) {
+  _SB.auth.onAuthStateChange((_event, session) => {
+    if (_event === 'SIGNED_IN' && session) {
+      handleAdminAuthSession(session);
+    }
+    if (_event === 'SIGNED_OUT') {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+// AUTH — SHA-256 + users.json (password fallback)
 // ══════════════════════════════════════════════
 const SESSION_KEY = 'vp_admin_session';
 let ADMIN_USERS_DB = null;
@@ -1023,11 +1135,14 @@ async function doLogin() {
 
 function doLogout() {
   localStorage.removeItem(SESSION_KEY);
+  if (_SB) _SB.auth.signOut();
   document.getElementById('adminUI').classList.add('hidden');
   document.getElementById('exportBar').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
+  const errEl = document.getElementById('loginError');
+  if (errEl) errEl.classList.remove('show');
 }
 
 // ══════════════════════════════════════════════
@@ -1303,12 +1418,7 @@ function migrateScenes(loadedScenes) {
 async function initAdmin() {
   // ── Priority 1: Supabase (source of truth — ทำงานได้ทุก deploy) ─────────
   try {
-    const _supaClient = (typeof supabase !== 'undefined')
-      ? supabase.createClient(
-          'https://pgaqdqbjyewwckpslyvx.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU'
-        )
-      : null;
+    const _supaClient = _SB; // reuse shared client
     if (_supaClient) {
       window._supaClient = _supaClient; // store globally
       const { data: sceneRows, error: sceneErr } = await _supaClient
@@ -5173,14 +5283,22 @@ function applyAiTagToForm(tagged, modelName) {
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
   await loadUsersDB(false);
+
+  // 1. Check Supabase OAuth session first (handles Google redirect callback)
+  if (_SB) {
+    const { data: { session } } = await _SB.auth.getSession();
+    if (session?.user) {
+      await handleAdminAuthSession(session);
+      return; // handled
+    }
+  }
+
+  // 2. Fallback: check legacy username/password session
   const sess = localStorage.getItem(SESSION_KEY);
-  const isValidAdmin = ADMIN_USERS_DB && ADMIN_USERS_DB[sess] && ADMIN_USERS_DB[sess].role === 'admin';
-  if (sess && isValidAdmin) {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('adminUI').classList.remove('hidden');
-    document.getElementById('exportBar').classList.remove('hidden');
-    document.getElementById('topbarUser').textContent = '👑 ' + sess;
-    initAdmin();
+  const isEmailAdmin = sess && (ADMIN_EMAILS.includes(sess) || sess.endsWith('@' + ALLOWED_DOMAIN));
+  const isUsernameAdmin = ADMIN_USERS_DB && ADMIN_USERS_DB[sess] && ADMIN_USERS_DB[sess].role === 'admin';
+  if (sess && (isEmailAdmin || isUsernameAdmin)) {
+    _showAdminUI('👑 ' + (sess.includes('@') ? sess.split('@')[0] : sess), '');
   }
 });
 

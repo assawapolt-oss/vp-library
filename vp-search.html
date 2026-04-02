@@ -1144,7 +1144,6 @@
         <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
         <a id="userMenuAdmin" href="vp-admin.html" target="_blank" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:#B91C1C;text-decoration:none;gap:8px;align-items:center;border-bottom:1px solid var(--border)" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">Admin Panel</a>
         <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เข้าสู่ระบบ</div>
-        <div id="userMenuAvatar" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer;border-bottom:1px solid var(--border)" onclick="closeUserMenu();uploadAvatar()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เปลี่ยนรูป Avatar</div>
         <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">ออกจากระบบ</div>
       </div>
     </div>
@@ -4232,7 +4231,6 @@ function initUser() {
   const menuAdmin = document.getElementById('userMenuAdmin');
   const menuLogin = document.getElementById('userMenuLogin');
   const menuLogout = document.getElementById('userMenuLogout');
-  const menuAvatar = document.getElementById('userMenuAvatar');
   const avatarImg  = document.getElementById('userAvatarImg');
   const avatarIcon = document.getElementById('userAvatarIcon');
   if (!saved) {
@@ -4241,7 +4239,6 @@ function initUser() {
     if (menuAdmin) menuAdmin.style.display = 'none';
     if (menuLogin) menuLogin.style.display = '';
     if (menuLogout) menuLogout.style.display = 'none';
-    if (menuAvatar) menuAvatar.style.display = 'none';
     if (avatarImg) { avatarImg.src = ''; avatarImg.style.display = 'none'; }
     if (avatarIcon) avatarIcon.style.display = 'inline';
     showAuthOverlay();
@@ -4255,8 +4252,7 @@ function initUser() {
     if (menuAdmin) { menuAdmin.style.display = isAdminOrEd ? 'flex' : 'none'; }
     if (menuLogin) menuLogin.style.display = 'none';
     if (menuLogout) menuLogout.style.display = '';
-    if (menuAvatar) menuAvatar.style.display = '';
-    // Avatar display
+    // Avatar display (Google profile photo)
     const avatarUrl = localStorage.getItem('vp_user_avatar') || '';
     if (avatarImg && avatarUrl) {
       avatarImg.src = avatarUrl;
@@ -4269,35 +4265,6 @@ function initUser() {
   }
 }
 
-// ── Avatar upload ──────────────────────────────────────────────
-async function uploadAvatar() {
-  const username = localStorage.getItem(USER_KEY);
-  if (!username) return;
-  const input = document.createElement('input');
-  input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp';
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { showToast('❌ รูปต้องไม่เกิน 2MB', 2500); return; }
-    try {
-      const ext = file.type.includes('png') ? 'png' : file.type.includes('webp') ? 'webp' : 'jpg';
-      const safeName = username.replace(/[^a-zA-Z0-9]/g, '_');
-      const path = `avatars/${safeName}.${ext}`;
-      showToast('⏳ กำลังอัปโหลด…', 2000);
-      const { error: upErr } = await _SB.storage.from('vp-images').upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw new Error(upErr.message);
-      const { data: urlData } = _SB.storage.from('vp-images').getPublicUrl(path);
-      const avatarUrl = urlData.publicUrl;
-      await _SB.from('users').update({ avatar_url: avatarUrl }).eq('email', username);
-      localStorage.setItem('vp_user_avatar', avatarUrl);
-      initUser();
-      showToast('✅ อัปเดต Avatar แล้ว!', 2500);
-    } catch(err) {
-      showToast('❌ ' + err.message, 3000);
-    }
-  };
-  input.click();
-}
 
 function showAuthOverlay() {
   document.getElementById('authOverlay').classList.add('open');
