@@ -1497,9 +1497,9 @@ function _supaRowToScene(r) {
     key_light_equip_id:  r.key_light_equip_id  || '',
     fill_light_equip_id: r.fill_light_equip_id || '',
     back_light_equip_id: r.back_light_equip_id || '',
-    // L4 posture + production format
-    posture:     r.posture     || '',
-    prod_format: r.prod_format || '',
+    // L4 posture + production format — default: standing / solo-host
+    posture:     r.posture     || 'standing',
+    prod_format: r.prod_format || 'solo-host',
     sort_order:  r.sort_order  || 0,
   };
 }
@@ -2638,6 +2638,10 @@ async function createNewScene() {
     key_light_dir:'', key_light_type:'', fill_light:'', back_light:'',
     lighting_ratio:'', presenter_zone:'', camera_setup:'', canvas_notes:'',
     key_light_equip_id:'', fill_light_equip_id:'', back_light_equip_id:'',
+    rim_l_equip_id:'', rim_r_equip_id:'', ambient_equip_id:'',
+    // L4 defaults — ยืน / พิธีกรเดี่ยว
+    posture: 'standing', prod_format: 'solo-host',
+    sort_order: (scenes.length + 1) * 10,
   };
 
   scenes.push(newScene);

@@ -184,3 +184,28 @@ SELECT tablename, policyname, cmd
 FROM   pg_policies
 WHERE  tablename IN ('collections', 'service_requests')
 ORDER BY tablename, policyname;
+
+-- ══════════════════════════════════════════════════════════════════
+-- 11. SET DEFAULT POSTURE + FORMAT for all existing scenes (v5 — 2026-04-03)
+--     ตั้งค่า default ให้ฉากเก่าทุกฉากที่ยังไม่ได้ตั้งค่า
+-- ══════════════════════════════════════════════════════════════════
+
+-- ฉากที่ posture ว่าง → ยืน (standing)
+UPDATE public.scenes
+SET    posture = 'standing'
+WHERE  posture IS NULL OR posture = '';
+
+-- ฉากที่ prod_format ว่าง → พิธีกรเดี่ยว (solo-host)
+UPDATE public.scenes
+SET    prod_format = 'solo-host'
+WHERE  prod_format IS NULL OR prod_format = '';
+
+-- เปลี่ยน DEFAULT ใน column ให้ future rows ได้ค่านี้โดยอัตโนมัติ
+ALTER TABLE public.scenes
+  ALTER COLUMN posture     SET DEFAULT 'standing',
+  ALTER COLUMN prod_format SET DEFAULT 'solo-host';
+
+-- VERIFY
+SELECT id, title, posture, prod_format
+FROM   public.scenes
+ORDER BY id;
