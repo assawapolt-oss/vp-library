@@ -4209,8 +4209,14 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) closeUserMenu();
 });
 
+// Emails that are always admin regardless of DB role
+const ADMIN_EMAILS = ['assawapol.t@thestandard.co'];
+
 // Lookup role from users table by email
 async function getRoleByEmail(email) {
+  // Hardcoded admin list — highest priority
+  if (ADMIN_EMAILS.includes(email)) return 'admin';
+  // Supabase users table by email
   try {
     const { data } = await _SB.from('users').select('role').eq('email', email).single();
     if (data && data.role) return data.role;
