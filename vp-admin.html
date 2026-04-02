@@ -135,9 +135,9 @@
   .chip-particle { background:#FDF4FF; color:#7C3AED; }
 
   /* image preview */
-  .image-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; position:relative; background:#111; }
+  .image-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; position:relative; background:#111; max-height:160px; }
   .image-preview-wrap:hover { border-color:var(--red); }
-  .image-preview { width:100%; aspect-ratio:16/9; object-fit:contain; display:block; background:#111; }
+  .image-preview { width:100%; max-height:160px; object-fit:contain; display:block; background:#111; }
   .image-preview-overlay { position:absolute; inset:0; background:rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; transition:opacity .18s; gap:8px; cursor:pointer; pointer-events:none; }
   .image-preview-wrap:hover .image-preview-overlay { opacity:1; }
   .image-overlay-text { color:#fff; font-size:13px; font-weight:700; }
@@ -762,12 +762,9 @@
     </div>
 
     <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button id="detectObjBtn" onclick="runObjectDetection()" style="padding:7px 14px;background:#0EA5E9;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">🔍 Detect Objects (DETR)</button>
-      <span id="detectObjStatus" style="font-size:11px;color:#6B7280"></span>
       <div style="flex:1"></div>
       <button class="btn-secondary" onclick="closeTagGuideModal()">ปิด</button>
     </div>
-    <div id="detectObjResults" style="display:none;margin-top:8px;padding:8px 12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;font-size:11px;color:#0369A1"></div>
   </div>
 </div>
 
@@ -1479,16 +1476,28 @@ async function _supaUpsertAll() {
 
   let { error: scenesErr } = await window._supaClient.from('scenes').upsert(rows, { onConflict:'id' });
   if (scenesErr) {
-    // Migration not run yet — strip unknown columns and retry
-    console.warn('[_supaUpsertAll] Full upsert failed:', scenesErr.message, '— retrying with safe columns');
-    const safeRows = rows.map(r => _stripUnknownCols(r, scenesErr.message));
-    const { error: retryErr } = await window._supaClient.from('scenes').upsert(safeRows, { onConflict:'id' });
-    if (retryErr) {
-      console.error('[_supaUpsertAll] Retry also failed:', retryErr.message);
-      throw new Error(retryErr.message);
+    // Migration not run yet — strip unknown columns iteratively and retry (up to 10 bad columns)
+    console.warn('[_supaUpsertAll] Full upsert failed:', scenesErr.message, '— stripping missing columns and retrying');
+    let currentRows = rows.map(r => Object.assign({}, r));
+    const stripped = [];
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const m = scenesErr.message.match(/column "([^"]+)" of relation/);
+      if (!m) break; // unknown error, stop trying
+      stripped.push(m[1]);
+      currentRows = currentRows.map(r => { const out = Object.assign({}, r); delete out[m[1]]; return out; });
+      console.warn('[_supaUpsertAll] Stripped column:', m[1]);
+      const { error: retryErr } = await window._supaClient.from('scenes').upsert(currentRows, { onConflict:'id' });
+      if (!retryErr) {
+        // Success with stripped columns
+        showToast(`⚠️ บันทึกสำเร็จ (ไม่มี column: ${stripped.join(', ')}) — กรุณา run supabase_migration.sql`, 'red', 8000);
+        scenesErr = null; break;
+      }
+      scenesErr = retryErr;
     }
-    // Show hint about running migration
-    showToast('⚠️ บันทึกสำเร็จ (บางฟิลด์ขาด) — กรุณา run supabase_migration.sql ใน Supabase ด้วย', 'red', 8000);
+    if (scenesErr) {
+      console.error('[_supaUpsertAll] Retry failed after stripping:', scenesErr.message);
+      throw new Error(scenesErr.message);
+    }
     return;
   }
 
@@ -1708,39 +1717,43 @@ function buildEditorHTML(s) {
           </div>
         </div>
         <!-- Presenter image upload (Tier 2) -->
-        <div style="margin-top:12px;padding:14px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
-          <div class="form-label" style="margin-bottom:4px;color:#065F46;font-size:13px">🧑 ภาพฉากมีพิธีกร (Presenter Toggle)</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">อัพโหลดภาพที่มีคนยืนอยู่ — ปุ่ม 🧑 จะขึ้นบนการ์ดให้ switch ได้ทันที หลังกด Save</div>
+        <div style="margin-top:12px;padding:12px 14px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;">
+          <div class="form-label" style="margin-bottom:8px;color:#065F46;font-size:13px">🧑 ภาพฉากมีพิธีกร (Presenter Toggle)</div>
           <div class="upload-zone" id="uploadZonePresenter_${s.id}"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
             ondrop="handleEditorFileDrop(event,'presenter','${s.id}')"
             onclick="document.getElementById('uploadPresenter_${s.id}').click()"
-            style="min-height:70px;cursor:pointer">
+            style="min-height:60px;cursor:pointer">
             <input type="file" id="uploadPresenter_${s.id}" accept="image/*" style="display:none" onchange="handleEditorFileSelect(this.files,'presenter','${s.id}')">
             <div id="uploadPresenterContent_${s.id}">
               <div class="upload-zone-icon" style="font-size:20px">🧑</div>
               <div class="upload-zone-label" style="font-size:12px">${s.presenter_image_url ? 'คลิกเพื่อเปลี่ยนภาพ' : 'คลิกหรือลากวางภาพที่นี่'}</div>
             </div>
           </div>
-          <div class="form-group" style="margin-top:8px">
-            <label class="form-label">Presenter image URL <span style="font-weight:400;font-size:10px">หรือวาง URL ตรงนี้แทน</span></label>
-            <input class="form-input" id="f_presenter_image_url" value="${s.presenter_image_url||''}" placeholder="https://..." oninput="updatePresenterPreview()" style="font-family:monospace;font-size:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <label class="form-label" style="white-space:nowrap;margin:0;flex-shrink:0">Presenter image URL</label>
+            <input class="form-input" id="f_presenter_image_url" value="${s.presenter_image_url||''}" placeholder="https://..." oninput="updatePresenterPreview()" style="font-family:monospace;font-size:11px;min-width:0;flex:1" title="${s.presenter_image_url||''}">
           </div>
-          <div style="font-size:11px;color:#065F46;margin-top:6px;font-weight:600">⚠️ อย่าลืมกด 💾 Save ด้านล่างหลังอัพโหลดเสร็จ</div>
         </div>
 
-        <!-- Path fields (read-only display + manual override) -->
-        <div class="form-row" style="margin-top:10px">
-          <div class="form-group">
-            <label class="form-label">Full path <span>แก้ manual ได้</span></label>
-            <input class="form-input" id="f_filepath" value="${s.filepath}" placeholder="indoor/sci-fi/VP-011.webp" oninput="updatePreview()" style="font-family:monospace;font-size:12px">
+        <!-- Path fields (read-only display + manual override) — collapsible -->
+        <details style="margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <summary style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;background:var(--bg);list-style:none;display:flex;align-items:center;gap:6px">
+            <span>📂 Full path &amp; Thumb path</span>
+            <span style="font-weight:400;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-left:6px;color:var(--dark);font-family:monospace">${s.filepath||'—'}</span>
+          </summary>
+          <div class="form-row" style="padding:10px 12px 12px">
+            <div class="form-group">
+              <label class="form-label">Full path <span>แก้ manual ได้</span></label>
+              <input class="form-input" id="f_filepath" value="${s.filepath}" placeholder="indoor/sci-fi/VP-011.webp" oninput="updatePreview()" style="font-family:monospace;font-size:12px">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Thumb path <span>แก้ manual ได้</span></label>
+              <input class="form-input" id="f_thumb" value="${s.thumb}" placeholder="_thumbnails/VP-011_thumb.webp" style="font-family:monospace;font-size:12px" oninput="refreshThumbPreview('${s.id}')">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Thumb path <span>แก้ manual ได้</span></label>
-            <input class="form-input" id="f_thumb" value="${s.thumb}" placeholder="_thumbnails/VP-011_thumb.webp" style="font-family:monospace;font-size:12px" oninput="refreshThumbPreview('${s.id}')">
-          </div>
-        </div>
+        </details>
         <div class="form-row" style="margin-top:0">
           <div class="form-group">
             <label class="form-label">วันที่เพิ่ม</label>
@@ -1776,12 +1789,17 @@ function buildEditorHTML(s) {
 
       <!-- Motion Background File (Production Only) -->
       <div class="editor-section">
-        <div class="editor-section-title">📁 Motion Virtual Background File <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">(ไม่แสดงหน้า Frontend)</span></div>
+        <div class="editor-section-title" style="display:flex;align-items:center;gap:8px">
+          📁 Motion Virtual Background File
+          <span style="font-size:10px;font-weight:400;color:var(--muted)">(ไม่แสดงหน้า Frontend)</span>
+          <span id="motionBgSaveStatus_${s.id}" style="font-size:10px;font-weight:600;color:#10B981;margin-left:auto;opacity:0;transition:opacity .4s"></span>
+        </div>
         <div class="form-group">
           <label class="form-label">Link ไฟล์ Motion Background ต้นฉบับ <span style="font-weight:400;color:var(--muted)">— Frame.io, Drive, NAS, etc.</span></label>
           <input class="form-input" id="f_motion_bg_url" value="${escHtml(s.motion_bg_url||'')}"
             placeholder="https://app.frame.io/... หรือ https://drive.google.com/..."
-            style="font-size:13px">
+            style="font-size:13px"
+            oninput="_scheduleMotionBgAutoSave('${s.id}')">
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">ใช้เก็บ link ไฟล์วิดีโอจริงที่ใช้ถ่ายทำ (ProRes, H.264, etc.) สำหรับทีม Production</div>
       </div>
@@ -1925,6 +1943,34 @@ function focusTagInput(teId) {
   if (!el) return;
   const inp = el.querySelector('.tag-input');
   if (inp) { inp.focus(); }
+}
+
+// ══════════════════════════════════════════════
+// MOTION BG AUTO-SAVE
+// ══════════════════════════════════════════════
+let _motionBgTimer = null;
+function _scheduleMotionBgAutoSave(sceneId) {
+  clearTimeout(_motionBgTimer);
+  const statusEl = document.getElementById('motionBgSaveStatus_' + sceneId);
+  if (statusEl) { statusEl.textContent = '…'; statusEl.style.opacity = '1'; statusEl.style.color = '#9CA3AF'; }
+  _motionBgTimer = setTimeout(async () => {
+    const url = document.getElementById('f_motion_bg_url')?.value.trim() || '';
+    const s = scenes.find(x => x.id === sceneId);
+    if (!s) return;
+    s.motion_bg_url = url;
+    localStorage.setItem(DATA_KEY, JSON.stringify(scenes));
+    if (statusEl) { statusEl.textContent = '⏳ saving…'; statusEl.style.color = '#9CA3AF'; }
+    if (window._supaClient) {
+      try {
+        await window._supaClient.from('scenes').update({ motion_bg_url: url }).eq('id', sceneId);
+        if (statusEl) { statusEl.textContent = '✓ saved'; statusEl.style.color = '#10B981'; setTimeout(() => { if (statusEl) statusEl.style.opacity = '0'; }, 2500); }
+      } catch(e) {
+        if (statusEl) { statusEl.textContent = '⚠️ local only'; statusEl.style.color = '#F59E0B'; setTimeout(() => { if (statusEl) statusEl.style.opacity = '0'; }, 3000); }
+      }
+    } else {
+      if (statusEl) { statusEl.textContent = '✓ local'; statusEl.style.color = '#10B981'; setTimeout(() => { if (statusEl) statusEl.style.opacity = '0'; }, 2000); }
+    }
+  }, 1200);
 }
 
 // ══════════════════════════════════════════════
@@ -3077,11 +3123,43 @@ async function handleColCoverUpload(input) {
   let file = input.files[0];
   if (!file) return;
   const fnEl = document.getElementById('col_cover_filename');
-  if (fnEl) fnEl.textContent = '⏳ กำลัง convert...';
+  if (fnEl) fnEl.textContent = '⏳ กำลัง resize + convert...';
   try {
-    const result = await convertImageToWebP(file, { quality: 0.85 });
-    if (result.wasConverted) file = blobToFile(result.blob, result.filename);
-  } catch(e) { console.warn('[col cover webp]', e); }
+    // Resize to max 800×450 (16:9 cover), then convert to WebP
+    const MAX_W = 800, MAX_H = 450;
+    const resized = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth, h = img.naturalHeight;
+          if (w > MAX_W || h > MAX_H) {
+            const ratio = Math.min(MAX_W / w, MAX_H / h);
+            w = Math.round(w * ratio); h = Math.round(h * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => {
+            if (!blob) { rej(new Error('toBlob failed')); return; }
+            res(new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' }));
+          }, 'image/webp', 0.85);
+        };
+        img.onerror = rej;
+        img.src = ev.target.result;
+      };
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    file = resized;
+  } catch(e) {
+    console.warn('[col cover resize]', e);
+    // fallback: just WebP convert without resize
+    try {
+      const result = await convertImageToWebP(file, { quality: 0.85 });
+      if (result.wasConverted) file = blobToFile(result.blob, result.filename);
+    } catch(e2) { console.warn('[col cover webp]', e2); }
+  }
   // Preview ทันที + ตั้ง cover_url ล่วงหน้าเป็น dataUrl ก่อน (ป้องกัน race condition เมื่อ Save ก่อน upload เสร็จ)
   const dataUrl = await new Promise(res => {
     const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
@@ -4846,62 +4924,10 @@ function closeTagGuideModal() {
   document.getElementById('tagGuideOverlay').style.display = 'none';
 }
 
-// ── Object Detection (DETR via transformers.js) ──────────────────
-const _DETR_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
-let _detrPipeline = null;
-let _detrLoading  = false;
-
-async function runObjectDetection() {
-  const s = currentId ? scenes.find(x => x.id === currentId) : null;
-  if (!s) { alert('เปิดฉากก่อนแล้วค่อย Detect'); return; }
-  const imgUrl = s.filepath || s.thumb || '';
-  if (!imgUrl) { alert('ฉากนี้ไม่มีรูปภาพ'); return; }
-
-  const statusEl  = document.getElementById('detectObjStatus');
-  const resultsEl = document.getElementById('detectObjResults');
-  const btn       = document.getElementById('detectObjBtn');
-  btn.disabled = true;
-  statusEl.textContent = '⏳ โหลด DETR model… (ครั้งแรกอาจใช้ ~30 วินาที)';
-  resultsEl.style.display = 'none';
-
-  try {
-    if (!_detrPipeline) {
-      if (_detrLoading) { statusEl.textContent = '⏳ กำลังโหลด…'; while(_detrLoading) await new Promise(r=>setTimeout(r,300)); }
-      else {
-        _detrLoading = true;
-        const { pipeline, env } = await import(_DETR_TX_URL);
-        env.allowRemoteModels = true; env.allowLocalModels = false;
-        _detrPipeline = await pipeline('object-detection', 'Xenova/detr-resnet-50', { quantized: true });
-        _detrLoading = false;
-      }
-    }
-    statusEl.textContent = '🔍 กำลัง detect…';
-    const cleanUrl = imgUrl.split('?')[0];
-    const output = await _detrPipeline(cleanUrl, { threshold: 0.4 });
-
-    if (!output || output.length === 0) {
-      statusEl.textContent = '⚠️ ไม่พบ object ที่ชัดเจน (threshold 0.4)';
-    } else {
-      const labels = [...new Set(output.map(o => o.label))];
-      const labelStr = labels.join(', ');
-      statusEl.textContent = `✅ พบ ${output.length} objects`;
-      resultsEl.style.display = '';
-      resultsEl.innerHTML = `<strong>🏷️ Detected:</strong> ${output.map(o=>`<span style="background:#E0F2FE;border-radius:4px;padding:1px 6px;margin:2px;display:inline-block">${o.label} <span style="opacity:.6">${Math.round(o.score*100)}%</span></span>`).join('')}
-        <br><br><strong>เพิ่มลงใน prompt:</strong><br>
-        <code style="display:block;margin-top:4px;background:#fff;padding:6px;border-radius:4px;font-size:10.5px">Detected objects in scene: ${labelStr}<br>Use these to improve keywords[] and semantic_description.</code>
-        <button onclick="appendDetectedToPrompt('${labelStr.replace(/'/g,"\\'")}');this.textContent='✅ Added!'" style="margin-top:8px;padding:5px 12px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⬆️ Append to Prompt</button>`;
-    }
-  } catch(e) {
-    statusEl.textContent = '❌ ' + e.message;
-    console.error('[DETR]', e);
-  }
-  btn.disabled = false;
-}
-
 function appendDetectedToPrompt(labelStr) {
   const ta = document.getElementById('tg_tag');
   if (!ta) return;
-  ta.value = ta.value + `\n\n// Object Detection (DETR):\nDetected objects: ${labelStr}\nรวม objects เหล่านี้ใน keywords[] และ semantic_description ด้วย`;
+  ta.value = ta.value + `\n\nDetected objects: ${labelStr}`;
 }
 function copyText(id, btn) {
   const el = document.getElementById(id);
