@@ -121,3 +121,66 @@ FROM   information_schema.columns
 WHERE  table_schema = 'public'
   AND  table_name   = 'service_requests'
 ORDER BY ordinal_position;
+
+-- ══════════════════════════════════════════════════════════════════
+-- 10. FIX RLS: collections + service_requests (v4 — 2026-04-03)
+--     ❗ สำคัญมาก: ทำให้ข้อมูล Collections และ Service Requests กลับมา
+--     วิธีใช้: Copy ทั้งหมด → วางใน Supabase SQL Editor → กด Run
+-- ══════════════════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────────────────────────────
+-- collections table — สร้างถ้ายังไม่มี + เปิด RLS ให้ถูกต้อง
+-- ─────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.collections (
+  id          text PRIMARY KEY DEFAULT ('COL-' || extract(epoch from now())::bigint::text),
+  name        text NOT NULL DEFAULT '',
+  emoji       text DEFAULT '🗂',
+  season      text DEFAULT '',
+  year        text DEFAULT '',
+  description text DEFAULT '',
+  color       text DEFAULT '#CC2229',
+  cover_url   text DEFAULT '',
+  scene_ids   text[] DEFAULT '{}',
+  sort_order  integer DEFAULT 0,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read collections"  ON public.collections;
+DROP POLICY IF EXISTS "Public write collections" ON public.collections;
+DROP POLICY IF EXISTS "Allow all collections"    ON public.collections;
+
+-- อ่านได้ทุกคน (anon + authenticated)
+CREATE POLICY "Public read collections"
+  ON public.collections FOR SELECT USING (true);
+
+-- เขียน/แก้ไข/ลบได้ผ่าน anon key (admin page ใช้ anon key)
+CREATE POLICY "Public write collections"
+  ON public.collections FOR ALL USING (true) WITH CHECK (true);
+
+-- ─────────────────────────────────────────────────────────────────
+-- service_requests table — เปิด RLS ให้ถูกต้อง
+-- ─────────────────────────────────────────────────────────────────
+ALTER TABLE public.service_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read service_requests"  ON public.service_requests;
+DROP POLICY IF EXISTS "Public write service_requests" ON public.service_requests;
+DROP POLICY IF EXISTS "Allow all service_requests"    ON public.service_requests;
+
+-- อ่านได้ทุกคน
+CREATE POLICY "Public read service_requests"
+  ON public.service_requests FOR SELECT USING (true);
+
+-- เขียน/แก้ไข/ลบได้ผ่าน anon key
+CREATE POLICY "Public write service_requests"
+  ON public.service_requests FOR ALL USING (true) WITH CHECK (true);
+
+-- ─────────────────────────────────────────────────────────────────
+-- VERIFY — ตรวจสอบ policies ที่สร้างแล้ว
+-- ─────────────────────────────────────────────────────────────────
+SELECT tablename, policyname, cmd
+FROM   pg_policies
+WHERE  tablename IN ('collections', 'service_requests')
+ORDER BY tablename, policyname;
