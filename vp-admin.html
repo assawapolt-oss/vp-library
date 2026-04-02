@@ -219,10 +219,10 @@
   .file-storage-fill { height:100%; background:var(--green); border-radius:8px; transition:width .4s; }
 
   /* video preview */
-  .video-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; background:#000; aspect-ratio:16/9; position:relative; }
+  .video-preview-wrap { border:2px dashed var(--border); border-radius:10px; overflow:hidden; background:#000; aspect-ratio:16/9; position:relative; max-width:320px; }
   .video-preview-wrap iframe { width:100%; height:100%; border:none; display:block; }
-  .video-preview-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:120px; color:var(--muted); gap:6px; font-size:13px; }
-  .video-preview-empty .icon { font-size:32px; }
+  .video-preview-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:80px; color:var(--muted); gap:4px; font-size:12px; }
+  .video-preview-empty .icon { font-size:24px; }
   .video-yt-hint { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.5; }
   .video-yt-hint code { background:#F3F4F6; padding:2px 6px; border-radius:4px; font-size:10px; }
 
@@ -373,7 +373,9 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-left">
-      <img src="tsd_logo.webp" alt="THE STANDARD" style="height:28px;width:auto;filter:brightness(0) invert(1);display:block;">
+      <a href="vp-search.html" title="กลับหน้าค้นหา" style="display:flex;align-items:center;gap:8px;text-decoration:none;opacity:.9;transition:opacity .12s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.9">
+        <img src="tsd_logo.webp" alt="THE STANDARD" style="height:28px;width:auto;filter:brightness(0) invert(1);display:block;">
+      </a>
       <div class="topbar-badge" style="font-size:10px;font-weight:700;background:rgba(255,255,255,.2);padding:2px 9px;border-radius:10px;letter-spacing:.04em;">VP Admin</div>
     </div>
     <div class="topbar-right">
@@ -1549,10 +1551,13 @@ function _sceneToRow(s, i) {
     presenter_zone:        s.presenter_zone||'',
     camera_setup:          s.camera_setup||'',
     canvas_notes:          s.canvas_notes||'',
-    // equipment slots
+    // equipment slots (key + fill + back + rim + ambient)
     key_light_equip_id:    s.key_light_equip_id||'',
     fill_light_equip_id:   s.fill_light_equip_id||'',
     back_light_equip_id:   s.back_light_equip_id||'',
+    rim_l_equip_id:        s.rim_l_equip_id||'',
+    rim_r_equip_id:        s.rim_r_equip_id||'',
+    ambient_equip_id:      s.ambient_equip_id||'',
     // L4 posture + production format
     posture:               s.posture||'',
     prod_format:           s.prod_format||'',
@@ -2176,10 +2181,10 @@ function _preserveSceneFields(origId) {
     key_light_equip_id:  s.key_light_equip_id  || '',
     fill_light_equip_id: s.fill_light_equip_id || '',
     back_light_equip_id: s.back_light_equip_id || '',
-    // preserve posture/format (these are in the editor but keep them safe)
-    posture:     s.posture     || '',
-    prod_format: s.prod_format || '',
-    sort_order:  s.sort_order  || 0,
+    rim_l_equip_id:      s.rim_l_equip_id      || '',
+    rim_r_equip_id:      s.rim_r_equip_id      || '',
+    ambient_equip_id:    s.ambient_equip_id    || '',
+    // NOTE: posture + prod_format are NOT here — they come from form inputs in collectFormData
   };
 }
 
