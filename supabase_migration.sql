@@ -209,3 +209,57 @@ ALTER TABLE public.scenes
 SELECT id, title, posture, prod_format
 FROM   public.scenes
 ORDER BY id;
+
+-- ══════════════════════════════════════════════════════════════════
+-- 12. GRAB REF — ref_images table + storage bucket (v6 — 2026-04-03)
+--     ❗ แยกจาก scenes ทั้งหมด ใช้เป็น reference image repository
+--
+--     วิธีใช้:
+--       1. รัน SQL นี้ใน Supabase SQL Editor
+--       2. ไปที่ Storage → สร้าง bucket ชื่อ "ref-images" (Public bucket)
+--       3. เปิดหน้า vp-grab-ref.html แล้วเริ่ม upload ได้เลย
+-- ══════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.ref_images (
+  id            bigserial   PRIMARY KEY,
+  storage_path  text        NOT NULL DEFAULT '',   -- path ใน bucket: refs/{ts}-{rand}.webp
+  url           text        NOT NULL DEFAULT '',   -- public URL สำหรับ <img src>
+  original_name text        DEFAULT '',            -- ชื่อไฟล์ต้นฉบับก่อน convert
+  width         integer     DEFAULT 0,             -- px หลัง resize
+  height        integer     DEFAULT 0,             -- px หลัง resize
+  file_size_kb  integer     DEFAULT 0,             -- KB ของ webp ที่ upload
+  uploaded_by   text        DEFAULT 'anon',        -- vp_user_id จาก localStorage
+  created_at    timestamptz DEFAULT now()
+);
+
+-- Index เรียงตาม created_at สำหรับ masonry grid (newest first)
+CREATE INDEX IF NOT EXISTS ref_images_created_at_idx
+  ON public.ref_images (created_at DESC);
+
+-- RLS — อ่านได้ทุกคน เขียน/ลบได้ผ่าน anon key (same pattern as collections)
+ALTER TABLE public.ref_images ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read ref_images"  ON public.ref_images;
+DROP POLICY IF EXISTS "Public write ref_images" ON public.ref_images;
+
+CREATE POLICY "Public read ref_images"
+  ON public.ref_images FOR SELECT USING (true);
+
+CREATE POLICY "Public write ref_images"
+  ON public.ref_images FOR ALL USING (true) WITH CHECK (true);
+
+-- VERIFY columns
+SELECT column_name, data_type, column_default
+FROM   information_schema.columns
+WHERE  table_schema = 'public'
+  AND  table_name   = 'ref_images'
+ORDER BY ordinal_position;
+
+-- ──────────────────────────────────────────────────────────────────
+-- Storage bucket setup (ทำใน Supabase Dashboard > Storage)
+-- ──────────────────────────────────────────────────────────────────
+-- 1. สร้าง bucket ชื่อ "ref-images"
+-- 2. เปิด Public bucket (ให้ URL public ได้)
+-- 3. ตั้ง File size limit: 10MB (เพียงพอสำหรับ 1920×1080 WebP)
+-- 4. Allowed MIME types: image/webp
+-- (ถ้าต้องการ policy ใน SQL ทำได้ แต่ Dashboard ง่ายกว่า)

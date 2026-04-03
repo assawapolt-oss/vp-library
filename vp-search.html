@@ -615,7 +615,7 @@
   .vp-header-title { display:none; }
   .topbar-title { font-size:13px; }
   .topbar-count { display:none; }
-  #topbar-service-btn { display:none; }
+  #topbar-service-btn { display:inline-flex !important; padding:4px 10px; font-size:11px; }
   #topbar-queue-btn { display:none; }
   #userPill { padding:3px 8px 3px 5px !important; font-size:11px !important; }
 
@@ -1168,6 +1168,7 @@
     <button class="mode-tab active" id="tabSearch" onclick="switchMode('search')">ค้นหาฉาก</button>
     <button class="mode-tab" id="tabRec" onclick="switchMode('rec')">AI แนะนำ</button>
     <button class="mode-tab" id="tabCollection" onclick="switchMode('collection')">Collection</button>
+    <a class="mode-tab" href="vp-grab-ref.html" style="text-decoration:none;display:inline-block">📌 Grab REF</a>
   </div>
   <div class="nav-right"></div>
 </div>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Grab REF — THE STANDARD VP Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — sync กับ vp-search.html
+══════════════════════════════════════════════════════════════ */
+:root {
+  --red:#CC2229; --red-dark:#A81B21;
+  --bg:#F4F5F7; --card:#FFFFFF; --dark:#1A1A1A; --muted:#6B7280;
+  --border:#E5E7EB; --nav-bg:#FFFFFF; --nav-border:#E5E7EB;
+  --topbar-bg:linear-gradient(135deg,#8B1218 0%,#CC2229 60%,#E53E3E 100%);
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+  --radius:12px;
+}
+[data-theme="dim"] {
+  --bg:#1E2130; --card:#252840; --dark:#E8EAF0; --muted:#8B93B0;
+  --border:#343756; --nav-bg:#1E2130; --nav-border:#343756;
+}
+[data-theme="dark"] {
+  --bg:#0F1117; --card:#1A1D2E; --dark:#EAEDF5; --muted:#7A84A3;
+  --border:#252840; --nav-bg:#0F1117; --nav-border:#252840;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  background:var(--topbar-bg);
+  height:52px; padding:0 20px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:50;
+  box-shadow:0 2px 12px rgba(140,18,24,.25);
+}
+.topbar-logo { height:26px; }
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.topbar-title { color:rgba(255,255,255,.9); font-size:13px; font-weight:700; letter-spacing:.03em; white-space:nowrap; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.btn-topbar {
+  background:rgba(255,255,255,.18); color:#fff;
+  border:1.5px solid rgba(255,255,255,.45); border-radius:7px;
+  padding:4px 11px; font-size:12px; font-weight:700; cursor:pointer;
+  font-family:inherit; white-space:nowrap; transition:background .15s; text-decoration:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.btn-topbar:hover { background:rgba(255,255,255,.30); }
+.btn-topbar.dim { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); font-size:11px; font-weight:600; }
+
+/* ── Nav bar ── */
+.nav-bar {
+  background:var(--nav-bg); border-bottom:2px solid var(--nav-border);
+  padding:0 20px; display:flex; align-items:center; gap:4px;
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+.nav-tab {
+  padding:13px 16px; font-size:13px; font-weight:700; color:var(--muted);
+  border-bottom:3px solid transparent; cursor:pointer; border:none; background:none;
+  font-family:inherit; margin-bottom:-2px; white-space:nowrap; transition:all .15s;
+  text-decoration:none; display:inline-block;
+}
+.nav-tab:hover { color:var(--dark); }
+.nav-tab.active { color:var(--red); border-bottom-color:var(--red); }
+
+/* ── Main layout ── */
+.page-wrap { max-width:1400px; margin:0 auto; padding:28px 20px 80px; }
+
+/* ── Drop Zone ── */
+.drop-zone {
+  border:2.5px dashed var(--border); border-radius:18px;
+  padding:44px 20px; text-align:center; cursor:pointer;
+  background:var(--card); transition:all .2s; margin-bottom:28px;
+  position:relative;
+}
+.drop-zone.drag-over {
+  border-color:var(--red); background:rgba(204,34,41,.04);
+  transform:scale(1.005);
+}
+.drop-zone:hover { border-color:rgba(204,34,41,.5); background:rgba(204,34,41,.02); }
+.dz-icon { font-size:40px; margin-bottom:12px; display:block; }
+.dz-title { font-size:16px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+.dz-sub { font-size:12px; color:var(--muted); line-height:1.6; }
+.dz-sub kbd {
+  background:var(--border); border-radius:4px; padding:1px 5px;
+  font-family:inherit; font-size:11px; font-weight:600; color:var(--dark);
+}
+.dz-actions { display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+.btn-upload {
+  background:var(--red); color:#fff; border:none; border-radius:9px;
+  padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:background .15s; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-upload:hover { background:var(--red-dark); }
+.btn-upload.secondary {
+  background:var(--card); color:var(--dark); border:1.5px solid var(--border);
+}
+.btn-upload.secondary:hover { background:var(--bg); }
+#fileInput { display:none; }
+
+/* ── Upload progress overlay ── */
+.upload-toast {
+  position:fixed; bottom:24px; right:24px; z-index:200;
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:14px 18px; box-shadow:0 8px 32px rgba(0,0,0,.15);
+  display:none; gap:12px; align-items:center; max-width:320px;
+  font-size:13px; font-weight:600;
+}
+.upload-toast.show { display:flex; }
+.toast-icon { font-size:20px; flex-shrink:0; }
+.toast-msg { flex:1; }
+.toast-bar-wrap { width:100%; height:4px; background:var(--border); border-radius:2px; margin-top:6px; }
+.toast-bar { height:4px; background:var(--red); border-radius:2px; transition:width .3s; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; flex-wrap:wrap; gap:8px;
+}
+.stats-count { font-size:13px; font-weight:700; color:var(--muted); }
+.stats-count span { color:var(--dark); }
+.filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+.pill {
+  background:var(--border); color:var(--muted); border:1px solid transparent;
+  border-radius:20px; padding:3px 10px; font-size:11px; font-weight:600; cursor:pointer;
+  transition:all .15s;
+}
+.pill.active { background:var(--red); color:#fff; }
+
+/* ── Masonry Grid ── */
+.masonry-grid {
+  columns:4 280px; gap:14px;
+}
+.masonry-grid.empty-state { columns:unset; }
+.ref-card {
+  break-inside:avoid; background:var(--card); border-radius:12px;
+  border:1px solid var(--border); overflow:hidden; margin-bottom:14px;
+  cursor:pointer; transition:transform .15s, box-shadow .15s; position:relative;
+  display:block;
+}
+.ref-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.ref-card img { width:100%; display:block; background:var(--bg); }
+.ref-card-meta {
+  padding:8px 10px; display:flex; align-items:center; justify-content:space-between; gap:6px;
+}
+.ref-card-date { font-size:10px; color:var(--muted); font-weight:500; }
+.ref-card-size { font-size:10px; color:var(--muted); }
+.ref-card-del {
+  position:absolute; top:7px; right:7px;
+  background:rgba(0,0,0,.45); color:#fff; border:none;
+  border-radius:50%; width:26px; height:26px; font-size:13px; cursor:pointer;
+  display:none; align-items:center; justify-content:center; transition:background .15s;
+}
+.ref-card:hover .ref-card-del { display:flex; }
+.ref-card-del:hover { background:rgba(204,34,41,.85); }
+
+/* empty state */
+.empty-wrap { text-align:center; padding:80px 20px; color:var(--muted); }
+.empty-wrap .e-icon { font-size:52px; margin-bottom:16px; opacity:.4; }
+.empty-wrap .e-title { font-size:16px; font-weight:700; margin-bottom:6px; }
+.empty-wrap .e-sub { font-size:13px; }
+
+/* ── Lightbox ── */
+.lb-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.88);
+  z-index:300; align-items:center; justify-content:center;
+  padding:20px; backdrop-filter:blur(4px);
+}
+.lb-overlay.open { display:flex; }
+.lb-inner { position:relative; max-width:92vw; max-height:88vh; }
+.lb-img { max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; display:block; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+.lb-close {
+  position:fixed; top:16px; right:20px; color:#fff; font-size:26px; cursor:pointer;
+  background:rgba(255,255,255,.12); border:none; border-radius:50%;
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  transition:background .12s;
+}
+.lb-close:hover { background:rgba(255,255,255,.25); }
+.lb-info {
+  position:absolute; bottom:-28px; left:0; right:0;
+  text-align:center; color:rgba(255,255,255,.6); font-size:11px;
+}
+
+/* ── Auth overlay (same pattern as vp-search) ── */
+.auth-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.72);
+  z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+}
+.auth-overlay.open { display:flex; }
+.auth-box {
+  background:var(--card); border-radius:20px; padding:40px 36px 32px;
+  width:100%; max-width:360px; box-shadow:0 32px 80px rgba(0,0,0,.45);
+  text-align:center; position:relative;
+}
+.auth-logo-wrap { display:flex; justify-content:center; margin-bottom:14px; }
+.auth-logo-icon {
+  width:52px; height:52px; border-radius:14px;
+  background:linear-gradient(135deg,#8B1218,#CC2229);
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:900; color:#fff; letter-spacing:.05em;
+  box-shadow:0 4px 20px rgba(204,34,41,.4);
+}
+.auth-title { font-size:20px; font-weight:800; margin-bottom:4px; }
+.auth-sub { font-size:13px; color:var(--muted); margin-bottom:24px; }
+.auth-input {
+  width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px;
+  font-size:14px; font-family:inherit; background:var(--bg); color:var(--dark);
+  margin-bottom:12px; outline:none; transition:border .15s;
+}
+.auth-input:focus { border-color:var(--red); }
+.auth-btn {
+  width:100%; padding:12px; background:var(--red); color:#fff; border:none;
+  border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:background .15s; margin-top:4px;
+}
+.auth-btn:hover { background:var(--red-dark); }
+.auth-error { color:var(--red); font-size:12px; margin-top:8px; display:none; }
+.auth-error.show { display:block; }
+
+/* ── Delete confirm overlay ── */
+.confirm-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
+  z-index:400; align-items:center; justify-content:center; backdrop-filter:blur(2px);
+}
+.confirm-overlay.open { display:flex; }
+.confirm-box {
+  background:var(--card); border-radius:16px; padding:28px 28px 24px;
+  max-width:360px; width:100%; box-shadow:0 16px 48px rgba(0,0,0,.25); text-align:center;
+}
+.confirm-title { font-size:16px; font-weight:800; margin-bottom:8px; }
+.confirm-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.confirm-actions { display:flex; gap:10px; justify-content:center; }
+.btn-danger { background:#DC2626; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-cancel { background:var(--border); color:var(--dark); border:none; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+
+/* ── Theme toggle ── */
+.theme-toggle-btn {
+  background:rgba(255,255,255,.14); color:#fff;
+  border:1px solid rgba(255,255,255,.3); border-radius:6px;
+  padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer;
+  font-family:inherit; letter-spacing:.06em; transition:background .15s;
+}
+.theme-toggle-btn:hover { background:rgba(255,255,255,.25); }
+
+/* theme menu */
+.theme-menu {
+  display:none; position:absolute; right:0; top:calc(100% + 6px);
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; overflow:hidden; min-width:110px;
+}
+.theme-menu.open { display:block; }
+.theme-opt { padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; color:var(--dark); }
+.theme-opt:hover { background:var(--bg); }
+.theme-opt.active { color:var(--red); font-weight:800; }
+
+/* ── Responsive ── */
+@media(max-width:640px) {
+  .topbar { padding:0 12px; height:46px; }
+  .topbar-logo { height:22px; }
+  .topbar-title { font-size:12px; }
+  .masonry-grid { columns:2 160px; gap:8px; }
+  .ref-card { margin-bottom:8px; }
+  .page-wrap { padding:16px 12px 60px; }
+  .drop-zone { padding:28px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="index.html" style="display:flex;align-items:center;text-decoration:none">
+      <img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo">
+    </a>
+    <div class="topbar-title">Grab REF</div>
+  </div>
+  <div class="topbar-right">
+    <div style="position:relative">
+      <button class="theme-toggle-btn" id="themeBtn" onclick="toggleThemeMenu()">Theme</button>
+      <div class="theme-menu" id="themeMenu">
+        <div class="theme-opt" id="tOptLight" onclick="setTheme('light')">Light</div>
+        <div class="theme-opt" id="tOptDim"   onclick="setTheme('dim')">Dim</div>
+        <div class="theme-opt" id="tOptDark"  onclick="setTheme('dark')">Dark</div>
+      </div>
+    </div>
+    <div id="userPillWrap" style="position:relative">
+      <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="toggleUserMenu()">
+        <span id="userLabel" style="color:#fff">ไม่ได้ login</span>
+        <span style="font-size:10px;opacity:.7;color:#fff">▾</span>
+      </div>
+      <div id="userMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:160px;z-index:999;overflow:hidden">
+        <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
+        <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เข้าสู่ระบบ</div>
+        <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();doLogout()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">ออกจากระบบ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAV BAR ══ -->
+<div class="nav-bar">
+  <a class="nav-tab" href="vp-search.html">ค้นหาฉาก</a>
+  <a class="nav-tab" href="vp-search.html#rec">AI แนะนำ</a>
+  <a class="nav-tab" href="vp-search.html#collection">Collection</a>
+  <a class="nav-tab active" href="vp-grab-ref.html">📌 Grab REF</a>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="page-wrap">
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone"
+    ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
+    onclick="document.getElementById('fileInput').click()">
+    <span class="dz-icon">🖼️</span>
+    <div class="dz-title">วาง / ลากภาพมาที่นี่</div>
+    <div class="dz-sub">
+      กด <kbd>Ctrl+V</kbd> หรือ <kbd>⌘V</kbd> เพื่อวางจาก clipboard<br>
+      รองรับ PNG · JPG · WebP · GIF · Screenshot<br>
+      <span style="color:var(--red);font-weight:600">ปรับเป็น WebP อัตโนมัติ · สูงสุด 1920×1080 · คงสัดส่วนเดิม</span>
+    </div>
+    <div class="dz-actions" onclick="event.stopPropagation()">
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">📁 เลือกไฟล์</button>
+      <button class="btn-upload secondary" onclick="pasteFromClipboard()">📋 Paste</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stats-count">พบ <span id="refCount">0</span> รูป</div>
+    <div style="font-size:12px;color:var(--muted)">คลิกภาพเพื่อดูเต็ม · hover เพื่อลบ</div>
+  </div>
+
+  <!-- Masonry Grid -->
+  <div class="masonry-grid" id="masonryGrid">
+    <!-- filled by JS -->
+  </div>
+
+</div>
+
+<!-- ══ UPLOAD TOAST ══ -->
+<div class="upload-toast" id="uploadToast">
+  <div class="toast-icon" id="toastIcon">⏳</div>
+  <div class="toast-msg">
+    <div id="toastMsg">กำลัง convert & upload…</div>
+    <div class="toast-bar-wrap"><div class="toast-bar" id="toastBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- ══ LIGHTBOX ══ -->
+<div class="lb-overlay" id="lbOverlay" onclick="closeLb(event)">
+  <div class="lb-inner">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <div class="lb-info" id="lbInfo"></div>
+  </div>
+  <button class="lb-close" onclick="closeLb()">✕</button>
+</div>
+
+<!-- ══ AUTH OVERLAY ══ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo-wrap"><div class="auth-logo-icon">TS</div></div>
+    <div class="auth-title">เข้าสู่ระบบ</div>
+    <div class="auth-sub">VP Library · THE STANDARD</div>
+    <input class="auth-input" id="authUser" type="text" placeholder="Username" autocomplete="username">
+    <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="auth-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ══ DELETE CONFIRM ══ -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title">ลบรูปนี้?</div>
+    <div class="confirm-sub">การลบจะลบไฟล์ออกจาก Storage และ Database ถาวร</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-danger" id="confirmDelBtn" onclick="confirmDelete()">ลบเลย</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// SUPABASE — same project as vp-search
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const REF_BUCKET = 'ref-images';   // Supabase Storage bucket (ต้องสร้างใน Supabase dashboard)
+const REF_TABLE  = 'ref_images';   // Supabase table (ดู SQL migration)
+
+// ══════════════════════════════════════════════════════════════
+// IMAGE PROCESSING — convert → WebP, max 1920×1080, preserve AR
+// ══════════════════════════════════════════════════════════════
+const MAX_W = 1920;
+const MAX_H = 1080;
+const WEBP_QUALITY = 0.88;
+
+/**
+ * รับ File/Blob → คืน { blob, width, height }
+ * ปรับขนาดถ้าใหญ่เกิน MAX_W×MAX_H โดยคง aspect ratio
+ * แปลงเป็น WebP เสมอ
+ */
+function processImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+
+      // Scale down preserving aspect ratio
+      const scaleW = w > MAX_W ? MAX_W / w : 1;
+      const scaleH = h > MAX_H ? MAX_H / h : 1;
+      const scale  = Math.min(scaleW, scaleH);    // ใช้ scale เล็กกว่าเพื่อ fit ทั้ง W และ H
+
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(blob => {
+        if (!blob) { reject(new Error('canvas.toBlob failed')); return; }
+        resolve({ blob, width: w, height: h });
+      }, 'image/webp', WEBP_QUALITY);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ไม่สามารถโหลดภาพได้')); };
+    img.src = url;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UPLOAD PIPELINE
+// ══════════════════════════════════════════════════════════════
+let _uploadQueue = [];
+let _uploading   = false;
+
+function queueUpload(files) {
+  const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  if (!arr.length) { showToast('error', '⚠️ ไม่พบไฟล์รูปภาพ'); return; }
+  _uploadQueue.push(...arr);
+  if (!_uploading) drainQueue();
+}
+
+async function drainQueue() {
+  if (!_uploadQueue.length) { _uploading = false; return; }
+  _uploading = true;
+  const file = _uploadQueue.shift();
+  await uploadOne(file);
+  drainQueue();
+}
+
+async function uploadOne(file) {
+  showToast('loading', `⏳ กำลัง convert "${file.name}"…`, 10);
+  try {
+    // 1. Convert → WebP
+    const { blob, width, height } = await processImage(file);
+    const fileSizeKB = Math.round(blob.size / 1024);
+
+    showToast('loading', `☁️ กำลัง upload "${file.name}"…`, 50);
+
+    // 2. Generate filename
+    const ts   = Date.now();
+    const rand = Math.random().toString(36).slice(2,7);
+    const path = `refs/${ts}-${rand}.webp`;
+
+    // 3. Upload to Supabase Storage
+    const { data: storageData, error: storageErr } = await _SB.storage
+      .from(REF_BUCKET)
+      .upload(path, blob, { contentType:'image/webp', cacheControl:'31536000', upsert:false });
+
+    if (storageErr) throw new Error('Storage: ' + storageErr.message);
+
+    const { data: pubData } = _SB.storage.from(REF_BUCKET).getPublicUrl(path);
+    const publicUrl = pubData?.publicUrl || '';
+
+    showToast('loading', `💾 กำลังบันทึก metadata…`, 80);
+
+    // 4. Save metadata to ref_images table
+    const user = localStorage.getItem('vp_user_id') || 'anon';
+    const { data: row, error: dbErr } = await _SB.from(REF_TABLE).insert({
+      storage_path : path,
+      url          : publicUrl,
+      original_name: file.name,
+      width        : width,
+      height       : height,
+      file_size_kb : fileSizeKB,
+      uploaded_by  : user,
+    }).select().single();
+
+    if (dbErr) throw new Error('DB: ' + dbErr.message);
+
+    showToast('success', `✅ บันทึกแล้ว (${width}×${height}, ${fileSizeKB}KB)`, 100);
+    setTimeout(() => hideToast(), 2200);
+
+    // 5. Prepend card to grid
+    prependCard(row);
+    updateStatsBar();
+
+  } catch(err) {
+    console.error('[GrabREF] upload error:', err);
+    showToast('error', `❌ ${err.message}`, 0);
+    setTimeout(() => hideToast(), 4000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DRAG & DROP
+// ══════════════════════════════════════════════════════════════
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  if (!document.getElementById('dropZone').contains(e.relatedTarget))
+    document.getElementById('dropZone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const files = e.dataTransfer?.files;
+  if (files?.length) queueUpload(files);
+}
+function handleFileInput(e) {
+  if (e.target.files?.length) queueUpload(e.target.files);
+  e.target.value = '';  // reset so same file can be re-selected
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLIPBOARD PASTE
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items || [];
+  const imageItems = Array.from(items).filter(i => i.kind === 'file' && i.type.startsWith('image/'));
+  if (!imageItems.length) return;
+  e.preventDefault();
+  const files = imageItems.map(i => i.getAsFile()).filter(Boolean);
+  queueUpload(files);
+});
+
+async function pasteFromClipboard() {
+  try {
+    const items = await navigator.clipboard.read();
+    const files = [];
+    for (const item of items) {
+      const imgType = item.types.find(t => t.startsWith('image/'));
+      if (imgType) {
+        const blob = await item.getType(imgType);
+        files.push(new File([blob], `paste-${Date.now()}.${imgType.split('/')[1]}`, { type: imgType }));
+      }
+    }
+    if (files.length) queueUpload(files);
+    else showToast('error', '⚠️ ไม่พบรูปใน clipboard', 0, true);
+  } catch {
+    showToast('error', '⚠️ กด Ctrl+V / ⌘V แทน', 0, true);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOAD & RENDER REFS
+// ══════════════════════════════════════════════════════════════
+let _allRefs = [];
+
+async function loadRefs() {
+  const grid = document.getElementById('masonryGrid');
+  grid.innerHTML = `<div class="empty-wrap"><div class="e-icon">⏳</div><div class="e-title">กำลังโหลด…</div></div>`;
+
+  const { data, error } = await _SB
+    .from(REF_TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[GrabREF] load error:', error);
+    grid.innerHTML = `<div class="empty-wrap"><div class="e-icon">⚠️</div><div class="e-title">โหลดไม่ได้</div><div class="e-sub">${error.message}</div></div>`;
+    return;
+  }
+
+  _allRefs = data || [];
+  renderGrid(_allRefs);
+  updateStatsBar();
+}
+
+function renderGrid(refs) {
+  const grid = document.getElementById('masonryGrid');
+  if (!refs.length) {
+    grid.classList.add('empty-state');
+    grid.innerHTML = `<div class="empty-wrap">
+      <div class="e-icon">📌</div>
+      <div class="e-title">ยังไม่มี REF</div>
+      <div class="e-sub">วาง หรือ ลากภาพมาด้านบน เพื่อเริ่มเก็บ reference</div>
+    </div>`;
+    return;
+  }
+  grid.classList.remove('empty-state');
+  grid.innerHTML = refs.map(r => cardHTML(r)).join('');
+}
+
+function prependCard(ref) {
+  _allRefs.unshift(ref);
+  const grid = document.getElementById('masonryGrid');
+  if (grid.querySelector('.empty-wrap')) grid.innerHTML = '';
+  grid.classList.remove('empty-state');
+  const div = document.createElement('div');
+  div.innerHTML = cardHTML(ref);
+  grid.prepend(div.firstChild);
+}
+
+function cardHTML(r) {
+  const date = r.created_at ? new Date(r.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) : '';
+  const dim  = (r.width && r.height) ? `${r.width}×${r.height}` : '';
+  const kb   = r.file_size_kb ? `${r.file_size_kb}KB` : '';
+  const info = [dim, kb].filter(Boolean).join(' · ');
+  return `<div class="ref-card" data-id="${r.id}" onclick="openLb('${r.url}','${info}')">
+    <img src="${r.url}" alt="${r.original_name||''}" loading="lazy"
+         onerror="this.src='';this.parentElement.style.display='none'">
+    <div class="ref-card-meta">
+      <div class="ref-card-date">${date}</div>
+      <div class="ref-card-size">${info}</div>
+    </div>
+    <button class="ref-card-del" title="ลบ" onclick="event.stopPropagation();askDelete('${r.id}','${r.storage_path||''}')">✕</button>
+  </div>`;
+}
+
+function updateStatsBar() {
+  const bar = document.getElementById('statsBar');
+  document.getElementById('refCount').textContent = _allRefs.length;
+  bar.style.display = _allRefs.length ? 'flex' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════════
+// LIGHTBOX
+// ══════════════════════════════════════════════════════════════
+function openLb(url, info) {
+  document.getElementById('lbImg').src = url;
+  document.getElementById('lbInfo').textContent = info || '';
+  document.getElementById('lbOverlay').classList.add('open');
+}
+function closeLb(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('lbOverlay').classList.remove('open');
+  document.getElementById('lbImg').src = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('lbOverlay').classList.remove('open');
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════════════════════════════
+let _pendingDel = null;
+
+function askDelete(id, storagePath) {
+  _pendingDel = { id, storagePath };
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  _pendingDel = null;
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+async function confirmDelete() {
+  if (!_pendingDel) return;
+  const { id, storagePath } = _pendingDel;
+  closeConfirm();
+
+  showToast('loading', '🗑️ กำลังลบ…', 30);
+
+  // Delete from Storage
+  if (storagePath) {
+    await _SB.storage.from(REF_BUCKET).remove([storagePath]);
+  }
+  // Delete from DB
+  const { error } = await _SB.from(REF_TABLE).delete().eq('id', id);
+  if (error) {
+    showToast('error', '❌ ลบไม่ได้: ' + error.message, 0);
+    setTimeout(hideToast, 3000);
+    return;
+  }
+
+  showToast('success', '✅ ลบแล้ว', 100);
+  setTimeout(hideToast, 1500);
+
+  // Remove card from DOM & _allRefs
+  _allRefs = _allRefs.filter(r => r.id !== id);
+  const card = document.querySelector(`.ref-card[data-id="${id}"]`);
+  if (card) card.remove();
+  updateStatsBar();
+  if (!_allRefs.length) renderGrid([]);
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════
+function showToast(type, msg, pct, autoHide=false) {
+  const t = document.getElementById('uploadToast');
+  const icons = { loading:'⏳', success:'✅', error:'❌' };
+  document.getElementById('toastIcon').textContent = icons[type] || '⏳';
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastBar').style.width = (pct||0) + '%';
+  t.classList.add('show');
+  if (autoHide) setTimeout(hideToast, 2500);
+}
+function hideToast() { document.getElementById('uploadToast').classList.remove('show'); }
+
+// ══════════════════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════════════════
+function setTheme(t) {
+  document.documentElement.removeAttribute('data-theme');
+  if (t !== 'light') document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('vp_theme', t);
+  ['tOptLight','tOptDim','tOptDark'].forEach(id => {
+    document.getElementById(id)?.classList.remove('active');
+  });
+  const map = { light:'tOptLight', dim:'tOptDim', dark:'tOptDark' };
+  document.getElementById(map[t])?.classList.add('active');
+  document.getElementById('themeMenu')?.classList.remove('open');
+}
+function toggleThemeMenu() {
+  document.getElementById('themeMenu')?.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#themeBtn') && !e.target.closest('#themeMenu'))
+    document.getElementById('themeMenu')?.classList.remove('open');
+  if (!e.target.closest('#userPillWrap'))
+    document.getElementById('userMenu').style.display = 'none';
+});
+
+// ══════════════════════════════════════════════════════════════
+// AUTH — same pattern as vp-search
+// ══════════════════════════════════════════════════════════════
+const USER_KEY  = 'vp_user_id';
+const USER_ROLE = 'vp_user_role';
+const FALLBACK_USERS = {
+  "admin":  { role:"admin",  hash:"ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name:"Administrator" },
+  "viewer": { role:"viewer", hash:"65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name:"Viewer" }
+};
+let _USERS_DB = null;
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function loadUsers() {
+  try {
+    const { data, error } = await _SB.from('users').select('*');
+    if (!error && data?.length) {
+      _USERS_DB = {};
+      data.forEach(u => { _USERS_DB[u.username] = { role:u.role||'viewer', hash:u.password_hash||'', name:u.display_name||u.username }; });
+      return;
+    }
+  } catch{}
+  _USERS_DB = { ...FALLBACK_USERS };
+}
+async function doLogin() {
+  const username = document.getElementById('authUser').value.trim().toLowerCase();
+  const password = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authError');
+  errEl.classList.remove('show');
+  if (!username || !password) { errEl.textContent='กรุณากรอก Username และ Password'; errEl.classList.add('show'); return; }
+  if (!_USERS_DB) await loadUsers();
+  const stored = _USERS_DB?.[username];
+  if (!stored) { errEl.textContent='ไม่พบ Username นี้'; errEl.classList.add('show'); return; }
+  const hashed = await sha256(password);
+  if (hashed !== stored.hash) { errEl.textContent='Password ไม่ถูกต้อง'; errEl.classList.add('show'); return; }
+  localStorage.setItem(USER_KEY,  username);
+  localStorage.setItem(USER_ROLE, stored.role||'viewer');
+  document.getElementById('authOverlay').classList.remove('open');
+  updateUserUI(username, stored.name);
+}
+function doLogout() {
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(USER_ROLE);
+  updateUserUI(null, null);
+}
+function promptLogin() { document.getElementById('authOverlay').classList.add('open'); }
+function toggleUserMenu() {
+  const m = document.getElementById('userMenu');
+  m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function closeUserMenu() { document.getElementById('userMenu').style.display='none'; }
+function updateUserUI(uid, name) {
+  const label = document.getElementById('userLabel');
+  const login = document.getElementById('userMenuLogin');
+  const logout = document.getElementById('userMenuLogout');
+  const menuName = document.getElementById('userMenuName');
+  if (uid) {
+    label.textContent = name || uid;
+    menuName.textContent = name || uid;
+    login.style.display = 'none';
+    logout.style.display = 'block';
+  } else {
+    label.textContent = 'ไม่ได้ login';
+    menuName.textContent = 'ไม่ได้ login';
+    login.style.display = 'block';
+    logout.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+(async function init() {
+  // Theme
+  const savedTheme = localStorage.getItem('vp_theme') || 'light';
+  setTheme(savedTheme);
+
+  // Auth
+  await loadUsers();
+  const uid = localStorage.getItem(USER_KEY);
+  if (uid && _USERS_DB?.[uid]) {
+    updateUserUI(uid, _USERS_DB[uid].name);
+  }
+
+  // Load refs
+  await loadRefs();
+})();
+</script>
+</body>
+</html>
