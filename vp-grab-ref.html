@@ -308,27 +308,29 @@ body {
   color: var(--bone-faint);
   letter-spacing: 0.06em;
 }
-/* Shuffle button */
-.btn-shuffle {
+/* Stats bar controls */
+.btn-shuffle, .btn-size {
+  all: unset;
+  box-sizing: border-box;
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
-  background: none;
   border: 1px solid var(--line-hi);
-  padding: 5px 14px;
+  padding: 5px 12px;
   cursor: pointer;
   transition: all .15s;
+  display: inline-block;
 }
-.btn-shuffle:hover { color: var(--gold); border-color: var(--gold-dim); }
+.btn-shuffle:hover, .btn-size:hover { color: var(--gold); border-color: var(--gold-dim); }
 
 /* ══════════════════════════════════════════════════════════════
    MASONRY GRID
 ══════════════════════════════════════════════════════════════ */
 .masonry-grid {
-  columns: 4 280px;
-  gap: 12px;
+  columns: 3 320px;
+  gap: 14px;
 }
 .masonry-grid.empty-state { columns: unset; }
 
@@ -489,41 +491,73 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(5,5,6,.94);
+  background: rgba(5,5,6,.96);
   z-index: 300;
   align-items: center;
   justify-content: center;
-  padding: 20px;
   backdrop-filter: blur(8px);
 }
 .lb-overlay.open { display: flex; }
-.lb-inner { position: relative; max-width: 92vw; max-height: 88vh; }
-.lb-img {
-  max-width: 92vw;
-  max-height: 88vh;
-  object-fit: contain;
-  display: block;
-  box-shadow: 0 32px 80px rgba(0,0,0,.8);
+
+/* Body: tabbar (left) + content */
+.lb-body {
+  display: flex;
+  align-items: stretch;
+  max-height: 90vh;
 }
-.lb-close {
-  position: fixed;
-  top: 20px;
-  right: 24px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
+
+/* Vertical tab strip */
+.lb-tabbar {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--line-hi);
-  border-radius: var(--radius);
-  padding: 7px 14px;
-  transition: all .15s;
+  border-right: none;
+  width: 40px;
+  align-self: stretch;
 }
-.lb-close:hover { color: var(--bone); border-color: var(--bone-faint); }
+.lb-tab {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: 20px 0;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, background .15s;
+  border-bottom: 1px solid var(--line-hi);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  user-select: none;
+}
+.lb-tab:last-child { border-bottom: none; }
+.lb-tab:hover { color: var(--bone); background: var(--card); }
+.lb-tab.active { color: var(--gold); background: var(--card); box-shadow: inset 2px 0 0 var(--gold); }
+
+/* Image pane */
+.lb-pane-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 56px 56px;
+}
+.lb-inner { position: relative; }
+.lb-img {
+  max-width: 86vw;
+  max-height: 84vh;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 24px 64px rgba(0,0,0,.8);
+}
 .lb-info {
   position: absolute;
-  bottom: -24px;
+  bottom: -22px;
   left: 0; right: 0;
   text-align: center;
   font-family: var(--font-mono);
@@ -531,6 +565,97 @@ body {
   color: var(--muted);
   letter-spacing: 0.06em;
 }
+
+/* Close button */
+.lb-close {
+  all: unset;
+  box-sizing: border-box;
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  padding: 7px 14px;
+  transition: all .15s;
+  z-index: 320;
+}
+.lb-close:hover { color: var(--bone); border-color: var(--bone-faint); }
+
+/* Data pane */
+.lb-pane-data {
+  width: 460px;
+  max-height: 84vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-top: 2px solid var(--gold);
+  padding: 24px 28px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-hi) transparent;
+}
+.lb-pane-data::-webkit-scrollbar { width: 3px; }
+.lb-pane-data::-webkit-scrollbar-thumb { background: var(--line-hi); }
+.lb-field {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 0 12px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.lb-field-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 3px;
+}
+.lb-field-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bone-dim);
+  word-break: break-all;
+  line-height: 1.5;
+}
+.lb-field-divider { border-top: 1px solid var(--gold-dim); margin: 14px 0 6px; }
+.lb-field-input {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bone);
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  padding: 7px 10px;
+  width: 100%;
+  transition: border-color .15s;
+}
+.lb-field-input:focus { border-color: var(--gold-dim); }
+.lb-field-input::placeholder { color: var(--muted); }
+.lb-field-textarea { height: 68px; line-height: 1.5; resize: none; white-space: pre-wrap; overflow-y: auto; }
+.lb-save-row { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+.lb-save-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--gold);
+  padding: 9px 22px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.lb-save-btn:hover { background: #D4B276; }
+.lb-save-status { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--muted); }
 
 /* ══════════════════════════════════════════════════════════════
    AUTH OVERLAY
@@ -818,7 +943,9 @@ body {
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="btn-size" onclick="resizeGrid(-1)" title="Fewer columns">—</button>
+      <button class="btn-size" onclick="resizeGrid(+1)" title="More columns">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
     </div>
     <div class="stats-hint">click to view &nbsp;·&nbsp; hover to delete</div>
@@ -840,21 +967,23 @@ body {
 
 <!-- ══ LIGHTBOX ══ -->
 <div class="lb-overlay" id="lbOverlay" onclick="closeLb(event)">
-  <!-- Tab bar (admin only, hidden by default) -->
-  <div class="lb-tabbar" id="lbTabbar" style="display:none" onclick="event.stopPropagation()">
-    <button class="lb-tab active" id="lbTabView" onclick="switchLbTab('view')">Image</button>
-    <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')">Data</button>
-  </div>
-  <!-- Image pane -->
-  <div class="lb-pane-view" id="lbPaneView">
-    <div class="lb-inner">
-      <img class="lb-img" id="lbImg" src="" alt="">
-      <div class="lb-info" id="lbInfo"></div>
+  <div class="lb-body" onclick="event.stopPropagation()">
+    <!-- Vertical tab strip (admin only) -->
+    <div class="lb-tabbar" id="lbTabbar" style="display:none">
+      <button class="lb-tab active" id="lbTabView" onclick="switchLbTab('view')">Image</button>
+      <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')">Data</button>
     </div>
-  </div>
-  <!-- Data pane (admin only) -->
-  <div class="lb-pane-data" id="lbPaneData" style="display:none" onclick="event.stopPropagation()">
-    <div class="lb-data-grid" id="lbDataGrid"></div>
+    <!-- Image pane -->
+    <div class="lb-pane-view" id="lbPaneView">
+      <div class="lb-inner">
+        <img class="lb-img" id="lbImg" src="" alt="">
+        <div class="lb-info" id="lbInfo"></div>
+      </div>
+    </div>
+    <!-- Data pane (admin only) -->
+    <div class="lb-pane-data" id="lbPaneData" style="display:none">
+      <div id="lbDataGrid"></div>
+    </div>
   </div>
   <button class="lb-close" onclick="closeLb()">ESC</button>
 </div>
@@ -1085,7 +1214,7 @@ function renderGrid(refs) {
     return;
   }
   grid.classList.remove('empty-state');
-  grid.innerHTML = refs.map(r => cardHTML(r)).join('');
+  grid.innerHTML = refs.slice(0, 50).map(r => cardHTML(r)).join('');
 }
 
 function prependCard(ref) {
@@ -1131,6 +1260,13 @@ function shuffleGrid() {
     [_allRefs[i], _allRefs[j]] = [_allRefs[j], _allRefs[i]];
   }
   renderGrid(_allRefs);
+}
+
+let _gridCols = 3; // default column count
+function resizeGrid(delta) {
+  _gridCols = Math.min(6, Math.max(1, _gridCols + delta));
+  const minW = Math.round(1200 / _gridCols);
+  document.getElementById('masonryGrid').style.columns = `${_gridCols} ${minW}px`;
 }
 
 // ══════════════════════════════════════════════════════════════
