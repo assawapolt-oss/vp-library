@@ -1,270 +1,747 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Grab REF — THE STANDARD VP Library</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
+
 /* ══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — sync กับ vp-search.html
+   MERIDIAN RESTRAINT — Design System v1
+   Palette: Graphite · Bone · Aged Gold
 ══════════════════════════════════════════════════════════════ */
 :root {
-  --red:#CC2229; --red-dark:#A81B21;
-  --bg:#F4F5F7; --card:#FFFFFF; --dark:#1A1A1A; --muted:#6B7280;
-  --border:#E5E7EB; --nav-bg:#FFFFFF; --nav-border:#E5E7EB;
-  --topbar-bg:linear-gradient(135deg,#8B1218 0%,#CC2229 60%,#E53E3E 100%);
-  --shadow:0 2px 8px rgba(0,0,0,.08);
-  --radius:12px;
-}
-[data-theme="dim"] {
-  --bg:#1E2130; --card:#252840; --dark:#E8EAF0; --muted:#8B93B0;
-  --border:#343756; --nav-bg:#1E2130; --nav-border:#343756;
-}
-[data-theme="dark"] {
-  --bg:#0F1117; --card:#1A1D2E; --dark:#EAEDF5; --muted:#7A84A3;
-  --border:#252840; --nav-bg:#0F1117; --nav-border:#252840;
+  --bg:       #0A0A0C;
+  --surface:  #111114;
+  --card:     #131316;
+  --bone:     #F0ECE4;
+  --bone-dim: #A09C94;
+  --bone-faint:#3C3C40;
+  --gold:     #C4A266;
+  --gold-dim: #6B5633;
+  --line:     #222226;
+  --line-hi:  #2E2E34;
+  --muted:    #58585E;
+  --danger:   #8B2020;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-serif:'Instrument Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --radius:    2px;
 }
 
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Topbar ── */
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--bone);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════════════════════ */
 .topbar {
-  background:var(--topbar-bg);
-  height:52px; padding:0 20px;
-  display:flex; align-items:center; justify-content:space-between;
-  position:sticky; top:0; z-index:50;
-  box-shadow:0 2px 12px rgba(140,18,24,.25);
+  height: 52px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }
-.topbar-logo { height:26px; }
-.topbar-left { display:flex; align-items:center; gap:12px; }
-.topbar-title { color:rgba(255,255,255,.9); font-size:13px; font-weight:700; letter-spacing:.03em; white-space:nowrap; }
-.topbar-right { display:flex; align-items:center; gap:8px; }
-.btn-topbar {
-  background:rgba(255,255,255,.18); color:#fff;
-  border:1.5px solid rgba(255,255,255,.45); border-radius:7px;
-  padding:4px 11px; font-size:12px; font-weight:700; cursor:pointer;
-  font-family:inherit; white-space:nowrap; transition:background .15s; text-decoration:none;
-  display:inline-flex; align-items:center; gap:5px;
-}
-.btn-topbar:hover { background:rgba(255,255,255,.30); }
-.btn-topbar.dim { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); font-size:11px; font-weight:600; }
 
-/* ── Nav bar ── */
+/* Gold rule at very top */
+.topbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%);
+}
+
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.topbar-logo { height: 22px; opacity: 0.9; filter: brightness(0) invert(1); }
+
+.topbar-wordmark {
+  font-family: var(--font-disp);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--bone-dim);
+  text-transform: uppercase;
+  border-left: 1px solid var(--line-hi);
+  padding-left: 16px;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.topbar-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.topbar-btn:hover { color: var(--bone); border-color: var(--bone-faint); }
+
+/* ══════════════════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════════════════ */
 .nav-bar {
-  background:var(--nav-bg); border-bottom:2px solid var(--nav-border);
-  padding:0 20px; display:flex; align-items:center; gap:4px;
-  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
+
 .nav-tab {
-  padding:13px 16px; font-size:13px; font-weight:700; color:var(--muted);
-  border-bottom:3px solid transparent; cursor:pointer; border:none; background:none;
-  font-family:inherit; margin-bottom:-2px; white-space:nowrap; transition:all .15s;
-  text-decoration:none; display:inline-block;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 14px 20px;
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background: none;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  text-decoration: none;
+  display: inline-block;
 }
-.nav-tab:hover { color:var(--dark); }
-.nav-tab.active { color:var(--red); border-bottom-color:var(--red); }
+.nav-tab:hover { color: var(--bone-dim); }
+.nav-tab.active {
+  color: var(--bone);
+  border-bottom-color: var(--gold);
+}
 
-/* ── Main layout ── */
-.page-wrap { max-width:1400px; margin:0 auto; padding:28px 20px 80px; }
+/* ══════════════════════════════════════════════════════════════
+   PAGE LAYOUT
+══════════════════════════════════════════════════════════════ */
+.page-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 40px 28px 100px;
+}
 
-/* ── Drop Zone ── */
+/* ══════════════════════════════════════════════════════════════
+   DROP ZONE
+══════════════════════════════════════════════════════════════ */
 .drop-zone {
-  border:2.5px dashed var(--border); border-radius:18px;
-  padding:44px 20px; text-align:center; cursor:pointer;
-  background:var(--card); transition:all .2s; margin-bottom:28px;
-  position:relative;
+  position: relative;
+  border: 1px solid var(--line-hi);
+  border-left: 2px solid var(--gold-dim);
+  background: var(--surface);
+  padding: 52px 32px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 36px;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:hover {
+  border-color: var(--bone-faint);
+  border-left-color: var(--gold);
+  background: #0E0E11;
 }
 .drop-zone.drag-over {
-  border-color:var(--red); background:rgba(204,34,41,.04);
-  transform:scale(1.005);
+  border-color: var(--gold);
+  border-left-color: var(--gold);
+  background: rgba(196,162,102,.04);
 }
-.drop-zone:hover { border-color:rgba(204,34,41,.5); background:rgba(204,34,41,.02); }
-.dz-icon { font-size:40px; margin-bottom:12px; display:block; }
-.dz-title { font-size:16px; font-weight:700; color:var(--dark); margin-bottom:6px; }
-.dz-sub { font-size:12px; color:var(--muted); line-height:1.6; }
-.dz-sub kbd {
-  background:var(--border); border-radius:4px; padding:1px 5px;
-  font-family:inherit; font-size:11px; font-weight:600; color:var(--dark);
-}
-.dz-actions { display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
-.btn-upload {
-  background:var(--red); color:#fff; border:none; border-radius:9px;
-  padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer;
-  font-family:inherit; transition:background .15s; display:inline-flex; align-items:center; gap:6px;
-}
-.btn-upload:hover { background:var(--red-dark); }
-.btn-upload.secondary {
-  background:var(--card); color:var(--dark); border:1.5px solid var(--border);
-}
-.btn-upload.secondary:hover { background:var(--bg); }
-#fileInput { display:none; }
 
-/* ── Upload progress overlay ── */
-.upload-toast {
-  position:fixed; bottom:24px; right:24px; z-index:200;
-  background:var(--card); border:1px solid var(--border); border-radius:12px;
-  padding:14px 18px; box-shadow:0 8px 32px rgba(0,0,0,.15);
-  display:none; gap:12px; align-items:center; max-width:320px;
-  font-size:13px; font-weight:600;
+/* Corner accents */
+.drop-zone::before,
+.drop-zone::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
 }
-.upload-toast.show { display:flex; }
-.toast-icon { font-size:20px; flex-shrink:0; }
-.toast-msg { flex:1; }
-.toast-bar-wrap { width:100%; height:4px; background:var(--border); border-radius:2px; margin-top:6px; }
-.toast-bar { height:4px; background:var(--red); border-radius:2px; transition:width .3s; }
+.drop-zone::before {
+  top: -1px; right: -1px;
+  border-top: 1px solid var(--gold-dim);
+  border-right: 1px solid var(--gold-dim);
+}
+.drop-zone::after {
+  bottom: -1px; left: 1px;
+  border-bottom: 1px solid var(--gold-dim);
+  border-left: 1px solid transparent;
+}
 
-/* ── Stats bar ── */
+.dz-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+  display: block;
+}
+
+.dz-title {
+  font-family: var(--font-disp);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--bone);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.dz-sub {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.dz-sub code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone-dim);
+  background: var(--line);
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+.dz-rule {
+  width: 40px;
+  height: 1px;
+  background: var(--gold-dim);
+  margin: 20px auto;
+}
+
+.dz-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+#fileInput { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════════════════════════ */
+.btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: var(--radius);
+  padding: 10px 22px;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--bg);
+  border: 1px solid var(--gold);
+}
+.btn-primary:hover { background: #D4B276; border-color: #D4B276; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--bone-dim);
+  border: 1px solid var(--line-hi);
+}
+.btn-ghost:hover { color: var(--bone); border-color: var(--bone-faint); }
+
+/* ══════════════════════════════════════════════════════════════
+   STATS BAR
+══════════════════════════════════════════════════════════════ */
 .stats-bar {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:16px; flex-wrap:wrap; gap:8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.stats-count { font-size:13px; font-weight:700; color:var(--muted); }
-.stats-count span { color:var(--dark); }
-.filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
-.pill {
-  background:var(--border); color:var(--muted); border:1px solid transparent;
-  border-radius:20px; padding:3px 10px; font-size:11px; font-weight:600; cursor:pointer;
-  transition:all .15s;
+.stats-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
 }
-.pill.active { background:var(--red); color:#fff; }
+.stats-count strong { color: var(--bone); font-weight: 400; }
+.stats-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone-faint);
+  letter-spacing: 0.06em;
+}
 
-/* ── Masonry Grid ── */
+/* ══════════════════════════════════════════════════════════════
+   MASONRY GRID
+══════════════════════════════════════════════════════════════ */
 .masonry-grid {
-  columns:4 280px; gap:14px;
+  columns: 4 280px;
+  gap: 12px;
 }
-.masonry-grid.empty-state { columns:unset; }
+.masonry-grid.empty-state { columns: unset; }
+
 .ref-card {
-  break-inside:avoid; background:var(--card); border-radius:12px;
-  border:1px solid var(--border); overflow:hidden; margin-bottom:14px;
-  cursor:pointer; transition:transform .15s, box-shadow .15s; position:relative;
-  display:block;
+  break-inside: avoid;
+  background: var(--card);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  position: relative;
+  display: block;
+  transition: border-color .2s;
 }
-.ref-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
-.ref-card img { width:100%; display:block; background:var(--bg); }
+.ref-card:hover { border-color: var(--line-hi); }
+.ref-card:hover .ref-card-overlay { opacity: 1; }
+
+.ref-card img {
+  width: 100%;
+  display: block;
+  background: var(--surface);
+}
+
+.ref-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 12, .45);
+  opacity: 0;
+  transition: opacity .2s;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 10px;
+}
+
 .ref-card-meta {
-  padding:8px 10px; display:flex; align-items:center; justify-content:space-between; gap:6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
 }
-.ref-card-date { font-size:10px; color:var(--muted); font-weight:500; }
-.ref-card-size { font-size:10px; color:var(--muted); }
+
+.ref-card-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.ref-card-size {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--bone-faint);
+  letter-spacing: 0.04em;
+}
+
 .ref-card-del {
-  position:absolute; top:7px; right:7px;
-  background:rgba(0,0,0,.45); color:#fff; border:none;
-  border-radius:50%; width:26px; height:26px; font-size:13px; cursor:pointer;
-  display:none; align-items:center; justify-content:center; transition:background .15s;
+  background: rgba(10,10,12,.85);
+  color: var(--bone-dim);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
 }
-.ref-card:hover .ref-card-del { display:flex; }
-.ref-card-del:hover { background:rgba(204,34,41,.85); }
+.ref-card-del:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 
-/* empty state */
-.empty-wrap { text-align:center; padding:80px 20px; color:var(--muted); }
-.empty-wrap .e-icon { font-size:52px; margin-bottom:16px; opacity:.4; }
-.empty-wrap .e-title { font-size:16px; font-weight:700; margin-bottom:6px; }
-.empty-wrap .e-sub { font-size:13px; }
+/* ══════════════════════════════════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════════════════════════════════ */
+.empty-wrap {
+  text-align: center;
+  padding: 100px 20px;
+}
+.e-rule {
+  width: 1px;
+  height: 48px;
+  background: var(--gold-dim);
+  margin: 0 auto 28px;
+}
+.e-title {
+  font-family: var(--font-disp);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bone-dim);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.e-sub {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--muted);
+}
 
-/* ── Lightbox ── */
+/* ══════════════════════════════════════════════════════════════
+   UPLOAD TOAST
+══════════════════════════════════════════════════════════════ */
+.upload-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-left: 2px solid var(--gold);
+  padding: 14px 18px;
+  display: none;
+  gap: 14px;
+  align-items: flex-start;
+  max-width: 300px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+}
+.upload-toast.show { display: flex; }
+
+.toast-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: var(--font-mono);
+  color: var(--gold);
+}
+.toast-msg {
+  flex: 1;
+  min-width: 0;
+}
+.toast-msg > div:first-child {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--bone-dim);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast-bar-wrap {
+  width: 100%;
+  height: 1px;
+  background: var(--line-hi);
+}
+.toast-bar {
+  height: 1px;
+  background: var(--gold);
+  transition: width .3s;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════════════════════════ */
 .lb-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.88);
-  z-index:300; align-items:center; justify-content:center;
-  padding:20px; backdrop-filter:blur(4px);
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,6,.94);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(8px);
 }
-.lb-overlay.open { display:flex; }
-.lb-inner { position:relative; max-width:92vw; max-height:88vh; }
-.lb-img { max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; display:block; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+.lb-overlay.open { display: flex; }
+.lb-inner { position: relative; max-width: 92vw; max-height: 88vh; }
+.lb-img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 32px 80px rgba(0,0,0,.8);
+}
 .lb-close {
-  position:fixed; top:16px; right:20px; color:#fff; font-size:26px; cursor:pointer;
-  background:rgba(255,255,255,.12); border:none; border-radius:50%;
-  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
-  transition:background .12s;
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  padding: 7px 14px;
+  transition: all .15s;
 }
-.lb-close:hover { background:rgba(255,255,255,.25); }
+.lb-close:hover { color: var(--bone); border-color: var(--bone-faint); }
 .lb-info {
-  position:absolute; bottom:-28px; left:0; right:0;
-  text-align:center; color:rgba(255,255,255,.6); font-size:11px;
+  position: absolute;
+  bottom: -24px;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
 }
 
-/* ── Auth overlay (same pattern as vp-search) ── */
+/* ══════════════════════════════════════════════════════════════
+   AUTH OVERLAY
+══════════════════════════════════════════════════════════════ */
 .auth-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.72);
-  z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,6,.88);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
 }
-.auth-overlay.open { display:flex; }
+.auth-overlay.open { display: flex; }
+
 .auth-box {
-  background:var(--card); border-radius:20px; padding:40px 36px 32px;
-  width:100%; max-width:360px; box-shadow:0 32px 80px rgba(0,0,0,.45);
-  text-align:center; position:relative;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-top: 2px solid var(--gold);
+  padding: 44px 40px 36px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.6);
 }
-.auth-logo-wrap { display:flex; justify-content:center; margin-bottom:14px; }
+
+.auth-logo-wrap { margin-bottom: 28px; }
 .auth-logo-icon {
-  width:52px; height:52px; border-radius:14px;
-  background:linear-gradient(135deg,#8B1218,#CC2229);
-  display:flex; align-items:center; justify-content:center;
-  font-size:15px; font-weight:900; color:#fff; letter-spacing:.05em;
-  box-shadow:0 4px 20px rgba(204,34,41,.4);
+  font-family: var(--font-disp);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-transform: uppercase;
 }
-.auth-title { font-size:20px; font-weight:800; margin-bottom:4px; }
-.auth-sub { font-size:13px; color:var(--muted); margin-bottom:24px; }
+
+.auth-title {
+  font-family: var(--font-disp);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--bone);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+.auth-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 28px;
+  text-transform: uppercase;
+}
 .auth-input {
-  width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px;
-  font-size:14px; font-family:inherit; background:var(--bg); color:var(--dark);
-  margin-bottom:12px; outline:none; transition:border .15s;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  background: var(--card);
+  color: var(--bone);
+  margin-bottom: 10px;
+  outline: none;
+  transition: border-color .15s;
 }
-.auth-input:focus { border-color:var(--red); }
+.auth-input::placeholder { color: var(--muted); }
+.auth-input:focus { border-color: var(--gold-dim); }
 .auth-btn {
-  width:100%; padding:12px; background:var(--red); color:#fff; border:none;
-  border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
-  font-family:inherit; transition:background .15s; margin-top:4px;
+  width: 100%;
+  padding: 12px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background .15s;
 }
-.auth-btn:hover { background:var(--red-dark); }
-.auth-error { color:var(--red); font-size:12px; margin-top:8px; display:none; }
-.auth-error.show { display:block; }
+.auth-btn:hover { background: #D4B276; }
+.auth-error {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #C06060;
+  letter-spacing: 0.06em;
+  margin-top: 10px;
+  display: none;
+}
+.auth-error.show { display: block; }
 
-/* ── Delete confirm overlay ── */
+/* ══════════════════════════════════════════════════════════════
+   CONFIRM OVERLAY
+══════════════════════════════════════════════════════════════ */
 .confirm-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
-  z-index:400; align-items:center; justify-content:center; backdrop-filter:blur(2px);
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,6,.8);
+  z-index: 400;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
 }
-.confirm-overlay.open { display:flex; }
+.confirm-overlay.open { display: flex; }
 .confirm-box {
-  background:var(--card); border-radius:16px; padding:28px 28px 24px;
-  max-width:360px; width:100%; box-shadow:0 16px 48px rgba(0,0,0,.25); text-align:center;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-top: 1px solid var(--danger);
+  padding: 32px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
 }
-.confirm-title { font-size:16px; font-weight:800; margin-bottom:8px; }
-.confirm-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
-.confirm-actions { display:flex; gap:10px; justify-content:center; }
-.btn-danger { background:#DC2626; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-.btn-cancel { background:var(--border); color:var(--dark); border:none; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-
-/* ── Theme toggle ── */
-.theme-toggle-btn {
-  background:rgba(255,255,255,.14); color:#fff;
-  border:1px solid rgba(255,255,255,.3); border-radius:6px;
-  padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer;
-  font-family:inherit; letter-spacing:.06em; transition:background .15s;
+.confirm-title {
+  font-family: var(--font-disp);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bone);
+  margin-bottom: 6px;
 }
-.theme-toggle-btn:hover { background:rgba(255,255,255,.25); }
-
-/* theme menu */
-.theme-menu {
-  display:none; position:absolute; right:0; top:calc(100% + 6px);
-  background:var(--card); border:1px solid var(--border); border-radius:10px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; overflow:hidden; min-width:110px;
+.confirm-sub {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
 }
-.theme-menu.open { display:block; }
-.theme-opt { padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; color:var(--dark); }
-.theme-opt:hover { background:var(--bg); }
-.theme-opt.active { color:var(--red); font-weight:800; }
+.confirm-actions { display: flex; gap: 10px; }
+.btn-danger {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--danger);
+  color: var(--bone);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-danger:hover { background: #A02828; }
+.btn-cancel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-cancel:hover { color: var(--bone); border-color: var(--bone-faint); }
 
-/* ── Responsive ── */
-@media(max-width:640px) {
-  .topbar { padding:0 12px; height:46px; }
-  .topbar-logo { height:22px; }
-  .topbar-title { font-size:12px; }
-  .masonry-grid { columns:2 160px; gap:8px; }
-  .ref-card { margin-bottom:8px; }
-  .page-wrap { padding:16px 12px 60px; }
-  .drop-zone { padding:28px 14px; }
+/* ══════════════════════════════════════════════════════════════
+   USER MENU
+══════════════════════════════════════════════════════════════ */
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 5px 12px;
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  transition: border-color .15s;
+}
+.user-pill:hover { border-color: var(--bone-faint); }
+.user-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone-dim);
+  letter-spacing: 0.06em;
+}
+.user-caret { font-size: 8px; color: var(--muted); }
+
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  box-shadow: 0 16px 40px rgba(0,0,0,.4);
+  min-width: 180px;
+  z-index: 999;
+  display: none;
+}
+.user-menu.open { display: block; }
+.user-menu-name {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.user-menu-item {
+  padding: 11px 16px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--bone-dim);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.user-menu-item:hover { background: var(--card); color: var(--bone); }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .topbar { padding: 0 16px; height: 48px; }
+  .topbar-wordmark { display: none; }
+  .nav-bar { padding: 0 16px; }
+  .page-wrap { padding: 24px 16px 80px; }
+  .drop-zone { padding: 36px 20px; }
+  .masonry-grid { columns: 2 160px; gap: 8px; }
+  .ref-card { margin-bottom: 8px; }
 }
 </style>
 </head>
@@ -276,37 +753,29 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
     <a href="index.html" style="display:flex;align-items:center;text-decoration:none">
       <img src="tsd_logo.webp" alt="THE STANDARD" class="topbar-logo">
     </a>
-    <div class="topbar-title">Grab REF</div>
+    <span class="topbar-wordmark">VP Library</span>
   </div>
   <div class="topbar-right">
-    <div style="position:relative">
-      <button class="theme-toggle-btn" id="themeBtn" onclick="toggleThemeMenu()">Theme</button>
-      <div class="theme-menu" id="themeMenu">
-        <div class="theme-opt" id="tOptLight" onclick="setTheme('light')">Light</div>
-        <div class="theme-opt" id="tOptDim"   onclick="setTheme('dim')">Dim</div>
-        <div class="theme-opt" id="tOptDark"  onclick="setTheme('dark')">Dark</div>
+    <div style="position:relative" id="userPillWrap">
+      <div class="user-pill" id="userPill" onclick="toggleUserMenu()">
+        <span class="user-label" id="userLabel">Not signed in</span>
+        <span class="user-caret">▾</span>
       </div>
-    </div>
-    <div id="userPillWrap" style="position:relative">
-      <div id="userPill" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px 3px 6px;font-size:12px;font-weight:600;cursor:pointer" onclick="toggleUserMenu()">
-        <span id="userLabel" style="color:#fff">ไม่ได้ login</span>
-        <span style="font-size:10px;opacity:.7;color:#fff">▾</span>
-      </div>
-      <div id="userMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:160px;z-index:999;overflow:hidden">
-        <div id="userMenuName" style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted)">ไม่ได้ login</div>
-        <div id="userMenuLogin" style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--dark);cursor:pointer" onclick="closeUserMenu();promptLogin()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">เข้าสู่ระบบ</div>
-        <div id="userMenuLogout" style="display:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer" onclick="closeUserMenu();doLogout()" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">ออกจากระบบ</div>
+      <div class="user-menu" id="userMenu">
+        <div class="user-menu-name" id="userMenuName">Not signed in</div>
+        <div class="user-menu-item" id="userMenuLogin" onclick="closeUserMenu();promptLogin()">Sign in</div>
+        <div class="user-menu-item" id="userMenuLogout" style="display:none" onclick="closeUserMenu();doLogout()">Sign out</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ NAV BAR ══ -->
+<!-- ══ NAV ══ -->
 <div class="nav-bar">
-  <a class="nav-tab" href="vp-search.html">ค้นหาฉาก</a>
-  <a class="nav-tab" href="vp-search.html#rec">AI แนะนำ</a>
+  <a class="nav-tab" href="vp-search.html">Scene Search</a>
+  <a class="nav-tab" href="vp-search.html#rec">AI Recommend</a>
   <a class="nav-tab" href="vp-search.html#collection">Collection</a>
-  <a class="nav-tab active" href="vp-grab-ref.html">📌 Grab REF</a>
+  <a class="nav-tab active" href="vp-grab-ref.html">Grab REF</a>
 </div>
 
 <!-- ══ MAIN ══ -->
@@ -316,38 +785,38 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
   <div class="drop-zone" id="dropZone"
     ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
     onclick="document.getElementById('fileInput').click()">
-    <span class="dz-icon">🖼️</span>
-    <div class="dz-title">วาง / ลากภาพมาที่นี่</div>
+
+    <span class="dz-eyebrow">Reference Collection</span>
+    <div class="dz-title">Drop images here</div>
+    <div class="dz-rule"></div>
     <div class="dz-sub">
-      กด <kbd>Ctrl+V</kbd> หรือ <kbd>⌘V</kbd> เพื่อวางจาก clipboard<br>
-      รองรับ PNG · JPG · WebP · GIF · Screenshot<br>
-      <span style="color:var(--red);font-weight:600">ปรับเป็น WebP อัตโนมัติ · สูงสุด 1920×1080 · คงสัดส่วนเดิม</span>
+      Press <code>⌘V</code> or <code>Ctrl+V</code> to paste from clipboard &nbsp;·&nbsp;
+      PNG &nbsp;JPG &nbsp;WebP &nbsp;GIF &nbsp;Screenshot<br>
+      Auto-converts to WebP &nbsp;·&nbsp; Max 1920 × 1080 &nbsp;·&nbsp; Aspect ratio preserved
     </div>
     <div class="dz-actions" onclick="event.stopPropagation()">
-      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">📁 เลือกไฟล์</button>
-      <button class="btn-upload secondary" onclick="pasteFromClipboard()">📋 Paste</button>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select files</button>
+      <button class="btn btn-ghost" onclick="pasteFromClipboard()">Paste</button>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
   </div>
 
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
-    <div class="stats-count">พบ <span id="refCount">0</span> รูป</div>
-    <div style="font-size:12px;color:var(--muted)">คลิกภาพเพื่อดูเต็ม · hover เพื่อลบ</div>
+    <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
+    <div class="stats-hint">click to view &nbsp;·&nbsp; hover to delete</div>
   </div>
 
   <!-- Masonry Grid -->
-  <div class="masonry-grid" id="masonryGrid">
-    <!-- filled by JS -->
-  </div>
+  <div class="masonry-grid" id="masonryGrid"></div>
 
 </div>
 
 <!-- ══ UPLOAD TOAST ══ -->
 <div class="upload-toast" id="uploadToast">
-  <div class="toast-icon" id="toastIcon">⏳</div>
+  <div class="toast-icon" id="toastIcon">—</div>
   <div class="toast-msg">
-    <div id="toastMsg">กำลัง convert & upload…</div>
+    <div id="toastMsg">Processing…</div>
     <div class="toast-bar-wrap"><div class="toast-bar" id="toastBar" style="width:0%"></div></div>
   </div>
 </div>
@@ -358,19 +827,21 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
     <img class="lb-img" id="lbImg" src="" alt="">
     <div class="lb-info" id="lbInfo"></div>
   </div>
-  <button class="lb-close" onclick="closeLb()">✕</button>
+  <button class="lb-close" onclick="closeLb()">ESC</button>
 </div>
 
 <!-- ══ AUTH OVERLAY ══ -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
-    <div class="auth-logo-wrap"><div class="auth-logo-icon">TS</div></div>
-    <div class="auth-title">เข้าสู่ระบบ</div>
-    <div class="auth-sub">VP Library · THE STANDARD</div>
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">The Standard</div>
+    </div>
+    <div class="auth-title">Sign in</div>
+    <div class="auth-sub">VP Library · Restricted Access</div>
     <input class="auth-input" id="authUser" type="text" placeholder="Username" autocomplete="username">
     <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password"
       onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="auth-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <button class="auth-btn" onclick="doLogin()">Continue</button>
     <div class="auth-error" id="authError"></div>
   </div>
 </div>
@@ -378,11 +849,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 <!-- ══ DELETE CONFIRM ══ -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
-    <div class="confirm-title">ลบรูปนี้?</div>
-    <div class="confirm-sub">การลบจะลบไฟล์ออกจาก Storage และ Database ถาวร</div>
+    <div class="confirm-title">Delete this image?</div>
+    <div class="confirm-sub">This will permanently remove the file from storage and the database. This action cannot be undone.</div>
     <div class="confirm-actions">
-      <button class="btn-cancel" onclick="closeConfirm()">ยกเลิก</button>
-      <button class="btn-danger" id="confirmDelBtn" onclick="confirmDelete()">ลบเลย</button>
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="confirmDelBtn" onclick="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>
@@ -391,57 +862,44 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 'use strict';
 
 // ══════════════════════════════════════════════════════════════
-// SUPABASE — same project as vp-search
+// SUPABASE
 // ══════════════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
 const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const REF_BUCKET = 'ref-images';   // Supabase Storage bucket (ต้องสร้างใน Supabase dashboard)
-const REF_TABLE  = 'ref_images';   // Supabase table (ดู SQL migration)
+const REF_BUCKET = 'ref-images';
+const REF_TABLE  = 'ref_images';
 
 // ══════════════════════════════════════════════════════════════
-// IMAGE PROCESSING — convert → WebP, max 1920×1080, preserve AR
+// IMAGE PROCESSING — WebP, max 1920×1080, preserve AR
 // ══════════════════════════════════════════════════════════════
 const MAX_W = 1920;
 const MAX_H = 1080;
 const WEBP_QUALITY = 0.88;
 
-/**
- * รับ File/Blob → คืน { blob, width, height }
- * ปรับขนาดถ้าใหญ่เกิน MAX_W×MAX_H โดยคง aspect ratio
- * แปลงเป็น WebP เสมอ
- */
 function processImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-
       let w = img.naturalWidth;
       let h = img.naturalHeight;
-
-      // Scale down preserving aspect ratio
       const scaleW = w > MAX_W ? MAX_W / w : 1;
       const scaleH = h > MAX_H ? MAX_H / h : 1;
-      const scale  = Math.min(scaleW, scaleH);    // ใช้ scale เล็กกว่าเพื่อ fit ทั้ง W และ H
-
+      const scale  = Math.min(scaleW, scaleH);
       w = Math.round(w * scale);
       h = Math.round(h * scale);
-
       const canvas = document.createElement('canvas');
-      canvas.width  = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       canvas.toBlob(blob => {
         if (!blob) { reject(new Error('canvas.toBlob failed')); return; }
         resolve({ blob, width: w, height: h });
       }, 'image/webp', WEBP_QUALITY);
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ไม่สามารถโหลดภาพได้')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
     img.src = url;
   });
 }
@@ -454,7 +912,7 @@ let _uploading   = false;
 
 function queueUpload(files) {
   const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
-  if (!arr.length) { showToast('error', '⚠️ ไม่พบไฟล์รูปภาพ'); return; }
+  if (!arr.length) { showToast('error', 'No image files found', 0, true); return; }
   _uploadQueue.push(...arr);
   if (!_uploading) drainQueue();
 }
@@ -468,55 +926,45 @@ async function drainQueue() {
 }
 
 async function uploadOne(file) {
-  showToast('loading', `⏳ กำลัง convert "${file.name}"…`, 10);
+  showToast('loading', `Converting…`, 10);
   try {
-    // 1. Convert → WebP
     const { blob, width, height } = await processImage(file);
     const fileSizeKB = Math.round(blob.size / 1024);
 
-    showToast('loading', `☁️ กำลัง upload "${file.name}"…`, 50);
+    showToast('loading', `Uploading…`, 50);
 
-    // 2. Generate filename
     const ts   = Date.now();
-    const rand = Math.random().toString(36).slice(2,7);
+    const rand = Math.random().toString(36).slice(2, 7);
     const path = `refs/${ts}-${rand}.webp`;
 
-    // 3. Upload to Supabase Storage
-    const { data: storageData, error: storageErr } = await _SB.storage
+    const { error: storageErr } = await _SB.storage
       .from(REF_BUCKET)
-      .upload(path, blob, { contentType:'image/webp', cacheControl:'31536000', upsert:false });
-
+      .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
     if (storageErr) throw new Error('Storage: ' + storageErr.message);
 
     const { data: pubData } = _SB.storage.from(REF_BUCKET).getPublicUrl(path);
     const publicUrl = pubData?.publicUrl || '';
 
-    showToast('loading', `💾 กำลังบันทึก metadata…`, 80);
+    showToast('loading', `Saving metadata…`, 80);
 
-    // 4. Save metadata to ref_images table
     const user = localStorage.getItem('vp_user_id') || 'anon';
     const { data: row, error: dbErr } = await _SB.from(REF_TABLE).insert({
       storage_path : path,
       url          : publicUrl,
       original_name: file.name,
-      width        : width,
-      height       : height,
+      width, height,
       file_size_kb : fileSizeKB,
       uploaded_by  : user,
     }).select().single();
-
     if (dbErr) throw new Error('DB: ' + dbErr.message);
 
-    showToast('success', `✅ บันทึกแล้ว (${width}×${height}, ${fileSizeKB}KB)`, 100);
+    showToast('success', `${width} × ${height}  ·  ${fileSizeKB} KB`, 100);
     setTimeout(() => hideToast(), 2200);
-
-    // 5. Prepend card to grid
     prependCard(row);
     updateStatsBar();
-
   } catch(err) {
-    console.error('[GrabREF] upload error:', err);
-    showToast('error', `❌ ${err.message}`, 0);
+    console.error('[GrabREF]', err);
+    showToast('error', err.message, 0);
     setTimeout(() => hideToast(), 4000);
   }
 }
@@ -540,19 +988,18 @@ function onDrop(e) {
 }
 function handleFileInput(e) {
   if (e.target.files?.length) queueUpload(e.target.files);
-  e.target.value = '';  // reset so same file can be re-selected
+  e.target.value = '';
 }
 
 // ══════════════════════════════════════════════════════════════
-// CLIPBOARD PASTE
+// CLIPBOARD
 // ══════════════════════════════════════════════════════════════
 document.addEventListener('paste', e => {
   const items = e.clipboardData?.items || [];
   const imageItems = Array.from(items).filter(i => i.kind === 'file' && i.type.startsWith('image/'));
   if (!imageItems.length) return;
   e.preventDefault();
-  const files = imageItems.map(i => i.getAsFile()).filter(Boolean);
-  queueUpload(files);
+  queueUpload(imageItems.map(i => i.getAsFile()).filter(Boolean));
 });
 
 async function pasteFromClipboard() {
@@ -567,20 +1014,20 @@ async function pasteFromClipboard() {
       }
     }
     if (files.length) queueUpload(files);
-    else showToast('error', '⚠️ ไม่พบรูปใน clipboard', 0, true);
+    else showToast('error', 'No image in clipboard — try Ctrl+V', 0, true);
   } catch {
-    showToast('error', '⚠️ กด Ctrl+V / ⌘V แทน', 0, true);
+    showToast('error', 'Use Ctrl+V / ⌘V instead', 0, true);
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-// LOAD & RENDER REFS
+// LOAD & RENDER
 // ══════════════════════════════════════════════════════════════
 let _allRefs = [];
 
 async function loadRefs() {
   const grid = document.getElementById('masonryGrid');
-  grid.innerHTML = `<div class="empty-wrap"><div class="e-icon">⏳</div><div class="e-title">กำลังโหลด…</div></div>`;
+  grid.innerHTML = `<div class="empty-wrap"><div class="e-rule"></div><div class="e-title">Loading…</div></div>`;
 
   const { data, error } = await _SB
     .from(REF_TABLE)
@@ -588,8 +1035,7 @@ async function loadRefs() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[GrabREF] load error:', error);
-    grid.innerHTML = `<div class="empty-wrap"><div class="e-icon">⚠️</div><div class="e-title">โหลดไม่ได้</div><div class="e-sub">${error.message}</div></div>`;
+    grid.innerHTML = `<div class="empty-wrap"><div class="e-rule"></div><div class="e-title">Could not load</div><div class="e-sub">${error.message}</div></div>`;
     return;
   }
 
@@ -603,9 +1049,9 @@ function renderGrid(refs) {
   if (!refs.length) {
     grid.classList.add('empty-state');
     grid.innerHTML = `<div class="empty-wrap">
-      <div class="e-icon">📌</div>
-      <div class="e-title">ยังไม่มี REF</div>
-      <div class="e-sub">วาง หรือ ลากภาพมาด้านบน เพื่อเริ่มเก็บ reference</div>
+      <div class="e-rule"></div>
+      <div class="e-title">No references yet</div>
+      <div class="e-sub">Drop or paste images above to begin your collection</div>
     </div>`;
     return;
   }
@@ -624,18 +1070,22 @@ function prependCard(ref) {
 }
 
 function cardHTML(r) {
-  const date = r.created_at ? new Date(r.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) : '';
-  const dim  = (r.width && r.height) ? `${r.width}×${r.height}` : '';
-  const kb   = r.file_size_kb ? `${r.file_size_kb}KB` : '';
-  const info = [dim, kb].filter(Boolean).join(' · ');
+  const date = r.created_at
+    ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
+    : '';
+  const dim  = (r.width && r.height) ? `${r.width} × ${r.height}` : '';
+  const kb   = r.file_size_kb ? `${r.file_size_kb} KB` : '';
+  const info = [dim, kb].filter(Boolean).join('  ·  ');
+  const sp   = r.storage_path ? r.storage_path.replace(/'/g, "\\'") : '';
   return `<div class="ref-card" data-id="${r.id}" onclick="openLb('${r.url}','${info}')">
-    <img src="${r.url}" alt="${r.original_name||''}" loading="lazy"
-         onerror="this.src='';this.parentElement.style.display='none'">
-    <div class="ref-card-meta">
-      <div class="ref-card-date">${date}</div>
-      <div class="ref-card-size">${info}</div>
+    <img src="${r.url}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+    <div class="ref-card-overlay">
+      <button class="ref-card-del" title="Delete" onclick="event.stopPropagation();askDelete('${r.id}','${sp}')">✕</button>
     </div>
-    <button class="ref-card-del" title="ลบ" onclick="event.stopPropagation();askDelete('${r.id}','${r.storage_path||''}')">✕</button>
+    <div class="ref-card-meta">
+      <span class="ref-card-date">${date}</span>
+      <span class="ref-card-size">${info}</span>
+    </div>
   </div>`;
 }
 
@@ -682,28 +1132,18 @@ async function confirmDelete() {
   if (!_pendingDel) return;
   const { id, storagePath } = _pendingDel;
   closeConfirm();
-
-  showToast('loading', '🗑️ กำลังลบ…', 30);
-
-  // Delete from Storage
-  if (storagePath) {
-    await _SB.storage.from(REF_BUCKET).remove([storagePath]);
-  }
-  // Delete from DB
+  showToast('loading', 'Deleting…', 30);
+  if (storagePath) await _SB.storage.from(REF_BUCKET).remove([storagePath]);
   const { error } = await _SB.from(REF_TABLE).delete().eq('id', id);
   if (error) {
-    showToast('error', '❌ ลบไม่ได้: ' + error.message, 0);
+    showToast('error', 'Delete failed: ' + error.message, 0);
     setTimeout(hideToast, 3000);
     return;
   }
-
-  showToast('success', '✅ ลบแล้ว', 100);
+  showToast('success', 'Deleted', 100);
   setTimeout(hideToast, 1500);
-
-  // Remove card from DOM & _allRefs
   _allRefs = _allRefs.filter(r => r.id !== id);
-  const card = document.querySelector(`.ref-card[data-id="${id}"]`);
-  if (card) card.remove();
+  document.querySelector(`.ref-card[data-id="${id}"]`)?.remove();
   updateStatsBar();
   if (!_allRefs.length) renderGrid([]);
 }
@@ -711,108 +1151,100 @@ async function confirmDelete() {
 // ══════════════════════════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════════════════════════
-function showToast(type, msg, pct, autoHide=false) {
+const TOAST_ICONS = { loading: '—', success: '+', error: '!' };
+function showToast(type, msg, pct, autoHide = false) {
   const t = document.getElementById('uploadToast');
-  const icons = { loading:'⏳', success:'✅', error:'❌' };
-  document.getElementById('toastIcon').textContent = icons[type] || '⏳';
-  document.getElementById('toastMsg').textContent = msg;
-  document.getElementById('toastBar').style.width = (pct||0) + '%';
+  document.getElementById('toastIcon').textContent = TOAST_ICONS[type] || '—';
+  document.getElementById('toastMsg').textContent  = msg;
+  document.getElementById('toastBar').style.width  = (pct || 0) + '%';
+  t.style.borderLeftColor = type === 'error' ? '#8B2020' : type === 'success' ? '#4A7C59' : 'var(--gold)';
   t.classList.add('show');
   if (autoHide) setTimeout(hideToast, 2500);
 }
 function hideToast() { document.getElementById('uploadToast').classList.remove('show'); }
 
 // ══════════════════════════════════════════════════════════════
-// THEME
+// USER MENU
 // ══════════════════════════════════════════════════════════════
-function setTheme(t) {
-  document.documentElement.removeAttribute('data-theme');
-  if (t !== 'light') document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem('vp_theme', t);
-  ['tOptLight','tOptDim','tOptDark'].forEach(id => {
-    document.getElementById(id)?.classList.remove('active');
-  });
-  const map = { light:'tOptLight', dim:'tOptDim', dark:'tOptDark' };
-  document.getElementById(map[t])?.classList.add('active');
-  document.getElementById('themeMenu')?.classList.remove('open');
+function toggleUserMenu() {
+  document.getElementById('userMenu').classList.toggle('open');
 }
-function toggleThemeMenu() {
-  document.getElementById('themeMenu')?.classList.toggle('open');
+function closeUserMenu() {
+  document.getElementById('userMenu').classList.remove('open');
 }
 document.addEventListener('click', e => {
-  if (!e.target.closest('#themeBtn') && !e.target.closest('#themeMenu'))
-    document.getElementById('themeMenu')?.classList.remove('open');
   if (!e.target.closest('#userPillWrap'))
-    document.getElementById('userMenu').style.display = 'none';
+    document.getElementById('userMenu').classList.remove('open');
 });
 
 // ══════════════════════════════════════════════════════════════
-// AUTH — same pattern as vp-search
+// AUTH
 // ══════════════════════════════════════════════════════════════
-const USER_KEY  = 'vp_user_id';
-const USER_ROLE = 'vp_user_role';
+const USER_KEY = 'vp_user_id';
 const FALLBACK_USERS = {
-  "admin":  { role:"admin",  hash:"ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name:"Administrator" },
-  "viewer": { role:"viewer", hash:"65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name:"Viewer" }
+  "admin":  { role: "admin",  hash: "ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name: "Administrator" },
+  "viewer": { role: "viewer", hash: "65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name: "Viewer" }
 };
 let _USERS_DB = null;
 
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
 async function loadUsers() {
   try {
     const { data, error } = await _SB.from('users').select('*');
     if (!error && data?.length) {
       _USERS_DB = {};
-      data.forEach(u => { _USERS_DB[u.username] = { role:u.role||'viewer', hash:u.password_hash||'', name:u.display_name||u.username }; });
+      data.forEach(u => {
+        _USERS_DB[u.username] = { role: u.role || 'viewer', hash: u.password_hash || '', name: u.display_name || u.username };
+      });
       return;
     }
-  } catch{}
+  } catch {}
   _USERS_DB = { ...FALLBACK_USERS };
 }
+
 async function doLogin() {
   const username = document.getElementById('authUser').value.trim().toLowerCase();
   const password = document.getElementById('authPass').value;
-  const errEl = document.getElementById('authError');
+  const errEl    = document.getElementById('authError');
   errEl.classList.remove('show');
-  if (!username || !password) { errEl.textContent='กรุณากรอก Username และ Password'; errEl.classList.add('show'); return; }
+  if (!username || !password) { errEl.textContent = 'Please enter username and password'; errEl.classList.add('show'); return; }
   if (!_USERS_DB) await loadUsers();
   const stored = _USERS_DB?.[username];
-  if (!stored) { errEl.textContent='ไม่พบ Username นี้'; errEl.classList.add('show'); return; }
-  const hashed = await sha256(password);
-  if (hashed !== stored.hash) { errEl.textContent='Password ไม่ถูกต้อง'; errEl.classList.add('show'); return; }
-  localStorage.setItem(USER_KEY,  username);
-  localStorage.setItem(USER_ROLE, stored.role||'viewer');
+  if (!stored) { errEl.textContent = 'Username not found'; errEl.classList.add('show'); return; }
+  if (await sha256(password) !== stored.hash) { errEl.textContent = 'Incorrect password'; errEl.classList.add('show'); return; }
+  localStorage.setItem(USER_KEY, username);
   document.getElementById('authOverlay').classList.remove('open');
   updateUserUI(username, stored.name);
 }
+
 function doLogout() {
   localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(USER_ROLE);
   updateUserUI(null, null);
 }
-function promptLogin() { document.getElementById('authOverlay').classList.add('open'); }
-function toggleUserMenu() {
-  const m = document.getElementById('userMenu');
-  m.style.display = m.style.display === 'block' ? 'none' : 'block';
+
+function promptLogin() {
+  document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('authUser').focus(), 100);
 }
-function closeUserMenu() { document.getElementById('userMenu').style.display='none'; }
+
 function updateUserUI(uid, name) {
-  const label = document.getElementById('userLabel');
-  const login = document.getElementById('userMenuLogin');
-  const logout = document.getElementById('userMenuLogout');
+  const label    = document.getElementById('userLabel');
+  const login    = document.getElementById('userMenuLogin');
+  const logout   = document.getElementById('userMenuLogout');
   const menuName = document.getElementById('userMenuName');
   if (uid) {
-    label.textContent = name || uid;
+    label.textContent    = name || uid;
     menuName.textContent = name || uid;
-    login.style.display = 'none';
+    login.style.display  = 'none';
     logout.style.display = 'block';
   } else {
-    label.textContent = 'ไม่ได้ login';
-    menuName.textContent = 'ไม่ได้ login';
-    login.style.display = 'block';
+    label.textContent    = 'Not signed in';
+    menuName.textContent = 'Not signed in';
+    login.style.display  = 'block';
     logout.style.display = 'none';
   }
 }
@@ -821,18 +1253,9 @@ function updateUserUI(uid, name) {
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
-  // Theme
-  const savedTheme = localStorage.getItem('vp_theme') || 'light';
-  setTheme(savedTheme);
-
-  // Auth
   await loadUsers();
   const uid = localStorage.getItem(USER_KEY);
-  if (uid && _USERS_DB?.[uid]) {
-    updateUserUI(uid, _USERS_DB[uid].name);
-  }
-
-  // Load refs
+  if (uid && _USERS_DB?.[uid]) updateUserUI(uid, _USERS_DB[uid].name);
   await loadRefs();
 })();
 </script>
