@@ -308,6 +308,20 @@ body {
   color: var(--bone-faint);
   letter-spacing: 0.06em;
 }
+/* Shuffle button */
+.btn-shuffle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line-hi);
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-shuffle:hover { color: var(--gold); border-color: var(--gold-dim); }
 
 /* ══════════════════════════════════════════════════════════════
    MASONRY GRID
@@ -804,6 +818,9 @@ body {
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+      <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
+    </div>
     <div class="stats-hint">click to view &nbsp;·&nbsp; hover to delete</div>
   </div>
 
@@ -823,9 +840,21 @@ body {
 
 <!-- ══ LIGHTBOX ══ -->
 <div class="lb-overlay" id="lbOverlay" onclick="closeLb(event)">
-  <div class="lb-inner">
-    <img class="lb-img" id="lbImg" src="" alt="">
-    <div class="lb-info" id="lbInfo"></div>
+  <!-- Tab bar (admin only, hidden by default) -->
+  <div class="lb-tabbar" id="lbTabbar" style="display:none" onclick="event.stopPropagation()">
+    <button class="lb-tab active" id="lbTabView" onclick="switchLbTab('view')">Image</button>
+    <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')">Data</button>
+  </div>
+  <!-- Image pane -->
+  <div class="lb-pane-view" id="lbPaneView">
+    <div class="lb-inner">
+      <img class="lb-img" id="lbImg" src="" alt="">
+      <div class="lb-info" id="lbInfo"></div>
+    </div>
+  </div>
+  <!-- Data pane (admin only) -->
+  <div class="lb-pane-data" id="lbPaneData" style="display:none" onclick="event.stopPropagation()">
+    <div class="lb-data-grid" id="lbDataGrid"></div>
   </div>
   <button class="lb-close" onclick="closeLb()">ESC</button>
 </div>
@@ -1077,7 +1106,7 @@ function cardHTML(r) {
   const kb   = r.file_size_kb ? `${r.file_size_kb} KB` : '';
   const info = [dim, kb].filter(Boolean).join('  ·  ');
   const sp   = r.storage_path ? r.storage_path.replace(/'/g, "\\'") : '';
-  return `<div class="ref-card" data-id="${r.id}" onclick="openLb('${r.url}','${info}')">
+  return `<div class="ref-card" data-id="${r.id}" onclick="openLb(_allRefs.find(x=>x.id===${r.id}))">
     <img src="${r.url}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
     <div class="ref-card-overlay">
       <button class="ref-card-del" title="Delete" onclick="event.stopPropagation();askDelete('${r.id}','${sp}')">✕</button>
@@ -1095,18 +1124,93 @@ function updateStatsBar() {
   bar.style.display = _allRefs.length ? 'flex' : 'none';
 }
 
+function shuffleGrid() {
+  if (_allRefs.length < 2) return;
+  for (let i = _allRefs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [_allRefs[i], _allRefs[j]] = [_allRefs[j], _allRefs[i]];
+  }
+  renderGrid(_allRefs);
+}
+
 // ══════════════════════════════════════════════════════════════
 // LIGHTBOX
 // ══════════════════════════════════════════════════════════════
-function openLb(url, info) {
-  document.getElementById('lbImg').src = url;
-  document.getElementById('lbInfo').textContent = info || '';
+let _currentRef = null;
+
+function openLb(ref) {
+  if (!ref) return;
+  _currentRef = ref;
+  document.getElementById('lbImg').src = ref.url;
+  const dim  = (ref.width && ref.height) ? `${ref.width} × ${ref.height}` : '';
+  const kb   = ref.file_size_kb ? `${ref.file_size_kb} KB` : '';
+  document.getElementById('lbInfo').textContent = [dim, kb].filter(Boolean).join('  ·  ');
+  // Show tab bar for admin only
+  const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
+  document.getElementById('lbTabbar').style.display = isAdmin ? 'flex' : 'none';
+  // Always start on image pane
+  switchLbTab('view');
   document.getElementById('lbOverlay').classList.add('open');
 }
+
+function switchLbTab(tab) {
+  document.getElementById('lbPaneView').style.display = tab === 'view' ? 'flex' : 'none';
+  document.getElementById('lbPaneData').style.display = tab === 'data' ? 'block' : 'none';
+  document.getElementById('lbTabView').classList.toggle('active', tab === 'view');
+  document.getElementById('lbTabData').classList.toggle('active', tab === 'data');
+  if (tab === 'data' && _currentRef) renderDataPanel(_currentRef);
+}
+
+function renderDataPanel(ref) {
+  const date = ref.created_at
+    ? new Date(ref.created_at).toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' })
+    : '—';
+  document.getElementById('lbDataGrid').innerHTML = `
+    <div class="lb-field"><div class="lb-field-label">ID</div><div class="lb-field-value">${ref.id || '—'}</div></div>
+    <div class="lb-field"><div class="lb-field-label">Filename</div><div class="lb-field-value">${ref.original_name || '—'}</div></div>
+    <div class="lb-field"><div class="lb-field-label">Dimensions</div><div class="lb-field-value">${ref.width && ref.height ? ref.width+' × '+ref.height+' px' : '—'}</div></div>
+    <div class="lb-field"><div class="lb-field-label">File size</div><div class="lb-field-value">${ref.file_size_kb ? ref.file_size_kb+' KB' : '—'}</div></div>
+    <div class="lb-field"><div class="lb-field-label">Uploaded by</div><div class="lb-field-value">${ref.uploaded_by || '—'}</div></div>
+    <div class="lb-field"><div class="lb-field-label">Date</div><div class="lb-field-value">${date}</div></div>
+    <div class="lb-field"><div class="lb-field-label">Storage path</div><div class="lb-field-value" style="word-break:break-all;font-size:10px">${ref.storage_path || '—'}</div></div>
+    <div class="lb-field-divider"></div>
+    <div class="lb-field">
+      <div class="lb-field-label">Backlink</div>
+      <input class="lb-field-input" id="lbBacklink" type="url" placeholder="https://…" value="${ref.backlink || ''}">
+    </div>
+    <div class="lb-field">
+      <div class="lb-field-label">Notes</div>
+      <textarea class="lb-field-input lb-field-textarea" id="lbNotes" placeholder="Context, source, usage…">${ref.notes || ''}</textarea>
+    </div>
+    <div class="lb-save-row">
+      <button class="lb-save-btn" onclick="saveLbData()">Save</button>
+      <span class="lb-save-status" id="lbSaveStatus"></span>
+    </div>`;
+}
+
+async function saveLbData() {
+  if (!_currentRef) return;
+  const backlink = document.getElementById('lbBacklink').value.trim();
+  const notes    = document.getElementById('lbNotes').value.trim();
+  const status   = document.getElementById('lbSaveStatus');
+  status.textContent = 'Saving…'; status.style.color = 'var(--muted)';
+  const { error } = await _SB.from(REF_TABLE).update({ backlink, notes }).eq('id', _currentRef.id);
+  if (error) {
+    status.textContent = 'Error: ' + error.message; status.style.color = '#8B2020';
+  } else {
+    _currentRef.backlink = backlink; _currentRef.notes = notes;
+    const idx = _allRefs.findIndex(r => r.id === _currentRef.id);
+    if (idx !== -1) { _allRefs[idx].backlink = backlink; _allRefs[idx].notes = notes; }
+    status.textContent = 'Saved'; status.style.color = '#4A7C59';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  }
+}
+
 function closeLb(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('lbOverlay').classList.remove('open');
   document.getElementById('lbImg').src = '';
+  _currentRef = null;
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
