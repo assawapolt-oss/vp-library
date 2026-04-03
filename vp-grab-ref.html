@@ -1180,7 +1180,8 @@ document.addEventListener('click', e => {
 // ══════════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════════
-const USER_KEY = 'vp_user_id';
+const USER_KEY      = 'vp_user_id';
+const USER_ROLE_KEY = 'vp_user_role';
 const FALLBACK_USERS = {
   "admin":  { role: "admin",  hash: "ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name: "Administrator" },
   "viewer": { role: "viewer", hash: "65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name: "Viewer" }
@@ -1217,12 +1218,14 @@ async function doLogin() {
   if (!stored) { errEl.textContent = 'Username not found'; errEl.classList.add('show'); return; }
   if (await sha256(password) !== stored.hash) { errEl.textContent = 'Incorrect password'; errEl.classList.add('show'); return; }
   localStorage.setItem(USER_KEY, username);
+  localStorage.setItem(USER_ROLE_KEY, stored.role || 'viewer');
   document.getElementById('authOverlay').classList.remove('open');
   updateUserUI(username, stored.name);
 }
 
 function doLogout() {
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(USER_ROLE_KEY);
   updateUserUI(null, null);
 }
 
@@ -1253,9 +1256,15 @@ function updateUserUI(uid, name) {
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
-  await loadUsers();
+  // Restore session immediately from localStorage (shared with vp-search.html)
   const uid = localStorage.getItem(USER_KEY);
-  if (uid && _USERS_DB?.[uid]) updateUserUI(uid, _USERS_DB[uid].name);
+  if (uid) updateUserUI(uid, uid);  // show username while loading
+  // Load users DB to get display name
+  await loadUsers();
+  if (uid) {
+    const name = _USERS_DB?.[uid]?.name || uid;
+    updateUserUI(uid, name);
+  }
   await loadRefs();
 })();
 </script>
