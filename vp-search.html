@@ -616,7 +616,7 @@
   .topbar-title { font-size:13px; }
   .topbar-count { display:none; }
   #topbar-service-btn { display:inline-flex !important; padding:4px 10px; font-size:11px; }
-  #topbar-queue-btn { display:none; }
+  #topbar-queue-btn { display:none !important; }
   #userPill { padding:3px 8px 3px 5px !important; font-size:11px !important; }
 
   /* ── Nav bar – wrap to 2×2 rows on mobile ── */
@@ -631,28 +631,31 @@
     flex-wrap: wrap;
     width: 100%;
     gap: 0;
-    border-bottom: none;
   }
   .mode-tab {
     flex: 1 1 50%;
     min-width: 0;
     text-align: center;
-    padding: 10px 6px;
-    font-size: 11px;
+    padding: 9px 4px;
+    font-size: 10px;
     font-weight: 700;
     box-sizing: border-box;
     border-bottom: 2px solid transparent;
+    border-top: none;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0;
+    letter-spacing: 0.04em;
   }
-  /* Top row bottom border */
-  .nav-left .mode-tab:nth-child(-n+2) {
-    border-top: none;
-    box-shadow: 0 1px 0 var(--nav-border);
-  }
+  /* Top-row tabs: right-side separator + bottom border */
+  .nav-left .mode-tab:nth-child(1) { border-right: 1px solid var(--nav-border); border-bottom: 1px solid var(--nav-border); }
+  .nav-left .mode-tab:nth-child(2) { border-bottom: 1px solid var(--nav-border); }
+  /* Bottom-row tabs: right-side separator */
+  .nav-left .mode-tab:nth-child(3) { border-right: 1px solid var(--nav-border); }
   .nav-right { display: none; }
+  /* Hide theme button on mobile — saves topbar space */
+  #themeToggleBtn { display: none !important; }
 
   /* ── Search bar ── */
   .search-bar { padding:10px 12px; gap:8px; }
@@ -4253,6 +4256,7 @@ const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const USER_KEY      = 'vp_user_id';
 const USER_ROLE_KEY = 'vp_user_role';
+const AUTH_TYPE_KEY = 'vp_auth_type'; // 'password' | 'google'
 const ALLOWED_DOMAIN = 'thestandard.co';
 
 // ── Username/Password fallback system ─────────────────────────
@@ -4304,6 +4308,7 @@ async function doLogin() {
   if (authenticated) {
     localStorage.setItem(USER_KEY, username);
     localStorage.setItem(USER_ROLE_KEY, role);
+    localStorage.setItem(AUTH_TYPE_KEY, 'password');
     const av = (USERS_DB[username]?.avatar) || '';
     if (av) localStorage.setItem('vp_user_avatar', av); else localStorage.removeItem('vp_user_avatar');
     document.getElementById('authOverlay').classList.remove('open');
@@ -4417,6 +4422,7 @@ function promptLogin() {
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(USER_ROLE_KEY);
       localStorage.removeItem('vp_user_avatar');
+      localStorage.removeItem(AUTH_TYPE_KEY);
       initUser();
     }
   } else {
@@ -4448,9 +4454,15 @@ async function doGoogleLogin() {
 // Handle Supabase auth session on load and on change
 async function handleAuthSession(session) {
   if (!session) {
+    // Username/password logins have no Supabase session — preserve them across refreshes
+    if (localStorage.getItem(AUTH_TYPE_KEY) === 'password' && localStorage.getItem(USER_KEY)) {
+      initUser();
+      return;
+    }
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(USER_ROLE_KEY);
     localStorage.removeItem('vp_user_avatar');
+    localStorage.removeItem(AUTH_TYPE_KEY);
     initUser();
     return;
   }
@@ -4462,6 +4474,7 @@ async function handleAuthSession(session) {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(USER_ROLE_KEY);
     localStorage.removeItem('vp_user_avatar');
+    localStorage.removeItem(AUTH_TYPE_KEY);
     const err = document.getElementById('authError');
     if (err) { err.textContent = 'เฉพาะบัญชี @' + ALLOWED_DOMAIN + ' เท่านั้น (อีเมลนี้ไม่ได้รับอนุญาต)'; err.classList.add('show'); }
     showAuthOverlay();
@@ -4472,6 +4485,7 @@ async function handleAuthSession(session) {
   const avatarUrl = user.user_metadata?.avatar_url || '';
   localStorage.setItem(USER_KEY, email);
   localStorage.setItem(USER_ROLE_KEY, role);
+  localStorage.setItem(AUTH_TYPE_KEY, 'google');
   if (avatarUrl) localStorage.setItem('vp_user_avatar', avatarUrl);
   else localStorage.removeItem('vp_user_avatar');
   document.getElementById('authOverlay').classList.remove('open');
