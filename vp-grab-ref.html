@@ -479,7 +479,7 @@ body {
   position: relative;
   background: #000;
   overflow: hidden;
-  cursor: crosshair;
+  cursor: default;
   user-select: none;
   max-height: 56vh;
   display: flex;
@@ -495,9 +495,58 @@ body {
 .crop-selection {
   position: absolute;
   border: 1px solid var(--gold);
-  box-shadow: 0 0 0 9999px rgba(0,0,0,.55);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.52);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+/* Edge handles */
+.crop-handle {
+  position: absolute;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0A0A0C;
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: all;
+  z-index: 10;
+  transition: background .12s;
+}
+.crop-handle:hover { background: #D4B276; }
+.crop-handle-t, .crop-handle-b {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 16px;
+  cursor: ns-resize;
+}
+.crop-handle-t { top: -8px; }
+.crop-handle-b { bottom: -8px; }
+.crop-handle-l, .crop-handle-r {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 48px;
+  cursor: ew-resize;
+  flex-direction: column;
+  gap: 2px;
+}
+.crop-handle-l { left: -8px; }
+.crop-handle-r { right: -8px; }
+/* Corner accent dots */
+.crop-corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--gold);
+  background: var(--surface);
   pointer-events: none;
 }
+.crop-corner-tl { top: -3px; left: -3px; }
+.crop-corner-tr { top: -3px; right: -3px; }
+.crop-corner-bl { bottom: -3px; left: -3px; }
+.crop-corner-br { bottom: -3px; right: -3px; }
 .crop-actions {
   display: flex;
   gap: 8px;
@@ -1202,10 +1251,23 @@ body {
       <button class="crop-ratio-btn"        data-ratio="3:2"   onclick="setCropRatio('3:2')">3 : 2</button>
     </div>
     <div class="crop-stage" id="cropStage"
-      onmousedown="cropMouseDown(event)" onmousemove="cropMouseMove(event)" onmouseup="cropMouseUp(event)"
-      ontouchstart="cropTouchStart(event)" ontouchmove="cropTouchMove(event)" ontouchend="cropMouseUp(event)">
+      onmousemove="cropMouseMove(event)" onmouseup="cropMouseUp(event)"
+      ontouchmove="cropTouchMove(event)" ontouchend="cropMouseUp(event)">
       <img id="cropImg" src="" alt="">
-      <div class="crop-selection" id="cropSel" style="display:none"></div>
+      <div class="crop-selection" id="cropSel" style="display:none">
+        <div class="crop-handle crop-handle-t"
+          onmousedown="handleCropEdge(event,'t')" ontouchstart="handleCropEdge(event,'t')">↕</div>
+        <div class="crop-handle crop-handle-b"
+          onmousedown="handleCropEdge(event,'b')" ontouchstart="handleCropEdge(event,'b')">↕</div>
+        <div class="crop-handle crop-handle-l"
+          onmousedown="handleCropEdge(event,'l')" ontouchstart="handleCropEdge(event,'l')">↔</div>
+        <div class="crop-handle crop-handle-r"
+          onmousedown="handleCropEdge(event,'r')" ontouchstart="handleCropEdge(event,'r')">↔</div>
+        <div class="crop-corner crop-corner-tl"></div>
+        <div class="crop-corner crop-corner-tr"></div>
+        <div class="crop-corner crop-corner-bl"></div>
+        <div class="crop-corner crop-corner-br"></div>
+      </div>
     </div>
     <div class="crop-actions">
       <span class="crop-info" id="cropInfo"></span>
@@ -1724,29 +1786,76 @@ document.addEventListener('click', e => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// CROP MODAL
+// CROP MODAL — edge-handle system
 // ══════════════════════════════════════════════════════════════
-let _cropFile    = null;
-let _cropRatio   = 'free';
-let _cropDragging = false;
-let _cropStart   = { x: 0, y: 0 };
-let _cropRect    = { x: 0, y: 0, w: 0, h: 0 };  // in image-natural coords
-let _cropImgNatW = 0;
-let _cropImgNatH = 0;
+let _cropFile         = null;
+let _cropRatio        = 'free';
+let _cropImgNatW      = 0;
+let _cropImgNatH      = 0;
+// Selection in stage-px coords (relative to cropStage element)
+let _cropSel          = { x: 0, y: 0, w: 0, h: 0 };
+// Image element bounds in stage-px coords
+let _cropImgBounds    = { x: 0, y: 0, w: 0, h: 0 };
+// Active edge drag state
+let _cropEdge         = null;            // 't'|'b'|'l'|'r'
+let _cropEdgeOrigin   = { cx: 0, cy: 0 }; // clientX/Y at drag start
+let _cropSelSnapshot  = null;           // _cropSel at drag start
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function _imgBounds() {
+  const img = document.getElementById('cropImg');
+  const ir  = img.getBoundingClientRect();
+  const sr  = document.getElementById('cropStage').getBoundingClientRect();
+  return { x: ir.left - sr.left, y: ir.top - sr.top, w: ir.width, h: ir.height };
+}
+
+function _renderSel() {
+  const sel = document.getElementById('cropSel');
+  sel.style.left    = _cropSel.x + 'px';
+  sel.style.top     = _cropSel.y + 'px';
+  sel.style.width   = _cropSel.w + 'px';
+  sel.style.height  = _cropSel.h + 'px';
+  sel.style.display = 'block';
+  // Update info label
+  const ib = _cropImgBounds;
+  if (!ib.w) return;
+  const sx = _cropImgNatW / ib.w;
+  const sy = _cropImgNatH / ib.h;
+  const nw = Math.round(_cropSel.w * sx);
+  const nh = Math.round(_cropSel.h * sy);
+  document.getElementById('cropInfo').textContent = `${nw} × ${nh}`;
+}
+
+function _fullSel() {
+  // Select full image, optionally clamped to ratio
+  const ib = _imgBounds();
+  _cropImgBounds = ib;
+  if (_cropRatio === 'free') {
+    _cropSel = { x: ib.x, y: ib.y, w: ib.w, h: ib.h };
+  } else {
+    const [rw, rh] = _cropRatio.split(':').map(Number);
+    const r = rw / rh;
+    let w = ib.w, h = ib.h;
+    if (w / h > r) w = h * r; else h = w / r;
+    _cropSel = { x: ib.x + (ib.w - w) / 2, y: ib.y + (ib.h - h) / 2, w, h };
+  }
+  _renderSel();
+}
 
 function openCropModal(file) {
   _cropFile = file;
   _cropRatio = 'free';
+  _cropEdge = null;
   document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === 'free'));
-  const overlay = document.getElementById('cropOverlay');
-  const img     = document.getElementById('cropImg');
+  const img = document.getElementById('cropImg');
   img.onload = () => {
     _cropImgNatW = img.naturalWidth;
     _cropImgNatH = img.naturalHeight;
-    resetCropSel();
+    requestAnimationFrame(_fullSel);
   };
   img.src = URL.createObjectURL(file);
-  overlay.classList.add('open');
+  document.getElementById('cropOverlay').classList.add('open');
 }
 
 function closeCropModal() {
@@ -1755,113 +1864,94 @@ function closeCropModal() {
   if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
   img.src = '';
   document.getElementById('cropSel').style.display = 'none';
+  _cropEdge = null;
 }
 
 function skipCrop() {
-  const file = _cropFile;
-  closeCropModal();
-  _cropFile = null;
+  const file = _cropFile; closeCropModal(); _cropFile = null;
   if (file) { _uploadQueue.push(file); if (!_uploading) drainQueue(); }
-}
-
-function resetCropSel() {
-  // Full image selected by default
-  const stage = document.getElementById('cropStage');
-  const img   = document.getElementById('cropImg');
-  const r = img.getBoundingClientRect();
-  const sr = stage.getBoundingClientRect();
-  const sel = document.getElementById('cropSel');
-  sel.style.left   = (r.left  - sr.left)  + 'px';
-  sel.style.top    = (r.top   - sr.top)   + 'px';
-  sel.style.width  = r.width  + 'px';
-  sel.style.height = r.height + 'px';
-  sel.style.display = 'block';
-  _cropRect = { x: 0, y: 0, w: _cropImgNatW, h: _cropImgNatH };
-  updateCropInfo();
 }
 
 function setCropRatio(ratio) {
   _cropRatio = ratio;
   document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
-  resetCropSel();
+  _fullSel();
 }
 
-function stageXY(e) {
-  const stage = document.getElementById('cropStage');
-  const sr    = stage.getBoundingClientRect();
-  const src   = e.touches ? e.touches[0] : e;
-  return { x: src.clientX - sr.left, y: src.clientY - sr.top };
+// ── Handle drag ─────────────────────────────────────────────
+function handleCropEdge(e, edge) {
+  e.stopPropagation(); e.preventDefault();
+  _cropEdge = edge;
+  _cropImgBounds = _imgBounds();
+  const src = e.touches ? e.touches[0] : e;
+  _cropEdgeOrigin  = { cx: src.clientX, cy: src.clientY };
+  _cropSelSnapshot = { ..._cropSel };
 }
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function cropMouseMove(e) {
+  if (!_cropEdge) return;
+  e.preventDefault();
+  const src = e.touches ? e.touches[0] : e;
+  const dx  = src.clientX - _cropEdgeOrigin.cx;
+  const dy  = src.clientY - _cropEdgeOrigin.cy;
+  const snap = _cropSelSnapshot;
+  const ib   = _cropImgBounds;
+  const MIN  = 24;
+  let { x, y, w, h } = snap;
 
-function computeCropRect(x0, y0, x1, y1) {
-  const img = document.getElementById('cropImg');
-  const ir  = img.getBoundingClientRect();
-  const stage = document.getElementById('cropStage');
-  const sr  = stage.getBoundingClientRect();
-  const imgX = ir.left - sr.left;
-  const imgY = ir.top  - sr.top;
-  // clamp to image bounds in stage coords
-  let sx = clamp(Math.min(x0, x1), imgX, imgX + ir.width)  - imgX;
-  let sy = clamp(Math.min(y0, y1), imgY, imgY + ir.height) - imgY;
-  let sw = clamp(Math.abs(x1 - x0), 0, ir.width  - sx);
-  let sh = clamp(Math.abs(y1 - y0), 0, ir.height - sy);
-  if (sw < 4 || sh < 4) { sw = ir.width; sh = ir.height; sx = 0; sy = 0; }
-  // Apply ratio lock
+  if (_cropEdge === 't') {
+    y = clamp(snap.y + dy, ib.y, snap.y + snap.h - MIN);
+    h = snap.h - (y - snap.y);
+  } else if (_cropEdge === 'b') {
+    h = clamp(snap.h + dy, MIN, ib.y + ib.h - snap.y);
+  } else if (_cropEdge === 'l') {
+    x = clamp(snap.x + dx, ib.x, snap.x + snap.w - MIN);
+    w = snap.w - (x - snap.x);
+  } else if (_cropEdge === 'r') {
+    w = clamp(snap.w + dx, MIN, ib.x + ib.w - snap.x);
+  }
+
+  // Apply ratio lock — adjust perpendicular dimension, keep center
   if (_cropRatio !== 'free') {
     const [rw, rh] = _cropRatio.split(':').map(Number);
-    const rRatio   = rw / rh;
-    if (sw / sh > rRatio) sw = sh * rRatio;
-    else                  sh = sw / rRatio;
+    const r = rw / rh;
+    if (_cropEdge === 't' || _cropEdge === 'b') {
+      const nw = clamp(h * r, MIN, ib.w);
+      x = snap.x + (snap.w - nw) / 2;
+      w = nw;
+    } else {
+      const nh = clamp(w / r, MIN, ib.h);
+      y = snap.y + (snap.h - nh) / 2;
+      h = nh;
+    }
   }
-  // Scale to natural image coords
-  const scaleX = _cropImgNatW / ir.width;
-  const scaleY = _cropImgNatH / ir.height;
-  _cropRect = {
-    x: Math.round(sx * scaleX), y: Math.round(sy * scaleY),
-    w: Math.round(sw * scaleX), h: Math.round(sh * scaleY),
-  };
-  // Update visual selection
-  const sel = document.getElementById('cropSel');
-  sel.style.left   = (imgX + sx) + 'px';
-  sel.style.top    = (imgY + sy) + 'px';
-  sel.style.width  = sw + 'px';
-  sel.style.height = sh + 'px';
-  sel.style.display = 'block';
-  updateCropInfo();
+
+  // Clamp to image bounds
+  x = clamp(x, ib.x, ib.x + ib.w - MIN);
+  y = clamp(y, ib.y, ib.y + ib.h - MIN);
+  w = clamp(w, MIN, ib.x + ib.w - x);
+  h = clamp(h, MIN, ib.y + ib.h - y);
+
+  _cropSel = { x, y, w, h };
+  _renderSel();
 }
 
-function updateCropInfo() {
-  document.getElementById('cropInfo').textContent =
-    `${_cropRect.w} × ${_cropRect.h}`;
-}
-
-function cropMouseDown(e) {
-  e.preventDefault();
-  _cropDragging = true;
-  _cropStart = stageXY(e);
-}
-function cropMouseMove(e) {
-  if (!_cropDragging) return;
-  const p = stageXY(e);
-  computeCropRect(_cropStart.x, _cropStart.y, p.x, p.y);
-}
-function cropMouseUp(e) {
-  _cropDragging = false;
-}
-function cropTouchStart(e) { e.preventDefault(); _cropDragging = true; _cropStart = stageXY(e); }
-function cropTouchMove(e)  { e.preventDefault(); if (_cropDragging) { const p = stageXY(e); computeCropRect(_cropStart.x, _cropStart.y, p.x, p.y); } }
+function cropMouseUp()  { _cropEdge = null; }
+function cropTouchMove(e) { e.preventDefault(); cropMouseMove(e); }
 
 async function applyCrop() {
   const file = _cropFile;
-  const rect = { ..._cropRect };
-  closeCropModal();
-  _cropFile = null;
-  if (file) {
-    _uploadQueue.push({ file, cropRect: rect });
-    if (!_uploading) drainQueue();
-  }
+  const ib   = _cropImgBounds;
+  const sx   = _cropImgNatW / ib.w;
+  const sy   = _cropImgNatH / ib.h;
+  const rect = {
+    x: Math.round((_cropSel.x - ib.x) * sx),
+    y: Math.round((_cropSel.y - ib.y) * sy),
+    w: Math.round(_cropSel.w * sx),
+    h: Math.round(_cropSel.h * sy),
+  };
+  closeCropModal(); _cropFile = null;
+  if (file) { _uploadQueue.push({ file, cropRect: rect }); if (!_uploading) drainQueue(); }
 }
 
 // ══════════════════════════════════════════════════════════════
