@@ -325,6 +325,219 @@ body {
 }
 .btn-shuffle:hover, .btn-size:hover { color: var(--gold); border-color: var(--gold-dim); }
 
+
+/* ══════════════════════════════════════════════════════════════
+   SEARCH BAR (collapsible)
+══════════════════════════════════════════════════════════════ */
+.search-wrap {
+  margin-bottom: 20px;
+}
+.search-toggle {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  transition: color .15s;
+}
+.search-toggle:hover { color: var(--gold); }
+.search-toggle-caret {
+  margin-left: auto;
+  font-size: 8px;
+  transition: transform .2s;
+}
+.search-toggle.open .search-toggle-caret { transform: rotate(180deg); }
+.search-panel {
+  display: none;
+  padding: 12px 0 4px;
+  gap: 8px;
+  flex-direction: column;
+}
+.search-panel.open { display: flex; }
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.search-input-ref {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bone);
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  border-bottom: 1px solid var(--gold-dim);
+  padding: 9px 14px;
+  transition: border-color .15s;
+  letter-spacing: 0.04em;
+}
+.search-input-ref:focus { outline: none; border-color: var(--gold); }
+.search-input-ref::placeholder { color: var(--muted); font-size: 10px; }
+.search-clear {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.search-clear:hover { color: var(--bone); border-color: var(--bone-faint); }
+.search-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  padding-left: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CROP MODAL
+══════════════════════════════════════════════════════════════ */
+.crop-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,6,.96);
+  z-index: 400;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.crop-overlay.open { display: flex; }
+.crop-box {
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-top: 2px solid var(--gold);
+  padding: 24px 28px 20px;
+  width: 90vw;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.crop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.crop-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.crop-close-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 12px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+}
+.crop-close-btn:hover { color: var(--bone); border-color: var(--bone-faint); }
+.crop-ratios {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.crop-ratio-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 12px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+}
+.crop-ratio-btn:hover { color: var(--bone); border-color: var(--bone-faint); }
+.crop-ratio-btn.active { color: var(--gold); border-color: var(--gold-dim); }
+.crop-stage {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+  max-height: 56vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crop-stage img {
+  max-width: 100%;
+  max-height: 56vh;
+  display: block;
+  pointer-events: none;
+}
+.crop-selection {
+  position: absolute;
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.55);
+  pointer-events: none;
+}
+.crop-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.crop-skip-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 9px 18px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+}
+.crop-skip-btn:hover { color: var(--bone); }
+.crop-apply-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--gold);
+  padding: 9px 22px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.crop-apply-btn:hover { background: #D4B276; }
+.crop-info {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-right: auto;
+}
 /* ══════════════════════════════════════════════════════════════
    MASONRY GRID
 ══════════════════════════════════════════════════════════════ */
@@ -940,12 +1153,29 @@ body {
     <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
   </div>
 
+  <!-- Search bar (collapsible) -->
+  <div class="search-wrap" id="searchWrap" style="display:none">
+    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()">
+      <span>Search References</span>
+      <span class="search-toggle-caret">▾</span>
+    </button>
+    <div class="search-panel" id="searchPanel">
+      <div class="search-row">
+        <input class="search-input-ref" id="refSearchInput" type="text"
+          placeholder="filename, notes, uploader, backlink…"
+          oninput="onRefSearch(this.value)">
+        <button class="search-clear" onclick="clearRefSearch()">Clear</button>
+      </div>
+      <div class="search-meta" id="searchMeta"></div>
+    </div>
+  </div>
+
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-      <button class="btn-size" onclick="resizeGrid(-1)" title="Fewer columns">—</button>
-      <button class="btn-size" onclick="resizeGrid(+1)" title="More columns">+</button>
+      <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
+      <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
     </div>
     <div class="stats-hint">click to view &nbsp;·&nbsp; hover to delete</div>
@@ -954,6 +1184,35 @@ body {
   <!-- Masonry Grid -->
   <div class="masonry-grid" id="masonryGrid"></div>
 
+</div>
+
+<!-- ══ CROP MODAL ══ -->
+<div class="crop-overlay" id="cropOverlay">
+  <div class="crop-box">
+    <div class="crop-header">
+      <span class="crop-title">Crop Image</span>
+      <button class="crop-close-btn" onclick="skipCrop()">Skip</button>
+    </div>
+    <div class="crop-ratios">
+      <button class="crop-ratio-btn active" data-ratio="free"  onclick="setCropRatio('free')">Free</button>
+      <button class="crop-ratio-btn"        data-ratio="16:9"  onclick="setCropRatio('16:9')">16 : 9</button>
+      <button class="crop-ratio-btn"        data-ratio="4:3"   onclick="setCropRatio('4:3')">4 : 3</button>
+      <button class="crop-ratio-btn"        data-ratio="1:1"   onclick="setCropRatio('1:1')">1 : 1</button>
+      <button class="crop-ratio-btn"        data-ratio="9:16"  onclick="setCropRatio('9:16')">9 : 16</button>
+      <button class="crop-ratio-btn"        data-ratio="3:2"   onclick="setCropRatio('3:2')">3 : 2</button>
+    </div>
+    <div class="crop-stage" id="cropStage"
+      onmousedown="cropMouseDown(event)" onmousemove="cropMouseMove(event)" onmouseup="cropMouseUp(event)"
+      ontouchstart="cropTouchStart(event)" ontouchmove="cropTouchMove(event)" ontouchend="cropMouseUp(event)">
+      <img id="cropImg" src="" alt="">
+      <div class="crop-selection" id="cropSel" style="display:none"></div>
+    </div>
+    <div class="crop-actions">
+      <span class="crop-info" id="cropInfo"></span>
+      <button class="crop-skip-btn" onclick="skipCrop()">Upload original</button>
+      <button class="crop-apply-btn" onclick="applyCrop()">Crop &amp; Upload</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ UPLOAD TOAST ══ -->
@@ -1035,27 +1294,51 @@ const REF_TABLE  = 'ref_images';
 const MAX_W = 1920;
 const MAX_H = 1080;
 const WEBP_QUALITY = 0.88;
+const THUMB_W     = 480;   // thumbnail max width
+const THUMB_H     = 360;   // thumbnail max height
+const THUMB_Q     = 0.75;  // thumbnail quality
 
-function processImage(file) {
+function blobFromCanvas(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/webp', quality);
+  });
+}
+
+function processImage(file, cropRect = null) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
+    img.onload = async () => {
       URL.revokeObjectURL(url);
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      const scaleW = w > MAX_W ? MAX_W / w : 1;
-      const scaleH = h > MAX_H ? MAX_H / h : 1;
-      const scale  = Math.min(scaleW, scaleH);
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => {
-        if (!blob) { reject(new Error('canvas.toBlob failed')); return; }
-        resolve({ blob, width: w, height: h });
-      }, 'image/webp', WEBP_QUALITY);
+      try {
+        // Source rect (apply crop if given)
+        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+        if (cropRect) { sx = cropRect.x; sy = cropRect.y; sw = cropRect.w; sh = cropRect.h; }
+
+        // Full-size canvas (max 1920×1080)
+        const scaleW = sw > MAX_W ? MAX_W / sw : 1;
+        const scaleH = sh > MAX_H ? MAX_H / sh : 1;
+        const scale  = Math.min(scaleW, scaleH);
+        const w = Math.round(sw * scale);
+        const h = Math.round(sh * scale);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+        const blob = await blobFromCanvas(cv, WEBP_QUALITY);
+
+        // Thumbnail canvas (max 480×360)
+        const tsW = sw > THUMB_W ? THUMB_W / sw : 1;
+        const tsH = sh > THUMB_H ? THUMB_H / sh : 1;
+        const ts  = Math.min(tsW, tsH);
+        const tw = Math.round(sw * ts);
+        const th = Math.round(sh * ts);
+        const tcv = document.createElement('canvas');
+        tcv.width = tw; tcv.height = th;
+        tcv.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+        const thumbBlob = await blobFromCanvas(tcv, THUMB_Q);
+
+        resolve({ blob, thumbBlob, width: w, height: h });
+      } catch(e) { reject(e); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
     img.src = url;
@@ -1071,44 +1354,64 @@ let _uploading   = false;
 function queueUpload(files) {
   const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
   if (!arr.length) { showToast('error', 'No image files found', 0, true); return; }
-  _uploadQueue.push(...arr);
-  if (!_uploading) drainQueue();
+  if (arr.length === 1) {
+    openCropModal(arr[0]);  // single file: show crop first
+  } else {
+    _uploadQueue.push(...arr);
+    if (!_uploading) drainQueue();
+  }
 }
 
 async function drainQueue() {
   if (!_uploadQueue.length) { _uploading = false; return; }
   _uploading = true;
-  const file = _uploadQueue.shift();
-  await uploadOne(file);
+  const item = _uploadQueue.shift();
+  if (item && item.file) {
+    await uploadOne(item.file, item.cropRect || null);  // came from crop
+  } else {
+    await uploadOne(item, null);  // plain File
+  }
   drainQueue();
 }
 
-async function uploadOne(file) {
+async function uploadOne(file, cropRect = null) {
   showToast('loading', `Converting…`, 10);
   try {
-    const { blob, width, height } = await processImage(file);
+    const { blob, thumbBlob, width, height } = await processImage(file, cropRect);
     const fileSizeKB = Math.round(blob.size / 1024);
 
-    showToast('loading', `Uploading…`, 50);
+    showToast('loading', `Uploading…`, 40);
 
     const ts   = Date.now();
     const rand = Math.random().toString(36).slice(2, 7);
-    const path = `refs/${ts}-${rand}.webp`;
+    const path      = `refs/${ts}-${rand}.webp`;
+    const thumbPath = `refs/thumbs/${ts}-${rand}_t.webp`;
 
+    // Upload full image
     const { error: storageErr } = await _SB.storage
       .from(REF_BUCKET)
       .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
     if (storageErr) throw new Error('Storage: ' + storageErr.message);
 
+    // Upload thumbnail
+    showToast('loading', `Uploading thumbnail…`, 65);
+    const { error: thumbErr } = await _SB.storage
+      .from(REF_BUCKET)
+      .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+    // Non-fatal if thumb fails
+    const thumbUrl = thumbErr ? '' : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || '');
+
     const { data: pubData } = _SB.storage.from(REF_BUCKET).getPublicUrl(path);
     const publicUrl = pubData?.publicUrl || '';
 
-    showToast('loading', `Saving metadata…`, 80);
+    showToast('loading', `Saving metadata…`, 85);
 
     const user = localStorage.getItem('vp_user_id') || 'anon';
     const { data: row, error: dbErr } = await _SB.from(REF_TABLE).insert({
       storage_path : path,
       url          : publicUrl,
+      thumb_path   : thumbPath,
+      thumb_url    : thumbUrl,
       original_name: file.name,
       width, height,
       file_size_kb : fileSizeKB,
@@ -1236,7 +1539,7 @@ function cardHTML(r) {
   const info = [dim, kb].filter(Boolean).join('  ·  ');
   const sp   = r.storage_path ? r.storage_path.replace(/'/g, "\\'") : '';
   return `<div class="ref-card" data-id="${r.id}" onclick="openLb(_allRefs.find(x=>x.id===${r.id}))">
-    <img src="${r.url}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+    <img src="${r.thumb_url || r.url}" alt="" loading="lazy" onerror="this.src=this.src==='${r.url}'?'':(this.src='${r.url}')">
     <div class="ref-card-overlay">
       <button class="ref-card-del" title="Delete" onclick="event.stopPropagation();askDelete('${r.id}','${sp}')">✕</button>
     </div>
@@ -1248,9 +1551,12 @@ function cardHTML(r) {
 }
 
 function updateStatsBar() {
-  const bar = document.getElementById('statsBar');
+  const bar  = document.getElementById('statsBar');
+  const wrap = document.getElementById('searchWrap');
   document.getElementById('refCount').textContent = _allRefs.length;
-  bar.style.display = _allRefs.length ? 'flex' : 'none';
+  const show = _allRefs.length > 0;
+  bar.style.display  = show ? 'flex' : 'none';
+  wrap.style.display = show ? 'block' : 'none';
 }
 
 function shuffleGrid() {
@@ -1416,6 +1722,190 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#userPillWrap'))
     document.getElementById('userMenu').classList.remove('open');
 });
+
+// ══════════════════════════════════════════════════════════════
+// CROP MODAL
+// ══════════════════════════════════════════════════════════════
+let _cropFile    = null;
+let _cropRatio   = 'free';
+let _cropDragging = false;
+let _cropStart   = { x: 0, y: 0 };
+let _cropRect    = { x: 0, y: 0, w: 0, h: 0 };  // in image-natural coords
+let _cropImgNatW = 0;
+let _cropImgNatH = 0;
+
+function openCropModal(file) {
+  _cropFile = file;
+  _cropRatio = 'free';
+  document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === 'free'));
+  const overlay = document.getElementById('cropOverlay');
+  const img     = document.getElementById('cropImg');
+  img.onload = () => {
+    _cropImgNatW = img.naturalWidth;
+    _cropImgNatH = img.naturalHeight;
+    resetCropSel();
+  };
+  img.src = URL.createObjectURL(file);
+  overlay.classList.add('open');
+}
+
+function closeCropModal() {
+  document.getElementById('cropOverlay').classList.remove('open');
+  const img = document.getElementById('cropImg');
+  if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+  img.src = '';
+  document.getElementById('cropSel').style.display = 'none';
+}
+
+function skipCrop() {
+  const file = _cropFile;
+  closeCropModal();
+  _cropFile = null;
+  if (file) { _uploadQueue.push(file); if (!_uploading) drainQueue(); }
+}
+
+function resetCropSel() {
+  // Full image selected by default
+  const stage = document.getElementById('cropStage');
+  const img   = document.getElementById('cropImg');
+  const r = img.getBoundingClientRect();
+  const sr = stage.getBoundingClientRect();
+  const sel = document.getElementById('cropSel');
+  sel.style.left   = (r.left  - sr.left)  + 'px';
+  sel.style.top    = (r.top   - sr.top)   + 'px';
+  sel.style.width  = r.width  + 'px';
+  sel.style.height = r.height + 'px';
+  sel.style.display = 'block';
+  _cropRect = { x: 0, y: 0, w: _cropImgNatW, h: _cropImgNatH };
+  updateCropInfo();
+}
+
+function setCropRatio(ratio) {
+  _cropRatio = ratio;
+  document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
+  resetCropSel();
+}
+
+function stageXY(e) {
+  const stage = document.getElementById('cropStage');
+  const sr    = stage.getBoundingClientRect();
+  const src   = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - sr.left, y: src.clientY - sr.top };
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function computeCropRect(x0, y0, x1, y1) {
+  const img = document.getElementById('cropImg');
+  const ir  = img.getBoundingClientRect();
+  const stage = document.getElementById('cropStage');
+  const sr  = stage.getBoundingClientRect();
+  const imgX = ir.left - sr.left;
+  const imgY = ir.top  - sr.top;
+  // clamp to image bounds in stage coords
+  let sx = clamp(Math.min(x0, x1), imgX, imgX + ir.width)  - imgX;
+  let sy = clamp(Math.min(y0, y1), imgY, imgY + ir.height) - imgY;
+  let sw = clamp(Math.abs(x1 - x0), 0, ir.width  - sx);
+  let sh = clamp(Math.abs(y1 - y0), 0, ir.height - sy);
+  if (sw < 4 || sh < 4) { sw = ir.width; sh = ir.height; sx = 0; sy = 0; }
+  // Apply ratio lock
+  if (_cropRatio !== 'free') {
+    const [rw, rh] = _cropRatio.split(':').map(Number);
+    const rRatio   = rw / rh;
+    if (sw / sh > rRatio) sw = sh * rRatio;
+    else                  sh = sw / rRatio;
+  }
+  // Scale to natural image coords
+  const scaleX = _cropImgNatW / ir.width;
+  const scaleY = _cropImgNatH / ir.height;
+  _cropRect = {
+    x: Math.round(sx * scaleX), y: Math.round(sy * scaleY),
+    w: Math.round(sw * scaleX), h: Math.round(sh * scaleY),
+  };
+  // Update visual selection
+  const sel = document.getElementById('cropSel');
+  sel.style.left   = (imgX + sx) + 'px';
+  sel.style.top    = (imgY + sy) + 'px';
+  sel.style.width  = sw + 'px';
+  sel.style.height = sh + 'px';
+  sel.style.display = 'block';
+  updateCropInfo();
+}
+
+function updateCropInfo() {
+  document.getElementById('cropInfo').textContent =
+    `${_cropRect.w} × ${_cropRect.h}`;
+}
+
+function cropMouseDown(e) {
+  e.preventDefault();
+  _cropDragging = true;
+  _cropStart = stageXY(e);
+}
+function cropMouseMove(e) {
+  if (!_cropDragging) return;
+  const p = stageXY(e);
+  computeCropRect(_cropStart.x, _cropStart.y, p.x, p.y);
+}
+function cropMouseUp(e) {
+  _cropDragging = false;
+}
+function cropTouchStart(e) { e.preventDefault(); _cropDragging = true; _cropStart = stageXY(e); }
+function cropTouchMove(e)  { e.preventDefault(); if (_cropDragging) { const p = stageXY(e); computeCropRect(_cropStart.x, _cropStart.y, p.x, p.y); } }
+
+async function applyCrop() {
+  const file = _cropFile;
+  const rect = { ..._cropRect };
+  closeCropModal();
+  _cropFile = null;
+  if (file) {
+    _uploadQueue.push({ file, cropRect: rect });
+    if (!_uploading) drainQueue();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SEARCH BAR
+// ══════════════════════════════════════════════════════════════
+let _searchQuery = '';
+
+function toggleSearch() {
+  const toggle = document.getElementById('searchToggle');
+  const panel  = document.getElementById('searchPanel');
+  const open   = panel.classList.toggle('open');
+  toggle.classList.toggle('open', open);
+  if (open) setTimeout(() => document.getElementById('refSearchInput').focus(), 80);
+}
+
+function onRefSearch(q) {
+  _searchQuery = q.trim().toLowerCase();
+  applySearch();
+}
+
+function clearRefSearch() {
+  _searchQuery = '';
+  document.getElementById('refSearchInput').value = '';
+  document.getElementById('searchMeta').textContent = '';
+  applySearch();
+}
+
+function applySearch() {
+  if (!_searchQuery) {
+    renderGrid(_allRefs);
+    document.getElementById('searchMeta').textContent = '';
+    return;
+  }
+  const q = _searchQuery;
+  const filtered = _allRefs.filter(r =>
+    (r.original_name || '').toLowerCase().includes(q) ||
+    (r.notes         || '').toLowerCase().includes(q) ||
+    (r.backlink      || '').toLowerCase().includes(q) ||
+    (r.uploaded_by   || '').toLowerCase().includes(q)
+  );
+  renderGrid(filtered);
+  document.getElementById('searchMeta').textContent =
+    `${filtered.length} of ${_allRefs.length} match`;
+}
 
 // ══════════════════════════════════════════════════════════════
 // AUTH
