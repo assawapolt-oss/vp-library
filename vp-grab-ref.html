@@ -1226,7 +1226,6 @@ body {
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
       <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
-      <button class="btn-shuffle" id="btnBackfill" onclick="backfillThumbnails()" title="Generate thumbnails for old images (admin only)" style="display:none;border-color:#6b5c3e;color:#9a7a3a">⟳ Thumbs</button>
     </div>
     <div class="stats-hint">click to view &nbsp;·&nbsp; hover to delete</div>
   </div>
@@ -2060,102 +2059,17 @@ function updateUserUI(uid, name) {
   const login    = document.getElementById('userMenuLogin');
   const logout   = document.getElementById('userMenuLogout');
   const menuName = document.getElementById('userMenuName');
-  const backfill = document.getElementById('btnBackfill');
   if (uid) {
     label.textContent    = name || uid;
     menuName.textContent = name || uid;
     login.style.display  = 'none';
     logout.style.display = 'block';
-    const role = localStorage.getItem(USER_ROLE_KEY) || '';
-    if (backfill) backfill.style.display = role === 'admin' ? 'inline-block' : 'none';
   } else {
     label.textContent    = 'Not signed in';
     menuName.textContent = 'Not signed in';
     login.style.display  = 'block';
     logout.style.display = 'none';
-    if (backfill) backfill.style.display = 'none';
   }
-}
-
-// ══════════════════════════════════════════════════════════════
-// THUMBNAIL BACKFILL  (admin only)
-// ══════════════════════════════════════════════════════════════
-async function makeThumbnailFromUrl(url) {
-  // Fetch as blob first so canvas never gets CORS-tainted
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const blob = await resp.blob();
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const objUrl = URL.createObjectURL(blob);
-    img.onload = async () => {
-      URL.revokeObjectURL(objUrl);
-      const sw = img.naturalWidth, sh = img.naturalHeight;
-      const scale = Math.min(THUMB_W / sw, THUMB_H / sh, 1);
-      const tw = Math.round(sw * scale), th = Math.round(sh * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = tw; canvas.height = th;
-      canvas.getContext('2d').drawImage(img, 0, 0, tw, th);
-      try { resolve(await blobFromCanvas(canvas, THUMB_Q)); }
-      catch(e) { reject(e); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('Image load failed')); };
-    img.src = objUrl;
-  });
-}
-
-async function backfillThumbnails() {
-  const role = localStorage.getItem(USER_ROLE_KEY) || '';
-  if (role !== 'admin') return;
-
-  const btn = document.getElementById('btnBackfill');
-
-  // Find all refs missing a thumbnail URL
-  const { data, error } = await _SB
-    .from(REF_TABLE)
-    .select('id, url, storage_path')
-    .or('thumb_url.is.null,thumb_url.eq.');
-
-  if (error) { showToast('error', 'Backfill error: ' + error.message, 0, true); return; }
-
-  const items = (data || []).filter(r => r.url);
-  if (!items.length) {
-    showToast('success', 'All images already have thumbnails', 100, true);
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.textContent = `0 / ${items.length}`; }
-
-  let done = 0, failed = 0;
-  for (const ref of items) {
-    try {
-      const thumbBlob = await makeThumbnailFromUrl(ref.url);
-      const ts   = Date.now();
-      const rand = Math.random().toString(36).slice(2, 7);
-      const thumbPath = `refs/thumbs/${ts}-${rand}_t.webp`;
-
-      const { error: upErr } = await _SB.storage
-        .from(REF_BUCKET)
-        .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
-      if (upErr) throw upErr;
-
-      const thumbUrl = _SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || '';
-      await _SB.from(REF_TABLE)
-        .update({ thumb_path: thumbPath, thumb_url: thumbUrl })
-        .eq('id', ref.id);
-      done++;
-    } catch(e) {
-      console.warn('[Backfill] id', ref.id, e.message);
-      failed++;
-    }
-    if (btn) btn.textContent = `${done + failed} / ${items.length}`;
-  }
-
-  if (btn) { btn.disabled = false; btn.textContent = '⟳ Thumbs'; }
-  const hadErrors = failed > 0;
-  const msg = `Backfill done — ${done} updated${hadErrors ? `, ${failed} failed (see console)` : ' ✓'}`;
-  showToast(hadErrors ? 'error' : 'success', msg, 100, true);
-  await loadRefs(); // Reload grid with new thumbnails
 }
 
 // ══════════════════════════════════════════════════════════════
