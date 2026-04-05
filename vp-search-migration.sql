@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════════
 -- VP Library — mCLIP Vector Search Migration
--- v1.0 — 2026-04-05
+-- v1.1 — 2026-04-06 (fixed column names: image_url, thumb_url)
 --
 -- สิ่งที่ migration นี้ทำ:
 --   1. เพิ่ม column mclip_vector (512d) + mclip_caption + mclip_tags
@@ -44,8 +44,8 @@ RETURNS TABLE (
   id              text,
   title           text,
   title_th        text,
-  filepath        text,
-  thumb           text,
+  image_url       text,
+  thumb_url       text,
   world           text,
   energy          text,
   context_tags    text[],
@@ -62,8 +62,8 @@ AS $$
     s.id,
     s.title,
     s.title_th,
-    s.filepath,
-    s.thumb,
+    s.image_url,
+    s.thumb_url,
     s.world,
     s.energy,
     s.context_tags,

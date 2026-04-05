@@ -180,7 +180,7 @@ def search(req: SearchRequest):
         "query":   query,
         "model":   EMBED_MODEL,
         "count":   len(data),
-        "results": data,  # แต่ละ item มี: id, title, title_th, filepath, thumb, world, energy,
+        "results": data,  # แต่ละ item มี: id, title, title_th, image_url, thumb_url, world, energy,
                           # context_tags, posture, prod_format, mclip_caption, mclip_tags, similarity
     }
 
