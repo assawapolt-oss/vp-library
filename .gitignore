@@ -5,8 +5,16 @@ vp-ai-tag.py
 generate_embeddings.py
 generate_topic_embeddings.py
 *.py
+# ── exceptions: new search system files ──
+!vp-indexer.py
+!vp-search-server.py
 _archived/
 .DS_Store
+*.env
 .env.example
+*.env.example
+# ── exceptions: template configs ──
+!vp-indexer.env.example
+!vp-search-server.env.example
 indoor/.DS_Store
 outdoor/.DS_Store

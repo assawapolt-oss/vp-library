@@ -2168,89 +2168,39 @@ function renderCards() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// SEMANTIC SEARCH — pgvector + CLIP text encoder
-// Uses match_scenes RPC in Supabase (vector cosine similarity)
-// Text encoder: Xenova/clip-vit-base-patch32 via transformers.js
-// Thai→English: Helsinki-NLP/opus-mt-th-en via transformers.js
+// SEMANTIC SEARCH — mCLIP multilingual via Search Server API
+// v2.0: ย้ายการ encode ออกจาก browser → server-side
+//   - รองรับ Thai + English โดยตรง (ไม่ต้องแปลภาษา)
+//   - ไม่ต้อง download model ~200MB ในฝั่ง browser
+//   - เร็วกว่าเดิม ~3-5x
+//
+// config: ตั้งค่า VP_SEARCH_SERVER ให้ชี้ไปที่ vp-search-server.py
 // ══════════════════════════════════════════════════════════════
 
-const _SEM_TX_URL = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
-const _SEM_MODEL  = 'Xenova/clip-vit-base-patch32';
-const _MT_MODEL   = 'Xenova/opus-mt-th-en';      // Thai→EN MT (Helsinki-NLP, ~120MB quantized)
-let _semTextProc   = null;            // AutoTokenizer (shared with runRec)
-let _semTextModel  = null;            // CLIPTextModelWithProjection (shared with runRec)
-let _semModelLoading = false;
-let _mtPipeline    = null;            // Translation pipeline (lazy-loaded)
-let _mtLoading     = false;
+// URL ของ vp-search-server.py — เปลี่ยนได้ใน localStorage
+// ตัวอย่าง: localStorage.setItem('vp_search_server', 'https://search.yourdomain.com')
+const VP_SEARCH_SERVER = localStorage.getItem('vp_search_server') || 'http://localhost:8766';
 
-// Detect if text is mostly Thai (has Thai Unicode chars)
-function _isThai(text) {
-  const thaiChars = (text.match(/[\u0E00-\u0E7F]/g) || []).length;
-  return thaiChars / text.length > 0.3;
-}
-
-async function _loadMTModel() {
-  if (_mtPipeline) return _mtPipeline;
-  if (_mtLoading) {
-    while (_mtLoading) await new Promise(r => setTimeout(r, 300));
-    return _mtPipeline;
+/**
+ * เรียก VP Search Server API ด้วย text query (ไทยหรืออังกฤษ)
+ * คืน array ของ { id, similarity, ... } หรือ throw Error
+ */
+async function _callSearchAPI(query, limit = 50) {
+  const res = await fetch(`${VP_SEARCH_SERVER}/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, limit, min_similarity: 0.05 }),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`Search server error ${res.status}: ${msg}`);
   }
-  _mtLoading = true;
-  try {
-    const { pipeline, env } = await import(_SEM_TX_URL);
-    env.allowRemoteModels = true; env.allowLocalModels = false;
-    setAIStatus('loading', '📥 โหลด Thai→EN translator… (~120MB ครั้งแรก)', 15);
-    _mtPipeline = await pipeline('translation', _MT_MODEL, { quantized: true });
-    _mtLoading = false;
-    return _mtPipeline;
-  } catch(e) {
-    console.warn('[MT] Load failed:', e.message);
-    _mtLoading = false;
-    return null;
-  }
-}
-
-async function _translateThai(text) {
-  // Fast path: keyword expansion (always available, instant)
-  const expanded = extractFromText(text);
-  if (expanded.size > 0) {
-    return Array.from(expanded).join(' ');
-  }
-  // Slow path: MT model (lazy-loaded, 120MB)
-  const mt = await _loadMTModel();
-  if (!mt) return text; // fallback to raw (CLIP won't understand but we tried)
-  try {
-    const result = await mt(text, { max_new_tokens: 64 });
-    return result[0]?.translation_text || text;
-  } catch(e) {
-    return text;
-  }
+  const json = await res.json();
+  return json.results || [];
 }
 
 function onSearchInput() {
   renderCards();
-}
-
-async function _loadSemTextModel() {
-  if (_semTextProc && _semTextModel) return true;
-  if (_semModelLoading) {
-    while (_semModelLoading) await new Promise(r => setTimeout(r, 250));
-    return !!_semTextModel;
-  }
-  _semModelLoading = true;
-  try {
-    const { AutoTokenizer, CLIPTextModelWithProjection, env } = await import(_SEM_TX_URL);
-    env.allowRemoteModels = true; env.allowLocalModels = false;
-    setAIStatus('loading', '📥 โหลด CLIP model… (ครั้งแรกอาจใช้ ~1 นาที)', 20);
-    _semTextProc  = await AutoTokenizer.from_pretrained(_SEM_MODEL);
-    _semTextModel = await CLIPTextModelWithProjection.from_pretrained(_SEM_MODEL, { quantized: true });
-    _semModelLoading = false;
-    return true;
-  } catch(e) {
-    console.warn('[Semantic] Text model load failed:', e.message);
-    _semModelLoading = false;
-    return false;
-  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2270,7 +2220,11 @@ function setAIStatus(state, text, pct) {
 }
 
 function initAI() {
-  setAIStatus('ready', '🧠 Semantic Search — พร้อมใช้งาน', 100);
+  // ตรวจสอบ search server แบบ background (ไม่ block UI)
+  fetch(`${VP_SEARCH_SERVER}/health`, { signal: AbortSignal.timeout(3000) })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => setAIStatus('ready', `🧠 mCLIP Semantic Search พร้อม (${d.model || 'multilingual'})`, 100))
+    .catch(() => setAIStatus('ready', '🧠 Semantic Search — (server offline ใช้ keyword แทน)', 100));
 }
 
 // ── Rec state ─────────────────────────────────────────────────
@@ -2488,45 +2442,15 @@ async function runRec() {
   const modeBadge = `<span class="ai-badge" style="background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border-color:transparent">🧠 Semantic AI</span>`;
 
   try {
-    // 1. Load text model
-    const ok = await _loadSemTextModel();
-    if (!ok) {
-      setAIStatus('error', '❌ โหลด model ไม่สำเร็จ — ลองใหม่', 0);
-      box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">โหลด AI model ไม่สำเร็จ กรุณาลองใหม่</div></div>`;
-      return;
-    }
+    // 1. เรียก VP Search Server — mCLIP encode + Supabase ANN ในครั้งเดียว
+    //    รองรับ Thai + English โดยตรง ไม่ต้องแปลภาษา
+    setAIStatus('loading', '🔍 กำลังค้นหาด้วย mCLIP Semantic Search…', 40);
+    const apiResults = await _callSearchAPI(text, 100);
+    setAIStatus('loading', '✨ จัดเรียงผลลัพธ์…', 85);
 
-    // 2. Translate Thai → English for CLIP (CLIP is English-only model)
-    let queryForCLIP = text;
-    if (_isThai(text)) {
-      setAIStatus('loading', '🔤 แปลภาษาไทย → English…', 35);
-      queryForCLIP = await _translateThai(text);
-      setAIStatus('loading', `🔤 แปลแล้ว: "${queryForCLIP}"`, 45);
-    }
-
-    // 3. Encode text → embedding
-    setAIStatus('loading', '🧠 คำนวณ text embedding…', 50);
-    const inputs = await _semTextProc(queryForCLIP, { padding: true, truncation: true });
-    const { text_embeds } = await _semTextModel(inputs);
-    const raw  = Array.from(text_embeds.data);
-    const norm = Math.sqrt(raw.reduce((s, v) => s + v * v, 0));
-    const embedding = norm > 0 ? raw.map(v => v / norm) : raw;
-
-    // 4. Query Supabase match_scenes RPC
-    setAIStatus('loading', '🔍 ค้นหาฉากที่ใกล้เคียงที่สุด…', 80);
-    const sc = _getSupaClient();
-    if (!sc) throw new Error('Supabase ไม่พร้อม');
-
-    const { data, error } = await sc.rpc('match_scenes', {
-      query_embedding: embedding,
-      match_threshold: 0.05,
-      match_count: 100
-    });
-    if (error) throw new Error(error.message);
-
-    // 5. Build score map + merge with SCENES data
+    // 2. Build score map + merge with SCENES data
     const scores = {};
-    (data || []).forEach(r => { scores[r.id] = r.similarity; });
+    apiResults.forEach(r => { scores[r.id] = r.similarity; });
 
     const ranked = SCENES
       .filter(s => scores[s.id] !== undefined)
@@ -2588,8 +2512,12 @@ async function runRec() {
 
   } catch(e) {
     console.error('[runRec]', e);
-    setAIStatus('error', '❌ ' + e.message, 0);
-    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">เกิดข้อผิดพลาด: ${e.message}</div></div>`;
+    const isFetch = e.message.includes('fetch') || e.message.includes('Failed to fetch') || e.message.includes('NetworkError');
+    const hint = isFetch
+      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 Search Server ยังไม่ได้เปิด — รัน <code>python vp-search-server.py</code> แล้วลองใหม่<br>หรือตั้งค่า: <code>localStorage.setItem('vp_search_server','https://...')</code></div>`
+      : '';
+    setAIStatus('error', '❌ ' + (isFetch ? 'เชื่อมต่อ Search Server ไม่ได้' : e.message), 0);
+    box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">เกิดข้อผิดพลาด: ${e.message}</div>${hint}</div>`;
   }
 }
 
