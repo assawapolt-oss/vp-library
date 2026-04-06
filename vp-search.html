@@ -2168,35 +2168,70 @@ function renderCards() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// SEMANTIC SEARCH — mCLIP multilingual via Search Server API
-// v2.0: ย้ายการ encode ออกจาก browser → server-side
-//   - รองรับ Thai + English โดยตรง (ไม่ต้องแปลภาษา)
-//   - ไม่ต้อง download model ~200MB ในฝั่ง browser
-//   - เร็วกว่าเดิม ~3-5x
+// SEMANTIC SEARCH — mCLIP multilingual via Hugging Face API
+// v3.0: Browser → HF Inference API (encode) → Supabase RPC (search)
+//   - ไม่ต้องรัน Python server
+//   - รองรับ Thai + English โดยตรง
+//   - ทำงานได้บน GitHub Pages / static hosting
 //
-// config: ตั้งค่า VP_SEARCH_SERVER ให้ชี้ไปที่ vp-search-server.py
+// Setup (ทำครั้งเดียว):
+//   localStorage.setItem('vp_hf_key', 'hf_xxxxxxxxxxxxxxxxxxxx')
+//   รับ key ฟรีที่ https://huggingface.co/settings/tokens
 // ══════════════════════════════════════════════════════════════
 
-// URL ของ vp-search-server.py — เปลี่ยนได้ใน localStorage
-// ตัวอย่าง: localStorage.setItem('vp_search_server', 'https://search.yourdomain.com')
-const VP_SEARCH_SERVER = localStorage.getItem('vp_search_server') || 'http://localhost:8766';
+const HF_EMBED_URL = 'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1';
 
 /**
- * เรียก VP Search Server API ด้วย text query (ไทยหรืออังกฤษ)
- * คืน array ของ { id, similarity, ... } หรือ throw Error
+ * Encode text → 512d vector ด้วย mCLIP ผ่าน HF Inference API
  */
-async function _callSearchAPI(query, limit = 50) {
-  const res = await fetch(`${VP_SEARCH_SERVER}/search`, {
+async function _encodeTextHF(text) {
+  const key = localStorage.getItem('vp_hf_key') || '';
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+
+  const res = await fetch(HF_EMBED_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, limit, min_similarity: 0.05 }),
+    headers,
+    body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
   });
+
+  if (res.status === 503) {
+    // Model กำลัง warm up — รอแล้วลองใหม่
+    await new Promise(r => setTimeout(r, 8000));
+    return _encodeTextHF(text);
+  }
   if (!res.ok) {
     const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`Search server error ${res.status}: ${msg}`);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(`HF API key ไม่ถูกต้อง — ตั้งค่า: localStorage.setItem('vp_hf_key','hf_xxx')`);
+    }
+    throw new Error(`HF API error ${res.status}: ${msg.slice(0, 120)}`);
   }
-  const json = await res.json();
-  return json.results || [];
+
+  const data = await res.json();
+  // HF returns [[v1, v2, ...]] หรือ [v1, v2, ...]
+  const vec = Array.isArray(data[0]) ? data[0] : data;
+  if (!Array.isArray(vec) || vec.length !== 512) {
+    throw new Error(`Vector dimension ไม่ถูกต้อง (ได้ ${Array.isArray(vec) ? vec.length : typeof vec})`);
+  }
+  return vec;
+}
+
+/**
+ * ค้นหาฉากด้วย text query — encode ผ่าน HF API แล้วยิง Supabase โดยตรง
+ * คืน array ของ { id, title, image_url, thumb_url, similarity, ... }
+ */
+async function _callSearchAPI(query, limit = 50) {
+  const vector = await _encodeTextHF(query);
+
+  const result = await _SB.rpc('match_scenes_mclip', {
+    query_vector:    vector,
+    match_count:     limit,
+    match_threshold: 0.05,
+  });
+
+  if (result.error) throw new Error(`Supabase: ${result.error.message}`);
+  return result.data || [];
 }
 
 function onSearchInput() {
@@ -2220,11 +2255,12 @@ function setAIStatus(state, text, pct) {
 }
 
 function initAI() {
-  // ตรวจสอบ search server แบบ background (ไม่ block UI)
-  fetch(`${VP_SEARCH_SERVER}/health`, { signal: AbortSignal.timeout(3000) })
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(d => setAIStatus('ready', `🧠 mCLIP Semantic Search พร้อม (${d.model || 'multilingual'})`, 100))
-    .catch(() => setAIStatus('ready', '🧠 Semantic Search — (server offline ใช้ keyword แทน)', 100));
+  const hasKey = !!localStorage.getItem('vp_hf_key');
+  if (hasKey) {
+    setAIStatus('ready', '🧠 mCLIP Semantic Search พร้อม (Thai + EN)', 100);
+  } else {
+    setAIStatus('ready', '🧠 Semantic Search พร้อม — (ตั้งค่า HF key เพื่อผลลัพธ์ดีขึ้น)', 100);
+  }
 }
 
 // ── Rec state ─────────────────────────────────────────────────
@@ -2512,11 +2548,14 @@ async function runRec() {
 
   } catch(e) {
     console.error('[runRec]', e);
-    const isFetch = e.message.includes('fetch') || e.message.includes('Failed to fetch') || e.message.includes('NetworkError');
-    const hint = isFetch
-      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 Search Server ยังไม่ได้เปิด — รัน <code>python vp-search-server.py</code> แล้วลองใหม่<br>หรือตั้งค่า: <code>localStorage.setItem('vp_search_server','https://...')</code></div>`
-      : '';
-    setAIStatus('error', '❌ ' + (isFetch ? 'เชื่อมต่อ Search Server ไม่ได้' : e.message), 0);
+    const isKeyErr = e.message.includes('hf_') || e.message.includes('HF API key') || e.message.includes('401') || e.message.includes('403');
+    const isNoData = e.message.includes('mclip_vector') || e.message.includes('indexed');
+    const hint = isKeyErr
+      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ตั้งค่า HF API key: <code>localStorage.setItem('vp_hf_key','hf_xxx')</code><br>รับ key ฟรีที่ <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:#7C3AED">huggingface.co/settings/tokens</a></div>`
+      : isNoData
+      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ยังไม่มีข้อมูล vector — รัน <code>python vp-indexer.py</code> เพื่อ index ภาพก่อน</div>`
+      : `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ตรวจสอบ HF API key: <code>localStorage.setItem('vp_hf_key','hf_xxx')</code></div>`;
+    setAIStatus('error', '❌ ' + e.message.slice(0, 80), 0);
     box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">เกิดข้อผิดพลาด: ${e.message}</div>${hint}</div>`;
   }
 }
