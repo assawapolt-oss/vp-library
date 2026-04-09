@@ -1002,6 +1002,29 @@ body {
   transition: background .15s;
 }
 .auth-btn:hover { background: #D4B276; }
+.auth-google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 12px 16px; margin-top: 10px;
+  background: #fff; color: #3c4043;
+  border: 1.5px solid #dadce0; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-sans); transition: background .15s, box-shadow .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+.auth-google-btn:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.auth-google-btn:disabled { opacity: .6; cursor: not-allowed; }
+.auth-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0 6px; color: var(--muted);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--line-hi);
+}
+.auth-hint {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  letter-spacing: 0.06em; margin-top: 12px; text-align: center;
+}
 .auth-error {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -1316,11 +1339,19 @@ body {
       <div class="auth-logo-icon">The Standard</div>
     </div>
     <div class="auth-title">Sign in</div>
-    <div class="auth-sub">VP Library · Restricted Access</div>
+    <div class="auth-sub">Grab Ref · Restricted Access</div>
+    <!-- Google Sign-in (primary) -->
+    <button class="auth-google-btn" id="authGoogleBtn" onclick="doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-hint">บัญชี @thestandard.co เท่านั้น</div>
+    <div class="auth-divider">or</div>
+    <!-- Password fallback -->
     <input class="auth-input" id="authUser" type="text" placeholder="Username" autocomplete="username">
     <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password"
       onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="auth-btn" onclick="doLogin()">Continue</button>
+    <button class="auth-btn" id="authSubmit" onclick="doLogin()">Continue</button>
     <div class="auth-error" id="authError"></div>
   </div>
 </div>
@@ -1998,10 +2029,16 @@ function applySearch() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// AUTH
+// AUTH — shared session with vp-search.html
+// Google OAuth (primary) + Username/Password (fallback)
+// เฉพาะ @thestandard.co เท่านั้น
 // ══════════════════════════════════════════════════════════════
-const USER_KEY      = 'vp_user_id';
-const USER_ROLE_KEY = 'vp_user_role';
+const USER_KEY       = 'vp_user_id';
+const USER_ROLE_KEY  = 'vp_user_role';
+const AUTH_TYPE_KEY  = 'vp_auth_type';   // 'password' | 'google'
+const ALLOWED_DOMAIN = 'thestandard.co';
+const ADMIN_EMAILS   = ['assawapol.t@thestandard.co'];
+
 const FALLBACK_USERS = {
   "admin":  { role: "admin",  hash: "ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name: "Administrator" },
   "viewer": { role: "viewer", hash: "65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name: "Viewer" }
@@ -2027,65 +2064,172 @@ async function loadUsers() {
   _USERS_DB = { ...FALLBACK_USERS };
 }
 
+async function getRoleByEmail(email) {
+  if (ADMIN_EMAILS.includes(email)) return 'admin';
+  try {
+    const { data } = await _SB.from('users').select('role').eq('email', email).single();
+    if (data?.role) return data.role;
+  } catch {}
+  try {
+    const username = email.split('@')[0];
+    const { data } = await _SB.from('users').select('role').eq('username', username).single();
+    if (data?.role) return data.role;
+  } catch {}
+  return 'viewer';
+}
+
+// ── Password login ─────────────────────────────────────────
 async function doLogin() {
   const username = document.getElementById('authUser').value.trim().toLowerCase();
   const password = document.getElementById('authPass').value;
   const errEl    = document.getElementById('authError');
+  const btnEl    = document.getElementById('authSubmit');
   errEl.classList.remove('show');
-  if (!username || !password) { errEl.textContent = 'Please enter username and password'; errEl.classList.add('show'); return; }
+  if (!username || !password) { errEl.textContent = 'กรุณากรอก Username และ Password'; errEl.classList.add('show'); return; }
+  btnEl.disabled = true; btnEl.textContent = 'กำลังตรวจสอบ...';
   if (!_USERS_DB) await loadUsers();
   const stored = _USERS_DB?.[username];
-  if (!stored) { errEl.textContent = 'Username not found'; errEl.classList.add('show'); return; }
-  if (await sha256(password) !== stored.hash) { errEl.textContent = 'Incorrect password'; errEl.classList.add('show'); return; }
+  let ok = false;
+  if (stored && await sha256(password) === stored.hash) ok = true;
+  btnEl.disabled = false; btnEl.textContent = 'Continue';
+  if (!ok) { errEl.textContent = 'Username หรือ Password ไม่ถูกต้อง'; errEl.classList.add('show'); document.getElementById('authPass').value = ''; return; }
   localStorage.setItem(USER_KEY, username);
   localStorage.setItem(USER_ROLE_KEY, stored.role || 'viewer');
+  localStorage.setItem(AUTH_TYPE_KEY, 'password');
   document.getElementById('authOverlay').classList.remove('open');
-  updateUserUI(username, stored.name);
+  updateUserUI(username, stored.name || username);
+  await loadRefs();
+}
+
+// ── Google OAuth ───────────────────────────────────────────
+async function doGoogleLogin() {
+  const btn = document.getElementById('authGoogleBtn');
+  const err = document.getElementById('authError');
+  err.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'กำลังเชื่อมต่อ...';
+  try {
+    const { error } = await _SB.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+    if (error) throw error;
+  } catch(e) {
+    err.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Sign in with Google';
+  }
+}
+
+// ── Handle Supabase OAuth session ─────────────────────────
+async function handleAuthSession(session) {
+  if (!session) {
+    // Password login — ยังใช้งานได้ข้ามหน้า
+    if (localStorage.getItem(AUTH_TYPE_KEY) === 'password' && localStorage.getItem(USER_KEY)) {
+      updateUserUI(localStorage.getItem(USER_KEY), localStorage.getItem(USER_KEY));
+      await loadRefs();
+      return;
+    }
+    // ไม่มี session — แสดง login overlay (mandatory)
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(USER_ROLE_KEY);
+    localStorage.removeItem('vp_user_avatar');
+    localStorage.removeItem(AUTH_TYPE_KEY);
+    updateUserUI(null, null);
+    showAuthOverlay();
+    return;
+  }
+  const user  = session.user;
+  const email = user.email || '';
+  // Domain restriction
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    await _SB.auth.signOut();
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(USER_ROLE_KEY);
+    localStorage.removeItem(AUTH_TYPE_KEY);
+    const err = document.getElementById('authError');
+    if (err) { err.textContent = 'เฉพาะบัญชี @' + ALLOWED_DOMAIN + ' เท่านั้น'; err.classList.add('show'); }
+    showAuthOverlay();
+    return;
+  }
+  const role      = await getRoleByEmail(email);
+  const avatarUrl = user.user_metadata?.avatar_url || '';
+  localStorage.setItem(USER_KEY, email);
+  localStorage.setItem(USER_ROLE_KEY, role);
+  localStorage.setItem(AUTH_TYPE_KEY, 'google');
+  if (avatarUrl) localStorage.setItem('vp_user_avatar', avatarUrl);
+  else localStorage.removeItem('vp_user_avatar');
+  document.getElementById('authOverlay').classList.remove('open');
+  updateUserUI(email, email);
+  await loadRefs();
+}
+
+function showAuthOverlay() {
+  document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => {
+    const btn = document.getElementById('authGoogleBtn');
+    if (btn) btn.focus();
+  }, 80);
 }
 
 function doLogout() {
+  _SB.auth.signOut();
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(USER_ROLE_KEY);
+  localStorage.removeItem('vp_user_avatar');
+  localStorage.removeItem(AUTH_TYPE_KEY);
   updateUserUI(null, null);
+  showAuthOverlay();
 }
 
-function promptLogin() {
-  document.getElementById('authOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('authUser').focus(), 100);
-}
+function promptLogin() { showAuthOverlay(); }
 
 function updateUserUI(uid, name) {
   const label    = document.getElementById('userLabel');
   const login    = document.getElementById('userMenuLogin');
   const logout   = document.getElementById('userMenuLogout');
   const menuName = document.getElementById('userMenuName');
+  const role     = localStorage.getItem(USER_ROLE_KEY) || '';
+  const icon     = role === 'admin' ? '👑 ' : '';
+  const display  = name ? (name.includes('@') ? name.split('@')[0] : name) : null;
   if (uid) {
-    label.textContent    = name || uid;
-    menuName.textContent = name || uid;
-    login.style.display  = 'none';
-    logout.style.display = 'block';
+    label.textContent    = icon + (display || uid);
+    if (menuName) menuName.textContent = icon + uid + (role ? ` (${role})` : '');
+    if (login)  login.style.display  = 'none';
+    if (logout) logout.style.display = 'block';
   } else {
     label.textContent    = 'Not signed in';
-    menuName.textContent = 'Not signed in';
-    login.style.display  = 'block';
-    logout.style.display = 'none';
+    if (menuName) menuName.textContent = 'Not signed in';
+    if (login)  login.style.display  = 'block';
+    if (logout) logout.style.display = 'none';
   }
 }
+
+// ── Listen for OAuth redirect + existing session ───────────
+let _supaAuthReady = false;
+_SB.auth.onAuthStateChange((_event, session) => {
+  _supaAuthReady = true;
+  handleAuthSession(session);
+});
 
 // ══════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
-  // Restore session immediately from localStorage (shared with vp-search.html)
-  const uid = localStorage.getItem(USER_KEY);
-  if (uid) updateUserUI(uid, uid);  // show username while loading
-  // Load users DB to get display name
-  await loadUsers();
-  if (uid) {
+  // ตรวจ localStorage session ทันที (เผื่อ login จาก vp-search.html แล้ว)
+  const uid      = localStorage.getItem(USER_KEY);
+  const authType = localStorage.getItem(AUTH_TYPE_KEY);
+  if (uid && authType === 'password') {
+    updateUserUI(uid, uid);
+    await loadUsers();
     const name = _USERS_DB?.[uid]?.name || uid;
     updateUserUI(uid, name);
+    await loadRefs();
+    return; // password session OK — skip Supabase check
   }
-  await loadRefs();
+  // ตรวจ Supabase session (Google OAuth)
+  const { data: { session } } = await _SB.auth.getSession();
+  if (!_supaAuthReady) handleAuthSession(session);
 })();
 </script>
 </body>
