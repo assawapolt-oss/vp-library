@@ -2812,30 +2812,41 @@ function _getHFKey() {
 }
 
 /**
- * ดาวน์โหลดภาพ → ส่ง raw bytes ไป HF API → คืน vector[512]
+ * ดาวน์โหลดภาพ → แปลงเป็น base64 → ส่งเป็น JSON ไป HF API → คืน vector[512]
+ * ใช้ JSON แทน raw blob เพื่อหลีกเลี่ยงปัญหา CORS preflight บน browser
  * @param {string} imageUrl  Public URL ของภาพ
  * @param {number} retries   จำนวน retry เมื่อ model cold start (503)
  */
 async function _encodeImageHF(imageUrl, retries = 3) {
-  // 1. ดาวน์โหลดภาพ (ผ่าน CORS proxy ถ้า Supabase Storage)
-  let imgBlob;
+  // 1. ดาวน์โหลดภาพ
+  let base64Data;
   try {
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
-    imgBlob = await imgRes.blob();
+    const blob = await imgRes.blob();
+    // แปลงเป็น base64 (ลบ data:image/...;base64, prefix ออก)
+    base64Data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   } catch(e) {
     throw new Error(`ดาวน์โหลดภาพไม่สำเร็จ: ${e.message}`);
   }
 
-  // 2. ส่ง raw image bytes ไป HF API
+  // 2. ส่งเป็น JSON (application/json ไม่มีปัญหา CORS)
   const hfKey = _getHFKey();
-  const headers = {};
+  const headers = { 'Content-Type': 'application/json' };
   if (hfKey) headers['Authorization'] = `Bearer ${hfKey}`;
-  // ไม่ต้องระบุ Content-Type — browser จะตั้งให้อัตโนมัติจาก Blob
 
   let res;
   try {
-    res = await fetch(HF_IMG_EMBED_URL, { method: 'POST', headers, body: imgBlob });
+    res = await fetch(HF_IMG_EMBED_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ inputs: base64Data }),
+    });
   } catch(e) {
     throw new Error(`HF API เรียกไม่ได้: ${e.message}`);
   }
