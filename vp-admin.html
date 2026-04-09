@@ -2798,26 +2798,81 @@ function escHtml(s) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// mCLIP EMBED — เรียก vp-search-server.py /embed endpoint
+// mCLIP EMBED — ผ่าน HF Inference API (ไม่ต้องรัน Python server)
+// ทำงานได้บน Windows ผ่าน browser โดยตรง
 // ══════════════════════════════════════════════════════════════════
 
-// URL ของ search+embed server (ตั้งค่าได้ใน localStorage)
-// localStorage.setItem('vp_embed_server', 'http://localhost:8766')
-function _getEmbedServer() {
-  return localStorage.getItem('vp_embed_server') || 'http://localhost:8766';
+// HF Inference API endpoint สำหรับ mCLIP (image → 512d vector)
+const HF_IMG_EMBED_URL = 'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1';
+
+// ดึง HF API key จาก localStorage (ใช้ key เดียวกับ vp-search.html)
+// ตั้งค่า: localStorage.setItem('vp_hf_key', 'hf_xxxxxxxxxxxx')
+function _getHFKey() {
+  return localStorage.getItem('vp_hf_key') || '';
 }
 
 /**
- * Embed ภาพ 1 ฉาก — เรียก /embed บน vp-search-server.py
- * @param {string} sceneId  e.g. "VP-001"
- * @param {boolean} withTags  true = เรียก Gemma4 ด้วย (LM Studio ต้องเปิด)
+ * ดาวน์โหลดภาพ → ส่ง raw bytes ไป HF API → คืน vector[512]
+ * @param {string} imageUrl  Public URL ของภาพ
+ * @param {number} retries   จำนวน retry เมื่อ model cold start (503)
  */
-async function embedScene(sceneId, withTags = false) {
+async function _encodeImageHF(imageUrl, retries = 3) {
+  // 1. ดาวน์โหลดภาพ (ผ่าน CORS proxy ถ้า Supabase Storage)
+  let imgBlob;
+  try {
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+    imgBlob = await imgRes.blob();
+  } catch(e) {
+    throw new Error(`ดาวน์โหลดภาพไม่สำเร็จ: ${e.message}`);
+  }
+
+  // 2. ส่ง raw image bytes ไป HF API
+  const hfKey = _getHFKey();
+  const headers = {};
+  if (hfKey) headers['Authorization'] = `Bearer ${hfKey}`;
+  // ไม่ต้องระบุ Content-Type — browser จะตั้งให้อัตโนมัติจาก Blob
+
+  let res;
+  try {
+    res = await fetch(HF_IMG_EMBED_URL, { method: 'POST', headers, body: imgBlob });
+  } catch(e) {
+    throw new Error(`HF API เรียกไม่ได้: ${e.message}`);
+  }
+
+  // 503 = model cold start → รอแล้ว retry
+  if (res.status === 503 && retries > 0) {
+    await new Promise(r => setTimeout(r, 10000));
+    return _encodeImageHF(imageUrl, retries - 1);
+  }
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error(`HF API error ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  // HF คืน array ของ vector: [[...512 floats...]] หรือ [...512 floats...]
+  const vector = Array.isArray(data[0]) ? data[0] : data;
+  if (!Array.isArray(vector) || vector.length < 100) {
+    throw new Error(`HF คืน vector ผิดรูปแบบ (length=${Array.isArray(vector) ? vector.length : 'N/A'})`);
+  }
+  return vector;
+}
+
+/**
+ * Embed ภาพ 1 ฉาก ผ่าน HF API → บันทึกลง Supabase
+ * @param {string} sceneId  e.g. "VP-001"
+ * @param {boolean} _withTags  (reserved — HF mode ไม่รองรับ Gemma4 tags)
+ */
+async function embedScene(sceneId, _withTags = false) {
   const s = scenes.find(x => x.id === sceneId);
   if (!s) return showToast('ไม่พบฉาก: ' + sceneId, 'red');
 
   const imageUrl = s.image_url || s.filepath || '';
   if (!imageUrl) return showToast('ฉากนี้ยังไม่มีภาพ — อัปโหลดภาพก่อน', 'red');
+
+  if (!window._supaClient) return showToast('Supabase ยังไม่พร้อม — รีเฟรชหน้า', 'red');
 
   const btn    = document.getElementById('embedBtn_' + sceneId);
   const status = document.getElementById('embedStatus_' + sceneId);
@@ -2825,39 +2880,31 @@ async function embedScene(sceneId, withTags = false) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4"/></svg> Embedding…'; }
   if (status) { status.className = 'embed-status none'; status.textContent = '⏳ กำลัง embed…'; }
 
+  const t0 = Date.now();
   try {
-    const res = await fetch(`${_getEmbedServer()}/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scene_id: sceneId, image_url: imageUrl, with_tags: withTags }),
-    });
+    // 1. Encode ภาพผ่าน HF API
+    const vector = await _encodeImageHF(imageUrl);
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || res.statusText);
-    }
+    // 2. บันทึกลง Supabase
+    const now = new Date().toISOString();
+    const { error } = await window._supaClient
+      .from('scenes')
+      .update({ mclip_vector: vector, mclip_indexed_at: now })
+      .eq('id', sceneId);
 
-    const data = await res.json();
-    const now  = new Date().toISOString();
+    if (error) throw new Error(`Supabase: ${error.message}`);
 
-    // อัปเดต local state
+    // 3. อัปเดต local state
     const idx = scenes.findIndex(x => x.id === sceneId);
-    if (idx !== -1) {
-      scenes[idx].mclip_indexed_at = now;
-      if (data.caption) {
-        scenes[idx].mclip_caption = data.caption;
-        scenes[idx].mclip_tags    = data.tags || [];
-      }
-    }
+    if (idx !== -1) scenes[idx].mclip_indexed_at = now;
 
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
     if (status) { status.className = 'embed-status done'; status.textContent = '✓ indexed'; status.title = 'indexed: ' + now; }
-    const tagInfo = data.tagged ? ` + ${data.tags?.length || 0} tags` : '';
-    showToast(`🧠 Embed สำเร็จ: ${sceneId}  (${data.elapsed_sec}s${tagInfo})`, 'green');
+    showToast(`🧠 Embed สำเร็จ: ${sceneId}  (${elapsed}s, dim=${vector.length})`, 'green');
 
   } catch(e) {
     if (status) { status.className = 'embed-status error'; status.textContent = '✗ error'; }
-    const isFetch = e.message.includes('fetch') || e.message.includes('Failed');
-    const hint = isFetch ? ' — server ยังไม่ได้เปิด?' : '';
+    const hint = e.message.includes('HF API') ? ' — ลอง set HF key: localStorage.setItem("vp_hf_key","hf_xxx")' : '';
     showToast(`❌ Embed ไม่สำเร็จ: ${e.message}${hint}`, 'red');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Embed'; }
@@ -2865,62 +2912,57 @@ async function embedScene(sceneId, withTags = false) {
 }
 
 /**
- * Embed with Gemma4 tags — เปิด LM Studio ก่อน
+ * Embed with tags — HF mode ใช้ embedScene เหมือนกัน (ไม่มี Gemma4)
  */
 async function embedSceneWithTags(sceneId) {
-  return embedScene(sceneId, true);
+  return embedScene(sceneId, false);
 }
 
 /**
- * Bulk embed — embed ทุกฉากที่ยังไม่มี mclip_vector
+ * Bulk embed — embed ทุกฉากที่ยังไม่มี mclip_vector (ทีละฉาก ผ่าน HF API)
  */
 async function embedAllUnindexed(withTags = false) {
   const unindexed = scenes.filter(s => !s.mclip_indexed_at && (s.image_url || s.filepath));
   if (!unindexed.length) return showToast('ทุกฉากถูก embed แล้ว 🎉', 'green');
 
-  const confirm = window.confirm(
-    `จะ embed ${unindexed.length} ฉากที่ยังไม่มี vector\n` +
-    (withTags ? '(รวม Gemma4 caption+tags — ต้องเปิด LM Studio)\n' : '') +
-    '\nใช้เวลาประมาณ ' + Math.round(unindexed.length * 1.5) + ' วินาที\n\nดำเนินการต่อ?'
+  const ok = window.confirm(
+    `จะ embed ${unindexed.length} ฉากที่ยังไม่มี vector ผ่าน HF API\n` +
+    `(ไม่ต้องรัน Python server)\n` +
+    `\nใช้เวลาประมาณ ${Math.round(unindexed.length * 3)} วินาที\n\nดำเนินการต่อ?`
   );
-  if (!confirm) return;
+  if (!ok) return;
 
-  showToast(`⏳ เริ่ม embed ${unindexed.length} ฉาก…`, 'green');
+  showToast(`⏳ เริ่ม embed ${unindexed.length} ฉาก ผ่าน HF API…`, 'green');
 
-  try {
-    const res = await fetch(`${_getEmbedServer()}/embed/bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scenes: unindexed.map(s => ({
-          scene_id:  s.id,
-          image_url: s.image_url || s.filepath,
-          with_tags: withTags,
-        })),
-        with_tags: withTags,
-      }),
-    });
+  let success = 0, failed = 0;
+  for (const s of unindexed) {
+    const status = document.getElementById('embedStatus_' + s.id);
+    if (status) { status.className = 'embed-status none'; status.textContent = '⏳'; }
+    try {
+      const vector = await _encodeImageHF(s.image_url || s.filepath);
+      const now = new Date().toISOString();
+      const { error } = await window._supaClient
+        .from('scenes')
+        .update({ mclip_vector: vector, mclip_indexed_at: now })
+        .eq('id', s.id);
+      if (error) throw new Error(error.message);
 
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const data = await res.json();
-
-    // อัปเดต local state
-    const now = new Date().toISOString();
-    data.results?.forEach(r => {
-      if (r.status !== 'ok') return;
-      const idx = scenes.findIndex(s => s.id === r.scene_id);
-      if (idx !== -1) {
-        scenes[idx].mclip_indexed_at = now;
-        if (r.caption) { scenes[idx].mclip_caption = r.caption; scenes[idx].mclip_tags = r.tags || []; }
-      }
-      const statusEl = document.getElementById('embedStatus_' + r.scene_id);
-      if (statusEl) { statusEl.className = 'embed-status done'; statusEl.textContent = '✓ indexed'; }
-    });
-
-    showToast(`✅ Embed เสร็จ: ${data.success}/${data.total} ฉาก (ล้มเหลว ${data.failed})`, 'green');
-  } catch(e) {
-    showToast('❌ Bulk embed ล้มเหลว: ' + e.message, 'red');
+      const idx = scenes.findIndex(x => x.id === s.id);
+      if (idx !== -1) scenes[idx].mclip_indexed_at = now;
+      if (status) { status.className = 'embed-status done'; status.textContent = '✓ indexed'; }
+      success++;
+    } catch(e) {
+      if (status) { status.className = 'embed-status error'; status.textContent = '✗ error'; }
+      console.warn(`[embed] ${s.id} failed:`, e.message);
+      failed++;
+    }
+    // อัปเดต progress toast ทุก 5 ฉาก
+    if ((success + failed) % 5 === 0) {
+      showToast(`⏳ Embed: ${success + failed}/${unindexed.length} ฉาก (✓${success} ✗${failed})`, 'green');
+    }
   }
+
+  showToast(`✅ Embed เสร็จ: ${success}/${unindexed.length} ฉาก (ล้มเหลว ${failed})`, failed > 0 ? 'red' : 'green');
 }
 
 // ══════════════════════════════════════════════
