@@ -98,6 +98,13 @@
   .btn-ai-tag { padding:8px 18px; background:linear-gradient(135deg,#6D28D9,#4F46E5); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
   .btn-ai-tag:hover { opacity:.88; }
   .btn-ai-tag:disabled { opacity:.5; cursor:wait; }
+  .btn-embed { padding:8px 18px; background:linear-gradient(135deg,#0F766E,#0D9488); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; display:flex; align-items:center; gap:6px; }
+  .btn-embed:hover { opacity:.88; }
+  .btn-embed:disabled { opacity:.5; cursor:wait; }
+  .embed-status { font-size:11px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; }
+  .embed-status.done  { background:#DCFCE7; color:#15803D; }
+  .embed-status.none  { background:#F3F4F6; color:#9CA3AF; }
+  .embed-status.error { background:#FEE2E2; color:#B91C1C; }
   .save-indicator { font-size:12px; color:var(--green); font-weight:600; opacity:0; transition:opacity .3s; }
   .save-indicator.show { opacity:1; }
 
@@ -406,7 +413,13 @@
       <div id="sidebarScenes">
         <div class="sidebar-header">
           <div class="sidebar-title">ฉากทั้งหมด (<span id="sidebarCount">0</span>)</div>
-          <button class="add-scene-btn" onclick="openNewSceneModal()">＋ เพิ่มฉาก</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn-embed" style="font-size:11px;padding:5px 10px" onclick="embedAllUnindexed(false)" title="Embed ทุกฉากที่ยังไม่มี vector (mCLIP เท่านั้น)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+              Embed All
+            </button>
+            <button class="add-scene-btn" onclick="openNewSceneModal()">＋ เพิ่มฉาก</button>
+          </div>
         </div>
         <div class="sidebar-search">
           <input id="sidebarSearch" placeholder="🔍 ค้นหา ID หรือชื่อ..." oninput="renderSidebar()">
@@ -1761,6 +1774,13 @@ function buildEditorHTML(s) {
         <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
       </div>
       <div class="editor-actions">
+        <button class="btn-embed" id="embedBtn_${s.id}" onclick="embedScene('${s.id}')" title="Embed ภาพด้วย mCLIP → บันทึก vector ลง Supabase">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Embed
+        </button>
+        <span class="embed-status ${s.mclip_indexed_at ? 'done' : 'none'}" id="embedStatus_${s.id}" title="${s.mclip_indexed_at ? 'indexed: ' + s.mclip_indexed_at : 'ยังไม่ได้ embed'}">
+          ${s.mclip_indexed_at ? '✓ indexed' : '— not embedded'}
+        </span>
         <button class="btn-ai-tag" onclick="openTagGuideModal('${s.id}')" title="Copy prompt → วางใน Claude Cowork chat เพื่อเติมทุกช่องอัตโนมัติ">✨ Tag by AI</button>
         <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
         <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
@@ -2775,6 +2795,132 @@ function opt(vals, current) {
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// mCLIP EMBED — เรียก vp-search-server.py /embed endpoint
+// ══════════════════════════════════════════════════════════════════
+
+// URL ของ search+embed server (ตั้งค่าได้ใน localStorage)
+// localStorage.setItem('vp_embed_server', 'http://localhost:8766')
+function _getEmbedServer() {
+  return localStorage.getItem('vp_embed_server') || 'http://localhost:8766';
+}
+
+/**
+ * Embed ภาพ 1 ฉาก — เรียก /embed บน vp-search-server.py
+ * @param {string} sceneId  e.g. "VP-001"
+ * @param {boolean} withTags  true = เรียก Gemma4 ด้วย (LM Studio ต้องเปิด)
+ */
+async function embedScene(sceneId, withTags = false) {
+  const s = scenes.find(x => x.id === sceneId);
+  if (!s) return showToast('ไม่พบฉาก: ' + sceneId, 'red');
+
+  const imageUrl = s.image_url || s.filepath || '';
+  if (!imageUrl) return showToast('ฉากนี้ยังไม่มีภาพ — อัปโหลดภาพก่อน', 'red');
+
+  const btn    = document.getElementById('embedBtn_' + sceneId);
+  const status = document.getElementById('embedStatus_' + sceneId);
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4"/></svg> Embedding…'; }
+  if (status) { status.className = 'embed-status none'; status.textContent = '⏳ กำลัง embed…'; }
+
+  try {
+    const res = await fetch(`${_getEmbedServer()}/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene_id: sceneId, image_url: imageUrl, with_tags: withTags }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+
+    const data = await res.json();
+    const now  = new Date().toISOString();
+
+    // อัปเดต local state
+    const idx = scenes.findIndex(x => x.id === sceneId);
+    if (idx !== -1) {
+      scenes[idx].mclip_indexed_at = now;
+      if (data.caption) {
+        scenes[idx].mclip_caption = data.caption;
+        scenes[idx].mclip_tags    = data.tags || [];
+      }
+    }
+
+    if (status) { status.className = 'embed-status done'; status.textContent = '✓ indexed'; status.title = 'indexed: ' + now; }
+    const tagInfo = data.tagged ? ` + ${data.tags?.length || 0} tags` : '';
+    showToast(`🧠 Embed สำเร็จ: ${sceneId}  (${data.elapsed_sec}s${tagInfo})`, 'green');
+
+  } catch(e) {
+    if (status) { status.className = 'embed-status error'; status.textContent = '✗ error'; }
+    const isFetch = e.message.includes('fetch') || e.message.includes('Failed');
+    const hint = isFetch ? ' — server ยังไม่ได้เปิด?' : '';
+    showToast(`❌ Embed ไม่สำเร็จ: ${e.message}${hint}`, 'red');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Embed'; }
+  }
+}
+
+/**
+ * Embed with Gemma4 tags — เปิด LM Studio ก่อน
+ */
+async function embedSceneWithTags(sceneId) {
+  return embedScene(sceneId, true);
+}
+
+/**
+ * Bulk embed — embed ทุกฉากที่ยังไม่มี mclip_vector
+ */
+async function embedAllUnindexed(withTags = false) {
+  const unindexed = scenes.filter(s => !s.mclip_indexed_at && (s.image_url || s.filepath));
+  if (!unindexed.length) return showToast('ทุกฉากถูก embed แล้ว 🎉', 'green');
+
+  const confirm = window.confirm(
+    `จะ embed ${unindexed.length} ฉากที่ยังไม่มี vector\n` +
+    (withTags ? '(รวม Gemma4 caption+tags — ต้องเปิด LM Studio)\n' : '') +
+    '\nใช้เวลาประมาณ ' + Math.round(unindexed.length * 1.5) + ' วินาที\n\nดำเนินการต่อ?'
+  );
+  if (!confirm) return;
+
+  showToast(`⏳ เริ่ม embed ${unindexed.length} ฉาก…`, 'green');
+
+  try {
+    const res = await fetch(`${_getEmbedServer()}/embed/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scenes: unindexed.map(s => ({
+          scene_id:  s.id,
+          image_url: s.image_url || s.filepath,
+          with_tags: withTags,
+        })),
+        with_tags: withTags,
+      }),
+    });
+
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const data = await res.json();
+
+    // อัปเดต local state
+    const now = new Date().toISOString();
+    data.results?.forEach(r => {
+      if (r.status !== 'ok') return;
+      const idx = scenes.findIndex(s => s.id === r.scene_id);
+      if (idx !== -1) {
+        scenes[idx].mclip_indexed_at = now;
+        if (r.caption) { scenes[idx].mclip_caption = r.caption; scenes[idx].mclip_tags = r.tags || []; }
+      }
+      const statusEl = document.getElementById('embedStatus_' + r.scene_id);
+      if (statusEl) { statusEl.className = 'embed-status done'; statusEl.textContent = '✓ indexed'; }
+    });
+
+    showToast(`✅ Embed เสร็จ: ${data.success}/${data.total} ฉาก (ล้มเหลว ${data.failed})`, 'green');
+  } catch(e) {
+    showToast('❌ Bulk embed ล้มเหลว: ' + e.message, 'red');
+  }
 }
 
 // ══════════════════════════════════════════════
