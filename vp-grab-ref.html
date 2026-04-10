@@ -7,29 +7,41 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <!-- CLIP image+text encoder + Thai→EN NMT — for GrabREF AI Search -->
 <script type="module">
-  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  import { CLIPTextModelWithProjection, AutoTokenizer, pipeline, env }
+    from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
   env.allowLocalModels = false;
 
   // Flags
-  window._refClipTextReady  = false;
-  window._refClipImgReady   = false;
+  window._refClipTextReady   = false;
+  window._refClipImgReady    = false;
   window._refTranslatorReady = false;
-  window._refClipTextLoading  = true;
-  window._refClipImgLoading   = true;
+  window._refClipTextLoading   = true;
+  window._refClipImgLoading    = true;
   window._refTranslatorLoading = true;
 
   function _checkAllRefModels() {
     if (!window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading) {
-      const ok = window._refClipTextReady && window._refClipImgReady;
       console.log(`[GrabREF] Models ready — CLIP text:${window._refClipTextReady} img:${window._refClipImgReady} NMT:${window._refTranslatorReady}`);
       if (typeof _updateRefAiStatus === 'function') _updateRefAiStatus();
     }
   }
 
-  // Text encoder (for search queries)
-  pipeline('feature-extraction', 'Xenova/clip-vit-base-patch32', { quantized: true })
-    .then(p => { window._refClipText = p; window._refClipTextReady = true; window._refClipTextLoading = false; _checkAllRefModels(); })
-    .catch(e => { window._refClipTextLoading = false; console.warn('[CLIP text]', e.message); _checkAllRefModels(); });
+  // Text encoder — CLIPTextModelWithProjection → text_embeds (projected CLIP space)
+  // NOTE: Must use text_embeds, NOT pooling:'mean' (which gives raw hidden states incompatible with image vectors)
+  Promise.all([
+    AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32'),
+    CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', { quantized: true })
+  ]).then(([tok, mdl]) => {
+    window._refClipTokenizer = tok;
+    window._refClipTextModel = mdl;
+    window._refClipTextReady = true;
+    window._refClipTextLoading = false;
+    _checkAllRefModels();
+  }).catch(e => {
+    window._refClipTextLoading = false;
+    console.warn('[CLIP text]', e.message);
+    _checkAllRefModels();
+  });
 
   // Image encoder (for auto-embedding uploaded images)
   pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32', { quantized: true })
@@ -2347,16 +2359,21 @@ async function _refTranslateToEnglish(text) {
 }
 
 // ── Encode query text → vector ─────────────────────────────────
+// Uses CLIPTextModelWithProjection → text_embeds (projected CLIP joint space)
+// IMPORTANT: Do NOT use pipeline('feature-extraction') + pooling:'mean' —
+// that gives raw hidden states without projection → wrong space vs image vectors
 async function _refEncodeText(text) {
   if (!window._refClipTextReady) throw new Error('CLIP text encoder ยังไม่พร้อม');
-  // Wait up to 30s if still loading
   let waited = 0;
   while (window._refClipTextLoading && waited < 30000) {
     await new Promise(r => setTimeout(r, 500));
     waited += 500;
   }
-  const output = await window._refClipText(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data);
+  const inputs = window._refClipTokenizer(text, { padding: true, truncation: true });
+  const { text_embeds } = await window._refClipTextModel(inputs);
+  const arr  = Array.from(text_embeds.data);
+  const norm = Math.sqrt(arr.reduce((s, v) => s + v * v, 0));
+  return norm > 0 ? arr.map(v => v / norm) : arr;
 }
 
 // ── Encode image URL → vector (for auto-embed after upload) ────
