@@ -8,6 +8,33 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>VP Library — THE STANDARD</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CLIP text encoder — โหลดใน browser โดยตรง ไม่ต้องพึ่ง HF API -->
+<script type="module">
+  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  env.allowLocalModels = false;
+
+  window._clipReady  = false;
+  window._clipLoading = true;
+
+  try {
+    // โหลด CLIP ViT-B/32 text encoder (~25MB, cache ใน browser หลังโหลดครั้งแรก)
+    window._clipExtractor = await pipeline(
+      'feature-extraction',
+      'Xenova/clip-vit-base-patch32',
+      { quantized: true }
+    );
+    window._clipReady   = true;
+    window._clipLoading = false;
+    console.log('[CLIP] text encoder พร้อม');
+    // อัปเดต UI ถ้า initAI ทำงานไปแล้ว
+    if (typeof setAIStatus === 'function') {
+      setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
+    }
+  } catch(e) {
+    window._clipLoading = false;
+    console.warn('[CLIP] โหลด model ไม่สำเร็จ:', e.message);
+  }
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
   /* ── Theme variables ── */
@@ -2179,80 +2206,52 @@ function renderCards() {
 //   รับ key ฟรีที่ https://huggingface.co/settings/tokens
 // ══════════════════════════════════════════════════════════════
 
-// ลำดับ URL ที่จะลองตามลำดับ — ถ้า URL แรกไม่ได้จะลอง URL ถัดไปอัตโนมัติ
-const HF_EMBED_URLS = [
-  'https://router.huggingface.co/hf-inference/models/sentence-transformers/clip-ViT-B-32-multilingual-v1',
-  'https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1',
-  'https://api-inference.huggingface.co/models/sentence-transformers/clip-ViT-B-32-multilingual-v1',
-];
-// cache URL ที่ใช้งานได้
-let _hfWorkingUrl = null;
-
 /**
- * Encode text → 512d vector ด้วย mCLIP ผ่าน HF Inference API
- * ลอง URL หลายตัวอัตโนมัติถ้าตัวแรกไม่ work
+ * Encode text → 512d vector ด้วย CLIP text encoder ที่รันใน browser
+ * ใช้ transformers.js (Xenova) — ไม่ต้องพึ่ง HF API ภายนอก
  */
-async function _encodeTextHF(text) {
-  const key     = localStorage.getItem('vp_hf_key') || '';
-  const headers = { 'Content-Type': 'application/json' };
-  if (key) headers['Authorization'] = `Bearer ${key}`;
-  const body = JSON.stringify({ inputs: text, options: { wait_for_model: true } });
-
-  const urlsToTry = _hfWorkingUrl ? [_hfWorkingUrl] : HF_EMBED_URLS;
-
-  for (const url of urlsToTry) {
-    try {
-      let res = await fetch(url, { method: 'POST', headers, body });
-
-      if (res.status === 503) {
-        await new Promise(r => setTimeout(r, 8000));
-        res = await fetch(url, { method: 'POST', headers, body });
-      }
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(`HF API key ไม่ถูกต้อง — ตั้งค่า: localStorage.setItem('vp_hf_key','hf_xxx')`);
-      }
-      if (!res.ok) continue; // ลอง URL ถัดไป
-
-      const data = await res.json();
-      const vec  = Array.isArray(data[0]) ? data[0] : data;
-      if (!Array.isArray(vec) || vec.length < 100) continue; // ลอง URL ถัดไป
-
-      _hfWorkingUrl = url; // cache URL ที่ใช้งานได้
-      console.log('[Search] HF URL ที่ใช้:', url);
-      return vec;
-    } catch(e) {
-      if (e.message.includes('key ไม่ถูกต้อง')) throw e;
-      console.warn('[Search] HF URL ล้มเหลว:', url, e.message);
-      continue;
-    }
+async function _encodeTextLocal(text) {
+  // รอ model โหลดเสร็จ (โหลดครั้งแรก ~5-10 วินาที, ครั้งถัดไปใช้ cache)
+  let waited = 0;
+  while (window._clipLoading && waited < 30000) {
+    await new Promise(r => setTimeout(r, 500));
+    waited += 500;
   }
-  // ทุก URL ล้มเหลว → โยน error ให้ fallback จัดการ
-  throw new Error('HF API ไม่ตอบสนอง — ใช้การค้นหาด้วยคำแทน');
+  if (!window._clipReady || !window._clipExtractor) {
+    throw new Error('CLIP model ยังไม่พร้อม — รีเฟรชหน้าแล้วลองใหม่');
+  }
+  const output = await window._clipExtractor(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data);
 }
 
 /**
- * Fallback: ค้นหาด้วยคำใน Supabase (ไม่ต้องใช้ vector)
- * ค้นจาก title, mclip_caption, mclip_tags
+ * Fallback: ค้นหาด้วยคำใน Supabase เมื่อ model ไม่พร้อม
+ * ค้นจาก title, mclip_caption — คืน scene ทั้งหมดถ้าไม่ match
  */
 async function _searchByText(query, limit = 50) {
-  const q = query.trim();
-  const { data, error } = await _SB
+  const words = query.trim().split(/\s+/).filter(w => w.length > 1);
+  const { data } = await _SB
     .from('scenes')
-    .select('id, title, image_url, thumb_url, mclip_caption, mclip_tags, sort_order, show_id')
-    .or(`title.ilike.%${q}%,mclip_caption.ilike.%${q}%,mclip_tags.cs.{"${q}"}`)
+    .select('id, title, image_url, thumb_url, mclip_caption, sort_order, show_id')
     .order('sort_order')
     .limit(limit);
-  if (error) throw new Error(`Supabase: ${error.message}`);
-  // เพิ่ม similarity จำลองให้ UI แสดงได้
-  return (data || []).map(r => ({ ...r, similarity: 0.8 }));
+  const all = (data || []).map(r => ({ ...r, similarity: 0.5 }));
+  if (!words.length) return all;
+  const q = query.toLowerCase();
+  const filtered = all.filter(s =>
+    words.some(w => (s.title || '').toLowerCase().includes(w.toLowerCase()) ||
+                    (s.mclip_caption || '').toLowerCase().includes(w.toLowerCase()))
+  );
+  return filtered.length > 0 ? filtered : all; // ถ้าไม่ match คืนทั้งหมด
 }
 
 /**
- * ค้นหาฉากด้วย text query — ลอง vector search ก่อน fallback เป็น text search
+ * ค้นหาฉากด้วย text query — ใช้ CLIP local model → Supabase vector search
+ * fallback เป็น text search ถ้า model ยังไม่พร้อม
  */
 async function _callSearchAPI(query, limit = 50) {
   try {
-    const vector = await _encodeTextHF(query);
+    const vector = await _encodeTextLocal(query);
     const result = await _SB.rpc('match_scenes_mclip', {
       query_vector:    vector,
       match_count:     limit,
@@ -2261,11 +2260,8 @@ async function _callSearchAPI(query, limit = 50) {
     if (result.error) throw new Error(`Supabase: ${result.error.message}`);
     return result.data || [];
   } catch(e) {
-    // ถ้า vector search ล้มเหลว → fallback เป็น text search
     console.warn('[Search] Vector search ล้มเหลว, ใช้ text search แทน:', e.message);
-    const results = await _searchByText(query, limit);
-    if (results.length === 0) throw new Error('ไม่พบผลลัพธ์ — ' + e.message);
-    return results;
+    return _searchByText(query, limit);
   }
 }
 
@@ -2290,11 +2286,22 @@ function setAIStatus(state, text, pct) {
 }
 
 function initAI() {
-  const hasKey = !!localStorage.getItem('vp_hf_key');
-  if (hasKey) {
-    setAIStatus('ready', '🧠 mCLIP Semantic Search พร้อม (Thai + EN)', 100);
+  if (window._clipReady) {
+    setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
+  } else if (window._clipLoading) {
+    setAIStatus('loading', '⏳ กำลังโหลด CLIP model (~25MB, ครั้งแรกเท่านั้น)…', 50);
+    // poll จนกว่าโหลดเสร็จ
+    const t = setInterval(() => {
+      if (window._clipReady) {
+        clearInterval(t);
+        setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
+      } else if (!window._clipLoading) {
+        clearInterval(t);
+        setAIStatus('ready', '⚡ Text Search พร้อม (CLIP โหลดไม่สำเร็จ)', 100);
+      }
+    }, 1000);
   } else {
-    setAIStatus('ready', '🧠 Semantic Search พร้อม — (ตั้งค่า HF key เพื่อผลลัพธ์ดีขึ้น)', 100);
+    setAIStatus('ready', '⚡ Text Search พร้อม', 100);
   }
 }
 
