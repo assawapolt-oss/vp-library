@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION match_refs_mclip(
   match_count     INT          DEFAULT 50,
   match_threshold FLOAT        DEFAULT 0.05
 )
-RETURNS TABLE (id uuid, similarity FLOAT)
+RETURNS TABLE (id bigint, similarity FLOAT)
 LANGUAGE sql STABLE AS $$
   SELECT
     id,

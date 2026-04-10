@@ -10,24 +10,27 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <!-- CLIP text encoder + Thai→English NMT — โหลดใน browser โดยตรง ไม่ต้องพึ่ง HF API -->
 <script type="module">
-  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  // ใช้ CLIPTextModelWithProjection โดยตรง (ไม่ใช้ feature-extraction pipeline)
+  // เพื่อให้ได้ text_embeds ที่ผ่าน text projection layer → compatible กับ image vectors จาก Colab
+  import { CLIPTextModelWithProjection, AutoTokenizer, pipeline, env }
+    from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
   env.allowLocalModels = false;
 
-  window._clipReady       = false;
-  window._clipLoading     = true;
-  window._translatorReady = false;
+  window._clipReady         = false;
+  window._clipLoading       = true;
+  window._translatorReady   = false;
   window._translatorLoading = true;
 
-  // โหลดทั้งสอง model พร้อมกัน (parallel)
-  const loadCLIP = pipeline(
-    'feature-extraction',
-    'Xenova/clip-vit-base-patch32',
-    { quantized: true }
-  ).then(p => {
-    window._clipExtractor = p;
-    window._clipReady     = true;
-    window._clipLoading   = false;
-    console.log('[CLIP] text encoder พร้อม');
+  // โหลด tokenizer + text model พร้อมกัน (model cache ใน browser หลังโหลดครั้งแรก)
+  Promise.all([
+    AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32'),
+    CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', { quantized: true })
+  ]).then(([tok, mdl]) => {
+    window._clipTokenizer  = tok;
+    window._clipTextModel  = mdl;
+    window._clipReady      = true;
+    window._clipLoading    = false;
+    console.log('[CLIP] CLIPTextModelWithProjection พร้อม');
     _notifyAIReady();
   }).catch(e => {
     window._clipLoading = false;
@@ -36,11 +39,8 @@
   });
 
   // opus-mt-th-en: ~50MB quantized, Neural Machine Translation Thai→English
-  const loadTranslator = pipeline(
-    'translation',
-    'Xenova/opus-mt-th-en',
-    { quantized: true }
-  ).then(p => {
+  pipeline('translation', 'Xenova/opus-mt-th-en', { quantized: true })
+  .then(p => {
     window._thEnTranslator    = p;
     window._translatorReady   = true;
     window._translatorLoading = false;
@@ -55,7 +55,7 @@
   function _notifyAIReady() {
     if (!window._clipLoading && !window._translatorLoading) {
       if (typeof setAIStatus === 'function') {
-        const clipOK = window._clipReady;
+        const clipOK  = window._clipReady;
         const transOK = window._translatorReady;
         if (clipOK && transOK) {
           setAIStatus('ready', '🧠 CLIP + NMT Thai→English พร้อม', 100);
@@ -2240,21 +2240,28 @@ function renderCards() {
 // ══════════════════════════════════════════════════════════════
 
 /**
- * Encode text → 512d vector ด้วย CLIP text encoder ที่รันใน browser
- * ใช้ transformers.js (Xenova) — ไม่ต้องพึ่ง HF API ภายนอก
+ * Encode text → 512d vector ด้วย CLIPTextModelWithProjection
+ * ใช้ text_embeds (หลัง text projection layer) ซึ่ง compatible กับ image vectors จาก Colab
+ * NOTE: ไม่ใช้ pooling:'mean' เพราะมันทำ mean ของ hidden states ดิบ ไม่ผ่าน projection → wrong space
  */
 async function _encodeTextLocal(text) {
-  // รอ model โหลดเสร็จ (โหลดครั้งแรก ~5-10 วินาที, ครั้งถัดไปใช้ cache)
+  // รอ model โหลดเสร็จ
   let waited = 0;
   while (window._clipLoading && waited < 30000) {
     await new Promise(r => setTimeout(r, 500));
     waited += 500;
   }
-  if (!window._clipReady || !window._clipExtractor) {
+  if (!window._clipReady || !window._clipTextModel || !window._clipTokenizer) {
     throw new Error('CLIP model ยังไม่พร้อม — รีเฟรชหน้าแล้วลองใหม่');
   }
-  const output = await window._clipExtractor(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data);
+  // Tokenize
+  const inputs = window._clipTokenizer(text, { padding: true, truncation: true });
+  // Forward pass → text_embeds คือ projected 512d vector ใน CLIP joint space
+  const { text_embeds } = await window._clipTextModel(inputs);
+  // L2 normalize (เหมือนกับที่ Colab normalize image vectors)
+  const arr  = Array.from(text_embeds.data);
+  const norm = Math.sqrt(arr.reduce((s, v) => s + v * v, 0));
+  return norm > 0 ? arr.map(v => v / norm) : arr;
 }
 
 /**
