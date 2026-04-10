@@ -551,6 +551,104 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   BATCH EMBED MODAL
+══════════════════════════════════════════════════════════════ */
+.btn-batch-embed {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn-batch-embed:hover { border-color: var(--gold); color: var(--bone); }
+
+.batch-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.72);
+  align-items: center; justify-content: center;
+}
+.batch-overlay.open { display: flex; }
+
+.batch-box {
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  width: 480px;
+  max-width: 96vw;
+  padding: 32px 28px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.batch-title {
+  font-family: var(--font-disp);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bone);
+  letter-spacing: .02em;
+}
+.batch-desc {
+  font-size: 12px;
+  color: var(--bone-dim);
+  line-height: 1.5;
+}
+.batch-progress-wrap {
+  height: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.batch-progress-bar {
+  height: 100%;
+  background: var(--gold);
+  transition: width .3s ease;
+}
+.batch-counters {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bone-dim);
+}
+.batch-log {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  min-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.batch-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.batch-actions .btn-cancel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--bone-faint);
+  color: var(--bone-dim);
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.batch-actions .btn-cancel:hover { border-color: var(--bone-dim); color: var(--bone); }
+.batch-actions .btn-start {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  background: var(--gold);
+  border: none;
+  color: var(--bg);
+  padding: 6px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.batch-actions .btn-start:hover { opacity: .85; }
+.batch-actions .btn-start:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════
    CROP MODAL
 ══════════════════════════════════════════════════════════════ */
 .crop-overlay {
@@ -1406,6 +1504,7 @@ body {
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed vectors for images that have no mclip_vector yet">Batch Embed</button>
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
       <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
@@ -1490,6 +1589,26 @@ body {
     </div>
   </div>
   <button class="lb-close" onclick="closeLb()">ESC</button>
+</div>
+
+<!-- ══ BATCH EMBED MODAL ══ -->
+<div class="batch-overlay" id="batchOverlay">
+  <div class="batch-box">
+    <div class="batch-title">Batch Embed — GrabREF</div>
+    <div class="batch-desc" id="batchDesc">กำลังนับรูปที่ยังไม่มี vector…</div>
+    <div class="batch-progress-wrap">
+      <div class="batch-progress-bar" id="batchProgressBar" style="width:0%"></div>
+    </div>
+    <div class="batch-counters">
+      <span id="batchDone">0</span> / <span id="batchTotal">—</span>
+      &nbsp;·&nbsp; <span id="batchErrors">0 errors</span>
+    </div>
+    <div class="batch-log" id="batchLog">—</div>
+    <div class="batch-actions">
+      <button class="btn-cancel" id="batchCancelBtn" onclick="cancelBatchEmbed()">Close</button>
+      <button class="btn-start" id="batchStartBtn" onclick="startBatchEmbed()" disabled>Start</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ AUTH OVERLAY ══ -->
@@ -1814,6 +1933,10 @@ function updateStatsBar() {
   const show = _allRefs.length > 0;
   bar.style.display  = show ? 'flex' : 'none';
   wrap.style.display = show ? 'block' : 'none';
+  // Show Batch Embed button for admin only
+  const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
+  const batchBtn = document.getElementById('batchEmbedBtn');
+  if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
 }
 
 function shuffleGrid() {
@@ -2268,6 +2391,144 @@ async function _autoEmbedRef(refId, imageUrl) {
     console.log(`[GrabREF embed] ✅ ${refId} — dim=${vector.length}`);
   } catch(e) {
     console.warn(`[GrabREF embed] ⚠️ ${refId}:`, e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BATCH EMBED — Admin tool for back-filling mclip_vector on old images
+// ══════════════════════════════════════════════════════════════
+let _batchRunning = false;
+let _batchCancel  = false;
+
+async function openBatchEmbed() {
+  // Reset UI
+  const descEl  = document.getElementById('batchDesc');
+  const startBtn = document.getElementById('batchStartBtn');
+  const cancelBtn= document.getElementById('batchCancelBtn');
+  document.getElementById('batchDone').textContent    = '0';
+  document.getElementById('batchTotal').textContent   = '—';
+  document.getElementById('batchErrors').textContent  = '0 errors';
+  document.getElementById('batchProgressBar').style.width = '0%';
+  document.getElementById('batchLog').textContent     = '—';
+  startBtn.disabled = true;
+  cancelBtn.textContent = 'Close';
+  descEl.textContent = 'กำลังนับรูปที่ยังไม่มี vector…';
+  document.getElementById('batchOverlay').classList.add('open');
+
+  // Count unembedded
+  const { count, error } = await _SB.from(REF_TABLE)
+    .select('id', { count: 'exact', head: true })
+    .is('mclip_vector', null);
+
+  if (error) {
+    descEl.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  const n = count || 0;
+  document.getElementById('batchTotal').textContent = n;
+  if (n === 0) {
+    descEl.textContent = '✅ ทุกรูปมี vector แล้ว ไม่ต้อง embed เพิ่ม';
+  } else {
+    descEl.textContent = `พบ ${n} รูปที่ยังไม่มี vector — กด Start เพื่อเริ่ม`;
+    startBtn.disabled = false;
+  }
+}
+
+async function startBatchEmbed() {
+  if (!window._refClipImgReady) {
+    alert('CLIP image model ยังโหลดไม่เสร็จ — รอสักครู่แล้วลองใหม่'); return;
+  }
+  if (_batchRunning) return;
+
+  _batchRunning = true;
+  _batchCancel  = false;
+
+  const startBtn  = document.getElementById('batchStartBtn');
+  const cancelBtn = document.getElementById('batchCancelBtn');
+  const descEl    = document.getElementById('batchDesc');
+  const logEl     = document.getElementById('batchLog');
+  const doneEl    = document.getElementById('batchDone');
+  const errEl     = document.getElementById('batchErrors');
+  const barEl     = document.getElementById('batchProgressBar');
+
+  startBtn.disabled    = true;
+  cancelBtn.textContent = 'Stop';
+
+  // Fetch up to 500 unembedded images at a time
+  const { data, error } = await _SB.from(REF_TABLE)
+    .select('id, image_url')
+    .is('mclip_vector', null)
+    .limit(500);
+
+  if (error || !data?.length) {
+    descEl.textContent = error ? ('Error: ' + error.message) : '✅ ไม่มีรูปที่ต้อง embed';
+    _batchRunning = false;
+    cancelBtn.textContent = 'Close';
+    return;
+  }
+
+  const total = data.length;
+  document.getElementById('batchTotal').textContent = total;
+  let done = 0, errors = 0;
+
+  for (const ref of data) {
+    if (_batchCancel) { descEl.textContent = `หยุดกลางคัน (${done}/${total})`; break; }
+
+    const shortId = String(ref.id).slice(0, 10);
+    logEl.textContent = `⏳ ${shortId}…`;
+
+    try {
+      if (!ref.image_url) throw new Error('no image_url');
+      const vector = await _refEncodeImage(ref.image_url);
+      const { error: updateErr } = await _SB.from(REF_TABLE)
+        .update({ mclip_vector: vector, mclip_indexed_at: new Date().toISOString() })
+        .eq('id', ref.id);
+      if (updateErr) throw new Error(updateErr.message);
+      done++;
+      logEl.textContent = `✅ ${shortId}`;
+      // Update local cache if present
+      const idx = _allRefs.findIndex(r => r.id === ref.id);
+      if (idx !== -1) _allRefs[idx].mclip_vector = vector;
+    } catch(e) {
+      errors++;
+      logEl.textContent = `⚠️ ${shortId}: ${e.message.slice(0, 55)}`;
+      console.warn('[Batch Embed]', ref.id, e.message);
+    }
+
+    doneEl.textContent = done;
+    errEl.textContent  = `${errors} error${errors !== 1 ? 's' : ''}`;
+    barEl.style.width  = `${Math.round((done + errors) / total * 100)}%`;
+  }
+
+  _batchRunning = false;
+  cancelBtn.textContent = 'Close';
+  if (!_batchCancel) {
+    descEl.textContent = `✅ เสร็จแล้ว! ${done} รูป${errors ? ` (${errors} errors)` : ''}`;
+    barEl.style.width = '100%';
+    // If there may be more (hit 500 limit), re-enable start
+    if (total === 500) {
+      startBtn.disabled = false;
+      descEl.textContent += ' — อาจมีเพิ่ม กด Start อีกครั้ง';
+    }
+  }
+}
+
+function cancelBatchEmbed() {
+  if (_batchRunning) {
+    _batchCancel = true;
+    document.getElementById('batchCancelBtn').textContent = 'Stopping…';
+    document.getElementById('batchCancelBtn').disabled = true;
+    // Will close once loop finishes
+    const wait = () => {
+      if (!_batchRunning) {
+        document.getElementById('batchOverlay').classList.remove('open');
+        document.getElementById('batchCancelBtn').disabled = false;
+      } else setTimeout(wait, 300);
+    };
+    setTimeout(wait, 300);
+  } else {
+    document.getElementById('batchOverlay').classList.remove('open');
   }
 }
 
