@@ -2179,59 +2179,94 @@ function renderCards() {
 //   รับ key ฟรีที่ https://huggingface.co/settings/tokens
 // ══════════════════════════════════════════════════════════════
 
-const HF_EMBED_URL = 'https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1';
+// ลำดับ URL ที่จะลองตามลำดับ — ถ้า URL แรกไม่ได้จะลอง URL ถัดไปอัตโนมัติ
+const HF_EMBED_URLS = [
+  'https://router.huggingface.co/hf-inference/models/sentence-transformers/clip-ViT-B-32-multilingual-v1',
+  'https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1',
+  'https://api-inference.huggingface.co/models/sentence-transformers/clip-ViT-B-32-multilingual-v1',
+];
+// cache URL ที่ใช้งานได้
+let _hfWorkingUrl = null;
 
 /**
  * Encode text → 512d vector ด้วย mCLIP ผ่าน HF Inference API
+ * ลอง URL หลายตัวอัตโนมัติถ้าตัวแรกไม่ work
  */
 async function _encodeTextHF(text) {
-  const key = localStorage.getItem('vp_hf_key') || '';
+  const key     = localStorage.getItem('vp_hf_key') || '';
   const headers = { 'Content-Type': 'application/json' };
   if (key) headers['Authorization'] = `Bearer ${key}`;
+  const body = JSON.stringify({ inputs: text, options: { wait_for_model: true } });
 
-  const res = await fetch(HF_EMBED_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
-  });
+  const urlsToTry = _hfWorkingUrl ? [_hfWorkingUrl] : HF_EMBED_URLS;
 
-  if (res.status === 503) {
-    // Model กำลัง warm up — รอแล้วลองใหม่
-    await new Promise(r => setTimeout(r, 8000));
-    return _encodeTextHF(text);
-  }
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    if (res.status === 401 || res.status === 403) {
-      throw new Error(`HF API key ไม่ถูกต้อง — ตั้งค่า: localStorage.setItem('vp_hf_key','hf_xxx')`);
+  for (const url of urlsToTry) {
+    try {
+      let res = await fetch(url, { method: 'POST', headers, body });
+
+      if (res.status === 503) {
+        await new Promise(r => setTimeout(r, 8000));
+        res = await fetch(url, { method: 'POST', headers, body });
+      }
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`HF API key ไม่ถูกต้อง — ตั้งค่า: localStorage.setItem('vp_hf_key','hf_xxx')`);
+      }
+      if (!res.ok) continue; // ลอง URL ถัดไป
+
+      const data = await res.json();
+      const vec  = Array.isArray(data[0]) ? data[0] : data;
+      if (!Array.isArray(vec) || vec.length < 100) continue; // ลอง URL ถัดไป
+
+      _hfWorkingUrl = url; // cache URL ที่ใช้งานได้
+      console.log('[Search] HF URL ที่ใช้:', url);
+      return vec;
+    } catch(e) {
+      if (e.message.includes('key ไม่ถูกต้อง')) throw e;
+      console.warn('[Search] HF URL ล้มเหลว:', url, e.message);
+      continue;
     }
-    throw new Error(`HF API error ${res.status}: ${msg.slice(0, 120)}`);
   }
-
-  const data = await res.json();
-  // HF returns [[v1, v2, ...]] หรือ [v1, v2, ...]
-  const vec = Array.isArray(data[0]) ? data[0] : data;
-  if (!Array.isArray(vec) || vec.length !== 512) {
-    throw new Error(`Vector dimension ไม่ถูกต้อง (ได้ ${Array.isArray(vec) ? vec.length : typeof vec})`);
-  }
-  return vec;
+  // ทุก URL ล้มเหลว → โยน error ให้ fallback จัดการ
+  throw new Error('HF API ไม่ตอบสนอง — ใช้การค้นหาด้วยคำแทน');
 }
 
 /**
- * ค้นหาฉากด้วย text query — encode ผ่าน HF API แล้วยิง Supabase โดยตรง
- * คืน array ของ { id, title, image_url, thumb_url, similarity, ... }
+ * Fallback: ค้นหาด้วยคำใน Supabase (ไม่ต้องใช้ vector)
+ * ค้นจาก title, mclip_caption, mclip_tags
+ */
+async function _searchByText(query, limit = 50) {
+  const q = query.trim();
+  const { data, error } = await _SB
+    .from('scenes')
+    .select('id, title, image_url, thumb_url, mclip_caption, mclip_tags, sort_order, show_id')
+    .or(`title.ilike.%${q}%,mclip_caption.ilike.%${q}%,mclip_tags.cs.{"${q}"}`)
+    .order('sort_order')
+    .limit(limit);
+  if (error) throw new Error(`Supabase: ${error.message}`);
+  // เพิ่ม similarity จำลองให้ UI แสดงได้
+  return (data || []).map(r => ({ ...r, similarity: 0.8 }));
+}
+
+/**
+ * ค้นหาฉากด้วย text query — ลอง vector search ก่อน fallback เป็น text search
  */
 async function _callSearchAPI(query, limit = 50) {
-  const vector = await _encodeTextHF(query);
-
-  const result = await _SB.rpc('match_scenes_mclip', {
-    query_vector:    vector,
-    match_count:     limit,
-    match_threshold: 0.05,
-  });
-
-  if (result.error) throw new Error(`Supabase: ${result.error.message}`);
-  return result.data || [];
+  try {
+    const vector = await _encodeTextHF(query);
+    const result = await _SB.rpc('match_scenes_mclip', {
+      query_vector:    vector,
+      match_count:     limit,
+      match_threshold: 0.05,
+    });
+    if (result.error) throw new Error(`Supabase: ${result.error.message}`);
+    return result.data || [];
+  } catch(e) {
+    // ถ้า vector search ล้มเหลว → fallback เป็น text search
+    console.warn('[Search] Vector search ล้มเหลว, ใช้ text search แทน:', e.message);
+    const results = await _searchByText(query, limit);
+    if (results.length === 0) throw new Error('ไม่พบผลลัพธ์ — ' + e.message);
+    return results;
+  }
 }
 
 function onSearchInput() {
