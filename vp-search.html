@@ -2461,6 +2461,82 @@ function extractFromText(text) {
   return out;
 }
 
+// ── Thai → English translator (สำหรับ CLIP query) ────────────────
+// แปลง query ภาษาไทยเป็น English ก่อนส่งไป CLIP encoder
+// CLIP เข้าใจ English ดีกว่า Thai — แปลแบบ keyword replacement
+const THAI_EN_TRANSLATE = {
+  // สถานที่
+  'ปั๊มน้ำมัน':'gas station oil pump','ปั้มน้ำมัน':'gas station oil pump',
+  'ปั๊ม':'gas station pump','ปั้ม':'pump station',
+  'น้ำมัน':'oil petroleum fuel','เชื้อเพลิง':'fuel energy petroleum',
+  'โรงงาน':'factory industrial plant','คลังสินค้า':'warehouse storage',
+  'โกดัง':'warehouse storage facility','ห้องแล็บ':'laboratory science lab',
+  'แล็บ':'lab laboratory','ห้องสมุด':'library books study',
+  'สตูดิโอ':'studio recording stage','อุโมงค์':'tunnel underground',
+  'ถ้ำ':'cave cavern dark underground','ใต้ดิน':'underground bunker',
+  'เหมือง':'mine mining quarry','เมือง':'city urban skyline',
+  'ตึก':'building skyscraper','ตึกระฟ้า':'skyscraper highrise',
+  'สกายไลน์':'city skyline urban','วิวเมือง':'city view urban skyline',
+  'ถนน':'road street highway','ไฮเวย์':'highway road',
+  'ป่า':'forest jungle nature','ทุ่งนา':'rice field farmland',
+  'ชายหาด':'beach coast sea','ทะเล':'ocean sea water',
+  'ภูเขา':'mountain highland','ท้องฟ้า':'sky clouds aerial',
+  'ชนบท':'rural countryside village','ตลาด':'market bazaar outdoor',
+  'โรงพยาบาล':'hospital medical clinic','โรงเรียน':'school education',
+  'มหาวิทยาลัย':'university campus college','วัด':'temple religious heritage',
+  'ร้านอาหาร':'restaurant food dining','ห้าง':'shopping mall retail',
+  // หัวข้อข่าว
+  'หุ่นยนต์':'robot automation machinery','เอไอ':'artificial intelligence AI technology',
+  'ปัญญาประดิษฐ์':'artificial intelligence AI','เทคโนโลยี':'technology innovation',
+  'อุตสาหกรรม':'industry manufacturing industrial','การผลิต':'manufacturing production',
+  'เศรษฐกิจ':'economy finance business','การเงิน':'finance money economy',
+  'การเมือง':'politics government news','เลือกตั้ง':'election politics voting',
+  'สงคราม':'war conflict military','วิกฤต':'crisis conflict emergency',
+  'สิ่งแวดล้อม':'environment nature ecology','โลกร้อน':'climate change global warming',
+  'สุขภาพ':'health medical medicine','โรค':'disease illness health',
+  'ดนตรี':'music concert performance','บันเทิง':'entertainment media showbiz',
+  'วัฒนธรรม':'culture tradition heritage','ชนบท':'rural countryside authentic',
+  'ธุรกิจ':'business commerce corporate','ทรัพยากร':'resources energy mineral',
+  'พลังงาน':'energy power resource','ข่าว':'news media journalism',
+  // บรรยากาศ / mood
+  'มืด':'dark dramatic moody','มืดมน':'dark gloomy mysterious',
+  'ตึงเครียด':'tense dramatic intense','เครียด':'tense serious stress',
+  'น่ากลัว':'scary dark tense mysterious','หลอน':'eerie mysterious haunting',
+  'อบอุ่น':'warm cozy comfortable','เย็น':'cool cold blue',
+  'ล้ำ':'futuristic sci-fi modern','อนาคต':'future technology futuristic',
+  'ย้อนยุค':'retro vintage nostalgic','วินเทจ':'vintage retro old-fashioned',
+  'กลางคืน':'night dark evening','กลางวัน':'day bright outdoor sunlight',
+  'พระอาทิตย์ตก':'sunset golden dusk','พระอาทิตย์ขึ้น':'sunrise morning golden',
+  'สว่าง':'bright light indoor studio','มีสีสัน':'colorful vibrant',
+  // คน / ตัวละคร
+  'คน':'person people human','นักธุรกิจ':'businessman suit office',
+  'นักการเมือง':'politician government official','นักวิทยาศาสตร์':'scientist lab research',
+  'ทหาร':'soldier military army','ตำรวจ':'police officer uniform',
+  'ผู้หญิง':'woman female person','ผู้ชาย':'man male person',
+  'เด็ก':'child kid young','ผู้สูงอายุ':'elderly old senior',
+  'นักดนตรี':'musician performer stage','นักแสดง':'actor performer stage',
+};
+
+/**
+ * แปลง Thai query → English ก่อนส่งให้ CLIP
+ * คืนคำ English ที่ครอบคลุมความหมาย เพื่อให้ CLIP เข้าใจได้ดีขึ้น
+ */
+function _translateToEnglish(text) {
+  let translated = text.trim();
+  // แทนที่ keyword ไทยด้วย English (เรียงจากยาวไปสั้น เพื่อ match คำยาวก่อน)
+  const sorted = Object.entries(THAI_EN_TRANSLATE).sort((a,b) => b[0].length - a[0].length);
+  for (const [th, en] of sorted) {
+    if (translated.includes(th)) {
+      translated = translated.replace(new RegExp(th, 'g'), en);
+    }
+  }
+  // ลบ whitespace ซ้ำ
+  translated = translated.replace(/\s+/g, ' ').trim();
+  // ถ้าแปลได้แล้ว log ให้รู้
+  if (translated !== text) console.log(`[Translate] "${text}" → "${translated}"`);
+  return translated || text;
+}
+
 // ── Tag-based scoring (normalized 0–1) ───────────────────────
 // maxPossible คำนวณเฉพาะ dimensions ที่ user ระบุจริงๆ
 // ป้องกัน score ต่ำเทียมเพราะ fields ที่ไม่ได้ถาม
@@ -2520,10 +2596,10 @@ async function runRec() {
   const modeBadge = `<span class="ai-badge" style="background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border-color:transparent">🧠 Semantic AI</span>`;
 
   try {
-    // 1. เรียก VP Search Server — mCLIP encode + Supabase ANN ในครั้งเดียว
-    //    รองรับ Thai + English โดยตรง ไม่ต้องแปลภาษา
-    setAIStatus('loading', '🔍 กำลังค้นหาด้วย mCLIP Semantic Search…', 40);
-    const apiResults = await _callSearchAPI(text, 100);
+    // 1. แปลง Thai → English ก่อนส่งให้ CLIP encoder
+    const queryForCLIP = _translateToEnglish(text);
+    setAIStatus('loading', `🔍 ค้นหา: "${queryForCLIP}"…`, 40);
+    const apiResults = await _callSearchAPI(queryForCLIP, 100);
     setAIStatus('loading', '✨ จัดเรียงผลลัพธ์…', 85);
 
     // 2. Build score map + merge with SCENES data
