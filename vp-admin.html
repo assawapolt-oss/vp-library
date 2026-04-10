@@ -98,13 +98,7 @@
   .btn-ai-tag { padding:8px 18px; background:linear-gradient(135deg,#6D28D9,#4F46E5); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
   .btn-ai-tag:hover { opacity:.88; }
   .btn-ai-tag:disabled { opacity:.5; cursor:wait; }
-  .btn-embed { padding:8px 18px; background:linear-gradient(135deg,#0F766E,#0D9488); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; display:flex; align-items:center; gap:6px; }
-  .btn-embed:hover { opacity:.88; }
-  .btn-embed:disabled { opacity:.5; cursor:wait; }
-  .embed-status { font-size:11px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; }
-  .embed-status.done  { background:#DCFCE7; color:#15803D; }
-  .embed-status.none  { background:#F3F4F6; color:#9CA3AF; }
-  .embed-status.error { background:#FEE2E2; color:#B91C1C; }
+
   .save-indicator { font-size:12px; color:var(--green); font-weight:600; opacity:0; transition:opacity .3s; }
   .save-indicator.show { opacity:1; }
 
@@ -414,10 +408,6 @@
         <div class="sidebar-header">
           <div class="sidebar-title">ฉากทั้งหมด (<span id="sidebarCount">0</span>)</div>
           <div style="display:flex;gap:6px;align-items:center">
-            <button class="btn-embed" style="font-size:11px;padding:5px 10px" onclick="embedAllUnindexed(false)" title="Embed ทุกฉากที่ยังไม่มี vector (mCLIP เท่านั้น)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
-              Embed All
-            </button>
             <button class="add-scene-btn" onclick="openNewSceneModal()">＋ เพิ่มฉาก</button>
           </div>
         </div>
@@ -1774,13 +1764,6 @@ function buildEditorHTML(s) {
         <div style="font-size:13px;font-weight:600;margin-top:2px">${s.title}</div>
       </div>
       <div class="editor-actions">
-        <button class="btn-embed" id="embedBtn_${s.id}" onclick="embedScene('${s.id}')" title="Embed ภาพด้วย mCLIP → บันทึก vector ลง Supabase">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-          Embed
-        </button>
-        <span class="embed-status ${s.mclip_indexed_at ? 'done' : 'none'}" id="embedStatus_${s.id}" title="${s.mclip_indexed_at ? 'indexed: ' + s.mclip_indexed_at : 'ยังไม่ได้ embed'}">
-          ${s.mclip_indexed_at ? '✓ indexed' : '— not embedded'}
-        </span>
         <button class="btn-ai-tag" onclick="openTagGuideModal('${s.id}')" title="Copy prompt → วางใน Claude Cowork chat เพื่อเติมทุกช่องอัตโนมัติ">✨ Tag by AI</button>
         <button class="btn-secondary" onclick="resetScene('${s.id}')">↺ รีเซ็ต</button>
         <button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 ลบฉาก</button>
@@ -2797,184 +2780,8 @@ function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ══════════════════════════════════════════════════════════════════
-// mCLIP EMBED — ผ่าน HF Inference API (ไม่ต้องรัน Python server)
-// ทำงานได้บน Windows ผ่าน browser โดยตรง
-// ══════════════════════════════════════════════════════════════════
-
-// HF Inference API endpoint สำหรับ mCLIP (image → 512d vector)
-const HF_IMG_EMBED_URL = 'https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32-multilingual-v1';
-
-// ดึง HF API key จาก localStorage (ใช้ key เดียวกับ vp-search.html)
-// ตั้งค่า: localStorage.setItem('vp_hf_key', 'hf_xxxxxxxxxxxx')
-function _getHFKey() {
-  return localStorage.getItem('vp_hf_key') || '';
-}
-
-/**
- * ดาวน์โหลดภาพ → แปลงเป็น base64 → ส่งเป็น JSON ไป HF API → คืน vector[512]
- * ใช้ JSON แทน raw blob เพื่อหลีกเลี่ยงปัญหา CORS preflight บน browser
- * @param {string} imageUrl  Public URL ของภาพ
- * @param {number} retries   จำนวน retry เมื่อ model cold start (503)
- */
-async function _encodeImageHF(imageUrl, retries = 3) {
-  // 1. ดาวน์โหลดภาพ
-  let base64Data;
-  try {
-    const imgRes = await fetch(imageUrl);
-    if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
-    const blob = await imgRes.blob();
-    // แปลงเป็น base64 (ลบ data:image/...;base64, prefix ออก)
-    base64Data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch(e) {
-    throw new Error(`ดาวน์โหลดภาพไม่สำเร็จ: ${e.message}`);
-  }
-
-  // 2. ส่งเป็น JSON (application/json ไม่มีปัญหา CORS)
-  const hfKey = _getHFKey();
-  const headers = { 'Content-Type': 'application/json' };
-  if (hfKey) headers['Authorization'] = `Bearer ${hfKey}`;
-
-  let res;
-  try {
-    res = await fetch(HF_IMG_EMBED_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ inputs: base64Data }),
-    });
-  } catch(e) {
-    throw new Error(`HF API เรียกไม่ได้: ${e.message}`);
-  }
-
-  // 503 = model cold start → รอแล้ว retry
-  if (res.status === 503 && retries > 0) {
-    await new Promise(r => setTimeout(r, 10000));
-    return _encodeImageHF(imageUrl, retries - 1);
-  }
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`HF API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  // HF คืน array ของ vector: [[...512 floats...]] หรือ [...512 floats...]
-  const vector = Array.isArray(data[0]) ? data[0] : data;
-  if (!Array.isArray(vector) || vector.length < 100) {
-    throw new Error(`HF คืน vector ผิดรูปแบบ (length=${Array.isArray(vector) ? vector.length : 'N/A'})`);
-  }
-  return vector;
-}
-
-/**
- * Embed ภาพ 1 ฉาก ผ่าน HF API → บันทึกลง Supabase
- * @param {string} sceneId  e.g. "VP-001"
- * @param {boolean} _withTags  (reserved — HF mode ไม่รองรับ Gemma4 tags)
- */
-async function embedScene(sceneId, _withTags = false) {
-  const s = scenes.find(x => x.id === sceneId);
-  if (!s) return showToast('ไม่พบฉาก: ' + sceneId, 'red');
-
-  const imageUrl = s.image_url || s.filepath || '';
-  if (!imageUrl) return showToast('ฉากนี้ยังไม่มีภาพ — อัปโหลดภาพก่อน', 'red');
-
-  if (!window._supaClient) return showToast('Supabase ยังไม่พร้อม — รีเฟรชหน้า', 'red');
-
-  const btn    = document.getElementById('embedBtn_' + sceneId);
-  const status = document.getElementById('embedStatus_' + sceneId);
-
-  if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4"/></svg> Embedding…'; }
-  if (status) { status.className = 'embed-status none'; status.textContent = '⏳ กำลัง embed…'; }
-
-  const t0 = Date.now();
-  try {
-    // 1. Encode ภาพผ่าน HF API
-    const vector = await _encodeImageHF(imageUrl);
-
-    // 2. บันทึกลง Supabase
-    const now = new Date().toISOString();
-    const { error } = await window._supaClient
-      .from('scenes')
-      .update({ mclip_vector: vector, mclip_indexed_at: now })
-      .eq('id', sceneId);
-
-    if (error) throw new Error(`Supabase: ${error.message}`);
-
-    // 3. อัปเดต local state
-    const idx = scenes.findIndex(x => x.id === sceneId);
-    if (idx !== -1) scenes[idx].mclip_indexed_at = now;
-
-    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-    if (status) { status.className = 'embed-status done'; status.textContent = '✓ indexed'; status.title = 'indexed: ' + now; }
-    showToast(`🧠 Embed สำเร็จ: ${sceneId}  (${elapsed}s, dim=${vector.length})`, 'green');
-
-  } catch(e) {
-    if (status) { status.className = 'embed-status error'; status.textContent = '✗ error'; }
-    const hint = e.message.includes('HF API') ? ' — ลอง set HF key: localStorage.setItem("vp_hf_key","hf_xxx")' : '';
-    showToast(`❌ Embed ไม่สำเร็จ: ${e.message}${hint}`, 'red');
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Embed'; }
-  }
-}
-
-/**
- * Embed with tags — HF mode ใช้ embedScene เหมือนกัน (ไม่มี Gemma4)
- */
-async function embedSceneWithTags(sceneId) {
-  return embedScene(sceneId, false);
-}
-
-/**
- * Bulk embed — embed ทุกฉากที่ยังไม่มี mclip_vector (ทีละฉาก ผ่าน HF API)
- */
-async function embedAllUnindexed(withTags = false) {
-  const unindexed = scenes.filter(s => !s.mclip_indexed_at && (s.image_url || s.filepath));
-  if (!unindexed.length) return showToast('ทุกฉากถูก embed แล้ว 🎉', 'green');
-
-  const ok = window.confirm(
-    `จะ embed ${unindexed.length} ฉากที่ยังไม่มี vector ผ่าน HF API\n` +
-    `(ไม่ต้องรัน Python server)\n` +
-    `\nใช้เวลาประมาณ ${Math.round(unindexed.length * 3)} วินาที\n\nดำเนินการต่อ?`
-  );
-  if (!ok) return;
-
-  showToast(`⏳ เริ่ม embed ${unindexed.length} ฉาก ผ่าน HF API…`, 'green');
-
-  let success = 0, failed = 0;
-  for (const s of unindexed) {
-    const status = document.getElementById('embedStatus_' + s.id);
-    if (status) { status.className = 'embed-status none'; status.textContent = '⏳'; }
-    try {
-      const vector = await _encodeImageHF(s.image_url || s.filepath);
-      const now = new Date().toISOString();
-      const { error } = await window._supaClient
-        .from('scenes')
-        .update({ mclip_vector: vector, mclip_indexed_at: now })
-        .eq('id', s.id);
-      if (error) throw new Error(error.message);
-
-      const idx = scenes.findIndex(x => x.id === s.id);
-      if (idx !== -1) scenes[idx].mclip_indexed_at = now;
-      if (status) { status.className = 'embed-status done'; status.textContent = '✓ indexed'; }
-      success++;
-    } catch(e) {
-      if (status) { status.className = 'embed-status error'; status.textContent = '✗ error'; }
-      console.warn(`[embed] ${s.id} failed:`, e.message);
-      failed++;
-    }
-    // อัปเดต progress toast ทุก 5 ฉาก
-    if ((success + failed) % 5 === 0) {
-      showToast(`⏳ Embed: ${success + failed}/${unindexed.length} ฉาก (✓${success} ✗${failed})`, 'green');
-    }
-  }
-
-  showToast(`✅ Embed เสร็จ: ${success}/${unindexed.length} ฉาก (ล้มเหลว ${failed})`, failed > 0 ? 'red' : 'green');
-}
+// NOTE: Image embedding (mCLIP vectors) is now done via Google Colab.
+// See vp-embed-colab.ipynb — รัน Notebook ครั้งเดียวเพื่อ embed ทุกฉาก
 
 // ══════════════════════════════════════════════
 // EXPORT

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REF Search — THE STANDARD VP Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&family=Instrument+Sans:wght@400;600&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0A0A0C;
+  --surface:  #111114;
+  --card:     #131316;
+  --bone:     #F0ECE4;
+  --bone-dim: #A09C94;
+  --bone-faint: #3C3C40;
+  --gold:     #C4A266;
+  --gold-dim: #6B5633;
+  --line:     #222226;
+  --line-hi:  #2E2E34;
+  --muted:    #58585E;
+  --green:    #3A7D5A;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --r: 2px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--bone);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 52px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.topbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%);
+}
+.brand {
+  font-family: var(--font-disp);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--bone-dim);
+  text-transform: uppercase;
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gold);
+  background: rgba(196,162,102,0.1);
+  border: 1px solid rgba(196,162,102,0.2);
+  border-radius: 2px;
+  padding: 2px 8px;
+  letter-spacing: 0.1em;
+}
+
+/* ── SEARCH AREA ── */
+.search-wrap {
+  max-width: 760px;
+  margin: 52px auto 0;
+  padding: 0 24px;
+}
+.search-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.search-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+#query {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--r);
+  color: var(--bone);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  padding: 14px 18px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+#query::placeholder { color: var(--muted); }
+#query:focus {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 2px rgba(196,162,102,0.08);
+}
+#search-btn {
+  height: 52px;
+  padding: 0 24px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--r);
+  color: #0A0A0C;
+  font-family: var(--font-disp);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+#search-btn:hover { opacity: 0.88; }
+#search-btn:disabled { opacity: 0.4; cursor: wait; }
+
+/* ── EXAMPLES ── */
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.example-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone-dim);
+  border: 1px solid var(--line-hi);
+  border-radius: 99px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: color .1s, border-color .1s;
+  background: none;
+}
+.example-chip:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+
+/* ── STATUS ── */
+#status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 18px;
+  min-height: 20px;
+}
+#status.error { color: #c04040; }
+
+/* ── RESULTS ── */
+.results-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 32px 0 16px;
+}
+.results-count {
+  font-family: var(--font-disp);
+  font-size: 13px;
+  color: var(--bone-dim);
+}
+.results-count strong {
+  color: var(--bone);
+  font-size: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  padding-bottom: 60px;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: border-color .15s, transform .1s;
+  cursor: pointer;
+}
+.card:hover {
+  border-color: var(--line-hi);
+  transform: translateY(-2px);
+}
+.card-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--surface);
+}
+.card-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity .2s;
+}
+.score-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  background: rgba(10,10,12,0.85);
+  color: var(--gold);
+  border: 1px solid rgba(196,162,102,0.3);
+  border-radius: 2px;
+  padding: 2px 6px;
+}
+.card-body {
+  padding: 12px 14px;
+}
+.card-caption {
+  font-size: 12px;
+  color: var(--bone-dim);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  border: 1px solid var(--bone-faint);
+  border-radius: 2px;
+  padding: 1px 6px;
+}
+.card-ocr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold-dim);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── LIGHTBOX ── */
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: min(90vw, 1000px);
+  max-height: 75vh;
+  object-fit: contain;
+  border: 1px solid var(--line-hi);
+}
+#lightbox-meta {
+  max-width: min(90vw, 600px);
+  text-align: center;
+}
+#lightbox-caption {
+  font-size: 13px;
+  color: var(--bone-dim);
+  margin-bottom: 8px;
+}
+#lightbox-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+#lightbox-close {
+  position: fixed;
+  top: 20px; right: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 6px;
+}
+#lightbox-close:hover { color: var(--bone); }
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+}
+.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.empty-text { font-family: var(--font-mono); font-size: 12px; }
+
+/* ── LOADING SHIMMER ── */
+.shimmer {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--line-hi) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r);
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">VP Library — REF Search</div>
+  <span class="badge">SEMANTIC AI</span>
+</div>
+
+<!-- SEARCH AREA -->
+<div class="search-wrap">
+  <label class="search-label" for="query">ค้นหาด้วยคำบรรยาย — ไทยหรืออังกฤษก็ได้</label>
+  <div class="search-box">
+    <input
+      id="query"
+      type="text"
+      placeholder="เช่น: ปั๊มน้ำมันกลางคืน · โรงงานอุตสาหกรรม · dramatic lighting"
+      autocomplete="off"
+      autofocus
+    >
+    <button id="search-btn" onclick="doSearch()">ค้นหา</button>
+  </div>
+
+  <div class="examples">
+    <span class="example-chip" onclick="setQuery(this)">ปั๊มน้ำมัน</span>
+    <span class="example-chip" onclick="setQuery(this)">โรงงานอุตสาหกรรม</span>
+    <span class="example-chip" onclick="setQuery(this)">เมืองกลางคืน city skyline</span>
+    <span class="example-chip" onclick="setQuery(this)">dramatic warm lighting</span>
+    <span class="example-chip" onclick="setQuery(this)">ป่าธรรมชาติ nature</span>
+    <span class="example-chip" onclick="setQuery(this)">ข้อความในภาพ signage</span>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- RESULTS -->
+  <div id="results-header" class="results-header" style="display:none">
+    <div class="results-count">พบ <strong id="result-count">0</strong> ภาพ</div>
+    <div id="query-echo" style="font-family:var(--font-mono);font-size:10px;color:var(--muted)"></div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">✕ ปิด</button>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-meta">
+    <div id="lightbox-caption"></div>
+    <div id="lightbox-tags"></div>
+  </div>
+</div>
+
+<script>
+const API = "http://localhost:8765";  // URL ของ search_server.py
+
+// ── ค้นหา ───────────────────────────────────────────────────
+async function doSearch() {
+  const query = document.getElementById("query").value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById("search-btn");
+  const status = document.getElementById("status");
+  const grid = document.getElementById("grid");
+  const header = document.getElementById("results-header");
+
+  btn.disabled = true;
+  btn.textContent = "กำลังค้นหา...";
+  status.textContent = "⏳ กำลัง embed และค้นหา...";
+  status.className = "";
+  grid.innerHTML = "";
+  header.style.display = "none";
+
+  try {
+    const res = await fetch(`${API}/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, limit: 20, min_similarity: 0.1 }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    renderResults(data, query);
+
+  } catch (err) {
+    status.textContent = `❌ เชื่อมต่อ server ไม่ได้: ${err.message}`;
+    status.className = "error";
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "ค้นหา";
+  }
+}
+
+// ── แสดงผล ──────────────────────────────────────────────────
+function renderResults(data, query) {
+  const status = document.getElementById("status");
+  const grid = document.getElementById("grid");
+  const header = document.getElementById("results-header");
+  const countEl = document.getElementById("result-count");
+  const echoEl = document.getElementById("query-echo");
+
+  const results = data.results || [];
+
+  header.style.display = "flex";
+  countEl.textContent = results.length;
+  echoEl.textContent = `"${query}"`;
+
+  if (results.length === 0) {
+    status.textContent = "";
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">ไม่พบภาพที่ตรงกัน — ลองเปลี่ยนคำค้นหา</div>
+      </div>`;
+    return;
+  }
+
+  status.textContent = `✓ ใช้เวลา < 1 วินาที · similarity สูงสุด ${(results[0].similarity * 100).toFixed(0)}%`;
+
+  grid.innerHTML = results.map(r => {
+    const score = (r.similarity * 100).toFixed(0);
+    const tags  = (r.tags || []).slice(0, 5).map(t =>
+      `<span class="tag">${t}</span>`).join("");
+    const caption = r.caption || "(ไม่มี caption)";
+    const imgSrc  = r.thumb_url || r.url || "";
+    const ocr = r.ocr_text ? `<div class="card-ocr">📝 ${r.ocr_text}</div>` : "";
+
+    return `
+    <div class="card" onclick="openLightbox(${JSON.stringify(r).replace(/"/g, '&quot;')})">
+      <div class="card-img-wrap">
+        <img src="${imgSrc}" alt="${caption}" loading="lazy"
+             onerror="this.style.opacity='0.2'">
+        <span class="score-badge">${score}%</span>
+      </div>
+      <div class="card-body">
+        <div class="card-caption">${caption}</div>
+        <div class="card-tags">${tags}</div>
+        ${ocr}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── Lightbox ────────────────────────────────────────────────
+function openLightbox(r) {
+  document.getElementById("lightbox-img").src = r.url || r.thumb_url || "";
+  document.getElementById("lightbox-caption").textContent = r.caption || "";
+  document.getElementById("lightbox-tags").innerHTML = (r.tags || [])
+    .map(t => `<span class="tag">${t}</span>`).join("");
+  document.getElementById("lightbox").classList.add("open");
+}
+
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+}
+
+document.getElementById("lightbox").addEventListener("click", e => {
+  if (e.target === document.getElementById("lightbox")) closeLightbox();
+});
+
+// ── Example chips ─────────────────────────────────────────────
+function setQuery(el) {
+  document.getElementById("query").value = el.textContent;
+  doSearch();
+}
+
+// ── Enter key ────────────────────────────────────────────────
+document.getElementById("query").addEventListener("keydown", e => {
+  if (e.key === "Enter") doSearch();
+});
+
+// ── เช็คว่า server พร้อมไหมตอนโหลด ──────────────────────────
+window.addEventListener("load", async () => {
+  try {
+    const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+    const data = await res.json();
+    document.getElementById("status").textContent =
+      `✓ Server พร้อม — model: ${data.embed_model}`;
+  } catch {
+    document.getElementById("status").textContent =
+      "⚠️  รัน python search_server.py แล้วรีเฟรชหน้านี้";
+    document.getElementById("status").className = "error";
+  }
+});
+</script>
+</body>
+</html>

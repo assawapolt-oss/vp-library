@@ -5,6 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Grab REF — THE STANDARD VP Library</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CLIP image+text encoder + Thai→EN NMT — for GrabREF AI Search -->
+<script type="module">
+  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  env.allowLocalModels = false;
+
+  // Flags
+  window._refClipTextReady  = false;
+  window._refClipImgReady   = false;
+  window._refTranslatorReady = false;
+  window._refClipTextLoading  = true;
+  window._refClipImgLoading   = true;
+  window._refTranslatorLoading = true;
+
+  function _checkAllRefModels() {
+    if (!window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading) {
+      const ok = window._refClipTextReady && window._refClipImgReady;
+      console.log(`[GrabREF] Models ready — CLIP text:${window._refClipTextReady} img:${window._refClipImgReady} NMT:${window._refTranslatorReady}`);
+      if (typeof _updateRefAiStatus === 'function') _updateRefAiStatus();
+    }
+  }
+
+  // Text encoder (for search queries)
+  pipeline('feature-extraction', 'Xenova/clip-vit-base-patch32', { quantized: true })
+    .then(p => { window._refClipText = p; window._refClipTextReady = true; window._refClipTextLoading = false; _checkAllRefModels(); })
+    .catch(e => { window._refClipTextLoading = false; console.warn('[CLIP text]', e.message); _checkAllRefModels(); });
+
+  // Image encoder (for auto-embedding uploaded images)
+  pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32', { quantized: true })
+    .then(p => { window._refClipImg = p; window._refClipImgReady = true; window._refClipImgLoading = false; _checkAllRefModels(); })
+    .catch(e => { window._refClipImgLoading = false; console.warn('[CLIP img]', e.message); _checkAllRefModels(); });
+
+  // Thai→English NMT
+  pipeline('translation', 'Xenova/opus-mt-th-en', { quantized: true })
+    .then(p => { window._refThEnTranslator = p; window._refTranslatorReady = true; window._refTranslatorLoading = false; _checkAllRefModels(); })
+    .catch(e => { window._refTranslatorLoading = false; console.warn('[NMT]', e.message); _checkAllRefModels(); });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -404,6 +440,114 @@ body {
   color: var(--muted);
   letter-spacing: 0.06em;
   padding-left: 2px;
+}
+/* ── AI CLIP Search section ── */
+.clip-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 12px 0 10px;
+}
+.clip-section-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.clip-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.clip-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.clip-search-input {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--bone);
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  border-bottom: 1px solid var(--gold-dim);
+  padding: 9px 14px;
+  transition: border-color .15s;
+  letter-spacing: 0.04em;
+}
+.clip-search-input:focus { outline: none; border-color: var(--gold); }
+.clip-search-input::placeholder { color: var(--muted); font-size: 10px; }
+.clip-search-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--bg);
+  background: var(--gold);
+  cursor: pointer;
+  padding: 9px 14px;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.clip-search-btn:hover { opacity: .82; }
+.clip-search-btn:disabled { opacity: .4; cursor: wait; }
+.clip-clear {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.clip-clear:hover { color: var(--bone); border-color: var(--bone-faint); }
+.clip-ai-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding-left: 2px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.clip-ai-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.clip-ai-dot.ready  { background: #4A7C59; }
+.clip-ai-dot.loading { background: var(--gold); animation: clipPulse 1.4s infinite; }
+.clip-ai-dot.error  { background: var(--danger); }
+@keyframes clipPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── CLIP result similarity badge on cards ── */
+.ref-card-sim {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  background: rgba(196,162,102,.92);
+  color: var(--bg);
+  padding: 2px 6px;
+  pointer-events: none;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1232,6 +1376,7 @@ body {
       <span class="search-toggle-caret">▾</span>
     </button>
     <div class="search-panel" id="searchPanel">
+      <!-- Keyword search -->
       <div class="search-row">
         <input class="search-input-ref" id="refSearchInput" type="text"
           placeholder="filename, notes, uploader, backlink…"
@@ -1239,6 +1384,21 @@ body {
         <button class="search-clear" onclick="clearRefSearch()">Clear</button>
       </div>
       <div class="search-meta" id="searchMeta"></div>
+
+      <!-- AI Semantic Search (CLIP) -->
+      <hr class="clip-divider">
+      <div class="clip-section-label">AI Semantic Search</div>
+      <div class="clip-search-row">
+        <input class="clip-search-input" id="clipSearchInput" type="text"
+          placeholder="describe the image… เช่น 'โรงงานกลางคืน', 'woman portrait studio'"
+          onkeydown="if(event.key==='Enter') doClipRefSearch()">
+        <button class="clip-search-btn" id="clipSearchBtn" onclick="doClipRefSearch()">Search</button>
+        <button class="clip-clear" id="clipClearBtn" onclick="clearClipRefSearch()" style="display:none">Clear</button>
+      </div>
+      <div class="clip-ai-status" id="clipAiStatus">
+        <span class="clip-ai-dot loading" id="clipAiDot"></span>
+        <span id="clipAiText">Loading AI models…</span>
+      </div>
     </div>
   </div>
 
@@ -1516,6 +1676,10 @@ async function uploadOne(file, cropRect = null) {
     setTimeout(() => hideToast(), 2200);
     prependCard(row);
     updateStatsBar();
+    // Auto-embed image with CLIP in browser (background — non-blocking)
+    if (row?.id && publicUrl) {
+      _autoEmbedRef(row.id, publicUrl).catch(() => {});
+    }
   } catch(err) {
     console.error('[GrabREF]', err);
     showToast('error', err.message, 0);
@@ -1986,6 +2150,209 @@ async function applyCrop() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// AI CLIP SEARCH — GrabREF (ใช้ ref_images table แยกจาก VP Library)
+// ══════════════════════════════════════════════════════════════
+
+// ── AI Status UI ──────────────────────────────────────────────
+function _updateRefAiStatus() {
+  const dot  = document.getElementById('clipAiDot');
+  const txt  = document.getElementById('clipAiText');
+  const btn  = document.getElementById('clipSearchBtn');
+  if (!dot || !txt) return;
+
+  const allLoading = window._refClipTextLoading || window._refClipImgLoading || window._refTranslatorLoading;
+  const clipOK     = window._refClipTextReady && window._refClipImgReady;
+  const transOK    = window._refTranslatorReady;
+
+  if (allLoading) {
+    dot.className = 'clip-ai-dot loading';
+    const parts = [];
+    if (window._refClipTextLoading || window._refClipImgLoading) parts.push('CLIP (~25MB)');
+    if (window._refTranslatorLoading) parts.push('NMT (~50MB)');
+    txt.textContent = `Loading ${parts.join(' + ')}…`;
+    if (btn) btn.disabled = true;
+  } else if (clipOK) {
+    dot.className = 'clip-ai-dot ready';
+    txt.textContent = transOK ? 'CLIP + NMT Thai→EN ready' : 'CLIP ready (keyword translation fallback)';
+    if (btn) btn.disabled = false;
+  } else {
+    dot.className = 'clip-ai-dot error';
+    txt.textContent = 'AI unavailable — check console';
+    if (btn) btn.disabled = true;
+  }
+}
+
+// Poll until models are ready (in case page loads before module)
+(function _pollRefAi() {
+  const done = !window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading;
+  if (done) { _updateRefAiStatus(); return; }
+  const t = setInterval(() => {
+    const allDone = !window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading;
+    _updateRefAiStatus();
+    if (allDone) clearInterval(t);
+  }, 800);
+})();
+
+// ── Thai → English (NMT async, same approach as vp-search.html) ──
+function _refHasThaiChars(text) { return /[\u0E00-\u0E7F]/.test(text); }
+
+const _REF_KW_FALLBACK = {
+  'โรงงาน':'factory industrial','เมือง':'city urban','ป่า':'forest nature',
+  'ทะเล':'ocean sea water','ภูเขา':'mountain highland','ท้องฟ้า':'sky clouds',
+  'กลางคืน':'night dark','กลางวัน':'day bright sunlight','มืด':'dark moody',
+  'คน':'person people','ผู้หญิง':'woman female','ผู้ชาย':'man male',
+  'เด็ก':'child young','เทคโนโลยี':'technology','สุขภาพ':'health medical',
+  'อาหาร':'food eating','ธรรมชาติ':'nature outdoor','สงคราม':'war military',
+  'ดนตรี':'music concert','บันเทิง':'entertainment','เศรษฐกิจ':'economy finance',
+};
+
+async function _refTranslateToEnglish(text) {
+  const t = text.trim();
+  if (!_refHasThaiChars(t)) return t;
+  if (window._refTranslatorReady && window._refThEnTranslator) {
+    try {
+      const r = await window._refThEnTranslator(t, { max_new_tokens: 128 });
+      const tr = (r[0]?.translation_text || '').trim();
+      if (tr && tr !== t) { console.log(`[NMT] "${t}" → "${tr}"`); return tr; }
+    } catch(e) { console.warn('[NMT fallback]', e.message); }
+  }
+  // keyword fallback
+  let out = t;
+  const sorted = Object.entries(_REF_KW_FALLBACK).sort((a,b) => b[0].length - a[0].length);
+  for (const [th, en] of sorted) out = out.replace(new RegExp(th,'g'), en);
+  return out.replace(/\s+/g,' ').trim() || t;
+}
+
+// ── Encode query text → vector ─────────────────────────────────
+async function _refEncodeText(text) {
+  if (!window._refClipTextReady) throw new Error('CLIP text encoder ยังไม่พร้อม');
+  // Wait up to 30s if still loading
+  let waited = 0;
+  while (window._refClipTextLoading && waited < 30000) {
+    await new Promise(r => setTimeout(r, 500));
+    waited += 500;
+  }
+  const output = await window._refClipText(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data);
+}
+
+// ── Encode image URL → vector (for auto-embed after upload) ────
+async function _refEncodeImage(imageUrl) {
+  if (!window._refClipImgReady) throw new Error('CLIP image encoder ยังไม่พร้อม');
+  // Wait up to 45s if still loading
+  let waited = 0;
+  while (window._refClipImgLoading && waited < 45000) {
+    await new Promise(r => setTimeout(r, 500));
+    waited += 500;
+  }
+  const output = await window._refClipImg(imageUrl, { pooling: 'mean', normalize: true });
+  const arr = Array.from(output.data);
+  // Normalize manually just in case
+  const norm = Math.sqrt(arr.reduce((s, v) => s + v*v, 0));
+  return norm > 0 ? arr.map(v => v / norm) : arr;
+}
+
+// ── Auto-embed image after upload ──────────────────────────────
+async function _autoEmbedRef(refId, imageUrl) {
+  if (!imageUrl || !refId) return;
+  try {
+    const vector = await _refEncodeImage(imageUrl);
+    const now    = new Date().toISOString();
+    const { error } = await _SB.from(REF_TABLE)
+      .update({ mclip_vector: vector, mclip_indexed_at: now })
+      .eq('id', refId);
+    if (error) { console.warn('[GrabREF embed] DB update failed:', error.message); return; }
+    // Update local cache
+    const idx = _allRefs.findIndex(r => r.id === refId);
+    if (idx !== -1) { _allRefs[idx].mclip_vector = vector; _allRefs[idx].mclip_indexed_at = now; }
+    console.log(`[GrabREF embed] ✅ ${refId} — dim=${vector.length}`);
+  } catch(e) {
+    console.warn(`[GrabREF embed] ⚠️ ${refId}:`, e.message);
+  }
+}
+
+// ── CLIP Search ────────────────────────────────────────────────
+let _clipRefResults = null;  // null = no clip search active
+
+async function doClipRefSearch() {
+  const input = document.getElementById('clipSearchInput');
+  const btn   = document.getElementById('clipSearchBtn');
+  const meta  = document.getElementById('searchMeta');
+  const query = input?.value.trim();
+  if (!query) return;
+  if (!window._refClipTextReady) {
+    showToast('error', 'AI model ยังโหลดไม่เสร็จ — รอสักครู่', 0, true); return;
+  }
+
+  btn.disabled = true; btn.textContent = '…';
+  _updateRefAiStatus();
+
+  try {
+    // 1. Translate
+    const q = await _refTranslateToEnglish(query);
+    if (q !== query) console.log(`[GrabREF search] translated: "${query}" → "${q}"`);
+
+    // 2. Encode text
+    const vector = await _refEncodeText(q);
+
+    // 3. Vector search
+    const { data, error } = await _SB.rpc('match_refs_mclip', {
+      query_vector:    vector,
+      match_count:     50,
+      match_threshold: 0.05,
+    });
+    if (error) throw new Error(error.message);
+
+    const results = data || [];
+    _clipRefResults = results;
+
+    // 4. Sort _allRefs by similarity score
+    const scoreMap = {};
+    results.forEach(r => { scoreMap[r.id] = r.similarity; });
+
+    const ranked = _allRefs
+      .filter(r => scoreMap[r.id] !== undefined)
+      .sort((a, b) => scoreMap[b.id] - scoreMap[a.id]);
+
+    // 5. Render with similarity badge
+    const grid = document.getElementById('masonryGrid');
+    if (!ranked.length) {
+      grid.innerHTML = `<div class="empty-wrap"><div class="e-rule"></div><div class="e-title">No matches</div><div class="e-sub">Try a different description</div></div>`;
+    } else {
+      grid.classList.remove('empty-state');
+      grid.innerHTML = ranked.slice(0, 50).map(r => {
+        const simPct = Math.round((scoreMap[r.id] || 0) * 100);
+        return cardHTMLWithSim(r, simPct);
+      }).join('');
+    }
+
+    const label = q !== query ? ` [searched: "${q}"]` : '';
+    if (meta) meta.textContent = `AI: ${ranked.length} matches${label}`;
+    document.getElementById('clipClearBtn').style.display = 'inline-block';
+
+  } catch(e) {
+    console.error('[GrabREF CLIP search]', e);
+    showToast('error', e.message.slice(0, 80), 0, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+
+function cardHTMLWithSim(r, simPct) {
+  const base = cardHTML(r);
+  // Inject sim badge inside ref-card
+  return base.replace('<div class="ref-card-overlay">', `<div class="ref-card-sim">${simPct}%</div><div class="ref-card-overlay">`);
+}
+
+function clearClipRefSearch() {
+  _clipRefResults = null;
+  document.getElementById('clipSearchInput').value = '';
+  document.getElementById('clipClearBtn').style.display = 'none';
+  document.getElementById('searchMeta').textContent = '';
+  renderGrid(_allRefs);
+}
+
+// ══════════════════════════════════════════════════════════════
 // SEARCH BAR
 // ══════════════════════════════════════════════════════════════
 let _searchQuery = '';
@@ -2216,6 +2583,8 @@ _SB.auth.onAuthStateChange((_event, session) => {
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
+  // Start polling AI model status now that DOM is ready
+  _updateRefAiStatus();
   // ตรวจ localStorage session ทันที (เผื่อ login จาก vp-search.html แล้ว)
   const uid      = localStorage.getItem(USER_KEY);
   const authType = localStorage.getItem(AUTH_TYPE_KEY);

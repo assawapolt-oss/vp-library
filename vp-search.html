@@ -8,31 +8,64 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>VP Library — THE STANDARD</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<!-- CLIP text encoder — โหลดใน browser โดยตรง ไม่ต้องพึ่ง HF API -->
+<!-- CLIP text encoder + Thai→English NMT — โหลดใน browser โดยตรง ไม่ต้องพึ่ง HF API -->
 <script type="module">
   import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
   env.allowLocalModels = false;
 
-  window._clipReady  = false;
-  window._clipLoading = true;
+  window._clipReady       = false;
+  window._clipLoading     = true;
+  window._translatorReady = false;
+  window._translatorLoading = true;
 
-  try {
-    // โหลด CLIP ViT-B/32 text encoder (~25MB, cache ใน browser หลังโหลดครั้งแรก)
-    window._clipExtractor = await pipeline(
-      'feature-extraction',
-      'Xenova/clip-vit-base-patch32',
-      { quantized: true }
-    );
-    window._clipReady   = true;
-    window._clipLoading = false;
+  // โหลดทั้งสอง model พร้อมกัน (parallel)
+  const loadCLIP = pipeline(
+    'feature-extraction',
+    'Xenova/clip-vit-base-patch32',
+    { quantized: true }
+  ).then(p => {
+    window._clipExtractor = p;
+    window._clipReady     = true;
+    window._clipLoading   = false;
     console.log('[CLIP] text encoder พร้อม');
-    // อัปเดต UI ถ้า initAI ทำงานไปแล้ว
-    if (typeof setAIStatus === 'function') {
-      setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
-    }
-  } catch(e) {
+    _notifyAIReady();
+  }).catch(e => {
     window._clipLoading = false;
-    console.warn('[CLIP] โหลด model ไม่สำเร็จ:', e.message);
+    console.warn('[CLIP] โหลดไม่สำเร็จ:', e.message);
+    _notifyAIReady();
+  });
+
+  // opus-mt-th-en: ~50MB quantized, Neural Machine Translation Thai→English
+  const loadTranslator = pipeline(
+    'translation',
+    'Xenova/opus-mt-th-en',
+    { quantized: true }
+  ).then(p => {
+    window._thEnTranslator    = p;
+    window._translatorReady   = true;
+    window._translatorLoading = false;
+    console.log('[Translator] opus-mt-th-en พร้อม');
+    _notifyAIReady();
+  }).catch(e => {
+    window._translatorLoading = false;
+    console.warn('[Translator] โหลดไม่สำเร็จ:', e.message);
+    _notifyAIReady();
+  });
+
+  function _notifyAIReady() {
+    if (!window._clipLoading && !window._translatorLoading) {
+      if (typeof setAIStatus === 'function') {
+        const clipOK = window._clipReady;
+        const transOK = window._translatorReady;
+        if (clipOK && transOK) {
+          setAIStatus('ready', '🧠 CLIP + NMT Thai→English พร้อม', 100);
+        } else if (clipOK) {
+          setAIStatus('ready', '🧠 CLIP พร้อม (Translator ใช้ keyword fallback)', 100);
+        } else {
+          setAIStatus('ready', '⚡ Text Search พร้อม (AI โหลดไม่สำเร็จ)', 100);
+        }
+      }
+    }
   }
 </script>
 <style>
@@ -2286,22 +2319,41 @@ function setAIStatus(state, text, pct) {
 }
 
 function initAI() {
-  if (window._clipReady) {
-    setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
-  } else if (window._clipLoading) {
-    setAIStatus('loading', '⏳ กำลังโหลด CLIP model (~25MB, ครั้งแรกเท่านั้น)…', 50);
-    // poll จนกว่าโหลดเสร็จ
+  const allDone = !window._clipLoading && !window._translatorLoading;
+  if (allDone) {
+    const clipOK  = window._clipReady;
+    const transOK = window._translatorReady;
+    if (clipOK && transOK) {
+      setAIStatus('ready', '🧠 CLIP + NMT Thai→English พร้อม', 100);
+    } else if (clipOK) {
+      setAIStatus('ready', '🧠 CLIP พร้อม (Translator ใช้ keyword fallback)', 100);
+    } else {
+      setAIStatus('ready', '⚡ Text Search พร้อม (AI โหลดไม่สำเร็จ)', 100);
+    }
+  } else {
+    // กำลังโหลด — แสดง status แล้ว poll
+    const clipMsg  = window._clipLoading      ? 'CLIP (~25MB)' : '';
+    const transMsg = window._translatorLoading ? 'NMT Thai→EN (~50MB)' : '';
+    const parts    = [clipMsg, transMsg].filter(Boolean).join(' + ');
+    setAIStatus('loading', `⏳ กำลังโหลด ${parts}… (ครั้งแรกเท่านั้น)`, 30);
     const t = setInterval(() => {
-      if (window._clipReady) {
+      if (!window._clipLoading && !window._translatorLoading) {
         clearInterval(t);
-        setAIStatus('ready', '🧠 CLIP Semantic Search พร้อม', 100);
-      } else if (!window._clipLoading) {
-        clearInterval(t);
-        setAIStatus('ready', '⚡ Text Search พร้อม (CLIP โหลดไม่สำเร็จ)', 100);
+        const clipOK  = window._clipReady;
+        const transOK = window._translatorReady;
+        if (clipOK && transOK) {
+          setAIStatus('ready', '🧠 CLIP + NMT Thai→English พร้อม', 100);
+        } else if (clipOK) {
+          setAIStatus('ready', '🧠 CLIP พร้อม (Translator ใช้ keyword fallback)', 100);
+        } else {
+          setAIStatus('ready', '⚡ Text Search พร้อม (AI โหลดไม่สำเร็จ)', 100);
+        }
+      } else if (window._clipReady && window._translatorLoading) {
+        setAIStatus('loading', '⏳ กำลังโหลด NMT Thai→EN (~50MB)…', 65);
+      } else if (!window._clipLoading && !window._clipReady) {
+        setAIStatus('loading', '⏳ กำลังโหลด NMT Thai→EN (~50MB)…', 65);
       }
     }, 1000);
-  } else {
-    setAIStatus('ready', '⚡ Text Search พร้อม', 100);
   }
 }
 
@@ -2462,10 +2514,16 @@ function extractFromText(text) {
 }
 
 // ── Thai → English translator (สำหรับ CLIP query) ────────────────
-// แปลง query ภาษาไทยเป็น English ก่อนส่งไป CLIP encoder
-// CLIP เข้าใจ English ดีกว่า Thai — แปลแบบ keyword replacement
-const THAI_EN_TRANSLATE = {
-  // สถานที่
+// Primary: Xenova/opus-mt-th-en (Neural Machine Translation, ~50MB, โหลดใน browser)
+// Fallback: keyword map (ใช้ทันที ขณะที่ NMT ยังโหลดอยู่)
+//
+// ตรวจสอบว่า text มีภาษาไทยหรือไม่
+function _hasThaiChars(text) {
+  return /[\u0E00-\u0E7F]/.test(text);
+}
+
+// Keyword map — fallback เมื่อ NMT ยังไม่พร้อม
+const _THAI_KW_FALLBACK = {
   'ปั๊มน้ำมัน':'gas station oil pump','ปั้มน้ำมัน':'gas station oil pump',
   'ปั๊ม':'gas station pump','ปั้ม':'pump station',
   'น้ำมัน':'oil petroleum fuel','เชื้อเพลิง':'fuel energy petroleum',
@@ -2485,7 +2543,6 @@ const THAI_EN_TRANSLATE = {
   'โรงพยาบาล':'hospital medical clinic','โรงเรียน':'school education',
   'มหาวิทยาลัย':'university campus college','วัด':'temple religious heritage',
   'ร้านอาหาร':'restaurant food dining','ห้าง':'shopping mall retail',
-  // หัวข้อข่าว
   'หุ่นยนต์':'robot automation machinery','เอไอ':'artificial intelligence AI technology',
   'ปัญญาประดิษฐ์':'artificial intelligence AI','เทคโนโลยี':'technology innovation',
   'อุตสาหกรรม':'industry manufacturing industrial','การผลิต':'manufacturing production',
@@ -2495,10 +2552,9 @@ const THAI_EN_TRANSLATE = {
   'สิ่งแวดล้อม':'environment nature ecology','โลกร้อน':'climate change global warming',
   'สุขภาพ':'health medical medicine','โรค':'disease illness health',
   'ดนตรี':'music concert performance','บันเทิง':'entertainment media showbiz',
-  'วัฒนธรรม':'culture tradition heritage','ชนบท':'rural countryside authentic',
+  'วัฒนธรรม':'culture tradition heritage',
   'ธุรกิจ':'business commerce corporate','ทรัพยากร':'resources energy mineral',
   'พลังงาน':'energy power resource','ข่าว':'news media journalism',
-  // บรรยากาศ / mood
   'มืด':'dark dramatic moody','มืดมน':'dark gloomy mysterious',
   'ตึงเครียด':'tense dramatic intense','เครียด':'tense serious stress',
   'น่ากลัว':'scary dark tense mysterious','หลอน':'eerie mysterious haunting',
@@ -2508,7 +2564,6 @@ const THAI_EN_TRANSLATE = {
   'กลางคืน':'night dark evening','กลางวัน':'day bright outdoor sunlight',
   'พระอาทิตย์ตก':'sunset golden dusk','พระอาทิตย์ขึ้น':'sunrise morning golden',
   'สว่าง':'bright light indoor studio','มีสีสัน':'colorful vibrant',
-  // คน / ตัวละคร
   'คน':'person people human','นักธุรกิจ':'businessman suit office',
   'นักการเมือง':'politician government official','นักวิทยาศาสตร์':'scientist lab research',
   'ทหาร':'soldier military army','ตำรวจ':'police officer uniform',
@@ -2517,24 +2572,43 @@ const THAI_EN_TRANSLATE = {
   'นักดนตรี':'musician performer stage','นักแสดง':'actor performer stage',
 };
 
-/**
- * แปลง Thai query → English ก่อนส่งให้ CLIP
- * คืนคำ English ที่ครอบคลุมความหมาย เพื่อให้ CLIP เข้าใจได้ดีขึ้น
- */
-function _translateToEnglish(text) {
-  let translated = text.trim();
-  // แทนที่ keyword ไทยด้วย English (เรียงจากยาวไปสั้น เพื่อ match คำยาวก่อน)
-  const sorted = Object.entries(THAI_EN_TRANSLATE).sort((a,b) => b[0].length - a[0].length);
+function _keywordFallback(text) {
+  let t = text.trim();
+  const sorted = Object.entries(_THAI_KW_FALLBACK).sort((a,b) => b[0].length - a[0].length);
   for (const [th, en] of sorted) {
-    if (translated.includes(th)) {
-      translated = translated.replace(new RegExp(th, 'g'), en);
+    if (t.includes(th)) t = t.replace(new RegExp(th, 'g'), en);
+  }
+  return t.replace(/\s+/g,' ').trim() || text;
+}
+
+/**
+ * แปลง Thai → English (async)
+ * - ถ้า NMT พร้อม: ใช้ opus-mt-th-en (แม่นยำ ยั่งยืน)
+ * - ถ้า NMT ยังโหลดอยู่: ใช้ keyword fallback ทันที
+ * - ถ้า text เป็น English อยู่แล้ว: คืนทันที
+ */
+async function _translateToEnglish(text) {
+  const t = text.trim();
+  if (!_hasThaiChars(t)) return t;  // English/mixed — ไม่ต้องแปล
+
+  // NMT พร้อม — ใช้ Neural Machine Translation
+  if (window._translatorReady && window._thEnTranslator) {
+    try {
+      const result = await window._thEnTranslator(t, { max_new_tokens: 256 });
+      const translated = (result[0]?.translation_text || '').trim();
+      if (translated && translated !== t) {
+        console.log(`[NMT] "${t}" → "${translated}"`);
+        return translated;
+      }
+    } catch(e) {
+      console.warn('[NMT] แปลไม่สำเร็จ fallback keyword:', e.message);
     }
   }
-  // ลบ whitespace ซ้ำ
-  translated = translated.replace(/\s+/g, ' ').trim();
-  // ถ้าแปลได้แล้ว log ให้รู้
-  if (translated !== text) console.log(`[Translate] "${text}" → "${translated}"`);
-  return translated || text;
+
+  // NMT ยังไม่พร้อม — keyword fallback
+  const kw = _keywordFallback(t);
+  if (kw !== t) console.log(`[KW fallback] "${t}" → "${kw}"`);
+  return kw;
 }
 
 // ── Tag-based scoring (normalized 0–1) ───────────────────────
@@ -2596,8 +2670,9 @@ async function runRec() {
   const modeBadge = `<span class="ai-badge" style="background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border-color:transparent">🧠 Semantic AI</span>`;
 
   try {
-    // 1. แปลง Thai → English ก่อนส่งให้ CLIP encoder
-    const queryForCLIP = _translateToEnglish(text);
+    // 1. แปลง Thai → English ก่อนส่งให้ CLIP encoder (NMT async)
+    setAIStatus('loading', '🌐 แปลภาษา…', 20);
+    const queryForCLIP = await _translateToEnglish(text);
     setAIStatus('loading', `🔍 ค้นหา: "${queryForCLIP}"…`, 40);
     const apiResults = await _callSearchAPI(queryForCLIP, 100);
     setAIStatus('loading', '✨ จัดเรียงผลลัพธ์…', 85);
@@ -2671,8 +2746,8 @@ async function runRec() {
     const hint = isKeyErr
       ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ตั้งค่า HF API key: <code>localStorage.setItem('vp_hf_key','hf_xxx')</code><br>รับ key ฟรีที่ <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:#7C3AED">huggingface.co/settings/tokens</a></div>`
       : isNoData
-      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ยังไม่มีข้อมูล vector — รัน <code>python vp-indexer.py</code> เพื่อ index ภาพก่อน</div>`
-      : `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ตรวจสอบ HF API key: <code>localStorage.setItem('vp_hf_key','hf_xxx')</code></div>`;
+      ? `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ยังไม่มีข้อมูล vector — รัน Google Colab Notebook เพื่อ embed ภาพก่อน</div>`
+      : `<div style="margin-top:8px;font-size:12px;color:#7C3AED">💡 ตรวจสอบ Supabase connection หรือรัน Colab Notebook ใหม่</div>`;
     setAIStatus('error', '❌ ' + e.message.slice(0, 80), 0);
     box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">❌</div><div style="font-size:15px;font-weight:600;color:var(--muted)">เกิดข้อผิดพลาด: ${e.message}</div>${hint}</div>`;
   }
