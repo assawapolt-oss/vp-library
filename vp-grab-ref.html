@@ -2457,7 +2457,7 @@ async function startBatchEmbed() {
 
   // Fetch up to 500 unembedded images at a time
   const { data, error } = await _SB.from(REF_TABLE)
-    .select('id, image_url')
+    .select('id, url')
     .is('mclip_vector', null)
     .limit(500);
 
@@ -2479,8 +2479,8 @@ async function startBatchEmbed() {
     logEl.textContent = `⏳ ${shortId}…`;
 
     try {
-      if (!ref.image_url) throw new Error('no image_url');
-      const vector = await _refEncodeImage(ref.image_url);
+      if (!ref.url) throw new Error('no url');
+      const vector = await _refEncodeImage(ref.url);
       const { error: updateErr } = await _SB.from(REF_TABLE)
         .update({ mclip_vector: vector, mclip_indexed_at: new Date().toISOString() })
         .eq('id', ref.id);
