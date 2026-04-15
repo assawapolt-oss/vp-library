@@ -263,3 +263,143 @@ ORDER BY ordinal_position;
 -- 3. ตั้ง File size limit: 10MB (เพียงพอสำหรับ 1920×1080 WebP)
 -- 4. Allowed MIME types: image/webp
 -- (ถ้าต้องการ policy ใน SQL ทำได้ แต่ Dashboard ง่ายกว่า)
+
+-- ══════════════════════════════════════════════════════════════════
+-- 13. SECURITY FIX — require Supabase Auth for all WRITE operations (v7 — 2026-04-15)
+--
+--  ❗ สำคัญมาก: เปลี่ยนจาก "ใครก็เขียนได้ด้วย anon key"
+--              → "ต้อง login ผ่าน Google OAuth (@thestandard.co) ก่อน"
+--
+--  หลักการ:
+--    • READ  (SELECT)          → ยังคงเปิด public (ค้นหาใช้ anon key ได้)
+--    • WRITE (INSERT/UPDATE/DELETE) → ต้องผ่าน auth.role() = 'authenticated'
+--                                     (= login ด้วย Supabase Auth / Google OAuth สำเร็จ)
+--    • service_requests INSERT → ยังคงเปิด anon ได้ (ฟอร์มส่งคำร้อง public)
+--      แต่ UPDATE/DELETE ต้องการ auth
+--
+--  วิธีใช้:
+--    Copy ทั้งหมด → วางใน Supabase SQL Editor → กด Run
+-- ══════════════════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13a. scenes — ล็อค write ให้ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+ALTER TABLE public.scenes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public write scenes"  ON public.scenes;
+DROP POLICY IF EXISTS "Allow all scenes"     ON public.scenes;
+DROP POLICY IF EXISTS "Auth write scenes"    ON public.scenes;
+
+-- READ: เปิด public (search ใช้ anon key)
+DROP POLICY IF EXISTS "Public read scenes" ON public.scenes;
+CREATE POLICY "Public read scenes"
+  ON public.scenes FOR SELECT USING (true);
+
+-- WRITE: ต้อง authenticated (Google OAuth login สำเร็จ)
+CREATE POLICY "Auth write scenes"
+  ON public.scenes FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13b. collections — ล็อค write ให้ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "Public write collections" ON public.collections;
+DROP POLICY IF EXISTS "Allow all collections"    ON public.collections;
+DROP POLICY IF EXISTS "Auth write collections"   ON public.collections;
+
+CREATE POLICY "Auth write collections"
+  ON public.collections FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13c. equipment — ล็อค write ให้ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "Public write equipment" ON public.equipment;
+DROP POLICY IF EXISTS "Auth write equipment"   ON public.equipment;
+
+CREATE POLICY "Auth write equipment"
+  ON public.equipment FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13d. shows — สร้าง RLS + ล็อค write ให้ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+ALTER TABLE public.shows ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read shows"  ON public.shows;
+DROP POLICY IF EXISTS "Public write shows" ON public.shows;
+DROP POLICY IF EXISTS "Allow all shows"    ON public.shows;
+DROP POLICY IF EXISTS "Auth write shows"   ON public.shows;
+
+CREATE POLICY "Public read shows"
+  ON public.shows FOR SELECT USING (true);
+
+CREATE POLICY "Auth write shows"
+  ON public.shows FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13e. ref_images — ล็อค write ให้ต้อง auth (GrabRef ต้อง login ก่อนอัปโหลด)
+-- ─────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "Public write ref_images" ON public.ref_images;
+DROP POLICY IF EXISTS "Auth write ref_images"   ON public.ref_images;
+
+CREATE POLICY "Auth write ref_images"
+  ON public.ref_images FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13f. service_requests — INSERT เปิด anon, UPDATE/DELETE ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "Public write service_requests" ON public.service_requests;
+DROP POLICY IF EXISTS "Allow all service_requests"    ON public.service_requests;
+DROP POLICY IF EXISTS "Public insert service_requests" ON public.service_requests;
+DROP POLICY IF EXISTS "Auth modify service_requests"   ON public.service_requests;
+DROP POLICY IF EXISTS "Auth delete service_requests"   ON public.service_requests;
+
+-- ใครก็ส่ง request ได้ (ฟอร์ม public)
+CREATE POLICY "Public insert service_requests"
+  ON public.service_requests FOR INSERT
+  WITH CHECK (true);
+
+-- แก้ไข/ลบต้อง auth (admin เท่านั้น)
+CREATE POLICY "Auth modify service_requests"
+  ON public.service_requests FOR UPDATE
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Auth delete service_requests"
+  ON public.service_requests FOR DELETE
+  USING      (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 13g. users — ล็อค read/write ให้ต้อง auth
+-- ─────────────────────────────────────────────────────────────────
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read users"  ON public.users;
+DROP POLICY IF EXISTS "Public write users" ON public.users;
+DROP POLICY IF EXISTS "Auth read users"    ON public.users;
+DROP POLICY IF EXISTS "Auth write users"   ON public.users;
+
+CREATE POLICY "Auth read users"
+  ON public.users FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Auth write users"
+  ON public.users FOR ALL
+  USING      (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- ─────────────────────────────────────────────────────────────────
+-- VERIFY — ตรวจสอบ policies ทั้งหมดหลังอัปเดต
+-- ─────────────────────────────────────────────────────────────────
+SELECT tablename, policyname, cmd, qual
+FROM   pg_policies
+WHERE  tablename IN ('scenes','collections','equipment','shows','ref_images','service_requests','users')
+ORDER  BY tablename, cmd, policyname;

@@ -1,6 +1,6 @@
 # VP Library — คู่มือระบบฉบับสมบูรณ์
 
-> อัปเดตล่าสุด: เมษายน 2569  
+> อัปเดตล่าสุด: เมษายน 2569 (v7 — Security + Auto-Embed + Video Preview)
 > สถาปัตยกรรมปัจจุบัน: **Google Colab embed + Browser CLIP search + NMT Thai→English**
 
 ---
@@ -267,18 +267,111 @@ const SUPABASE_ANON = 'eyJhbGciOi...';  // anon/public key
 
 ```
 VP_Library/
-├── vp-search.html         ← หน้าค้นหา (ใช้งานหลัก)
-├── vp-admin.html          ← จัดการ/เพิ่มฉาก
-├── vp-grab-ref.html       ← เก็บ Reference + CLIP search
-├── vp-embed-colab.ipynb   ← Google Colab Notebook สำหรับ embed ภาพ
-└── VP_SYSTEM_INSTRUCTIONS.md  ← ไฟล์นี้
+├── vp-search.html                        ← หน้าค้นหา (ใช้งานหลัก) + Video Hover Preview
+├── vp-admin.html                         ← จัดการ/เพิ่มฉาก
+├── vp-grab-ref.html                      ← เก็บ Reference + CLIP search
+├── vp-embed-colab.ipynb                  ← Google Colab Notebook สำหรับ embed ภาพ
+├── supabase_migration.sql                ← SQL migrations ทั้งหมด (v1–v7)
+├── supabase/functions/auto-embed/
+│   └── index.ts                          ← Edge Function: auto-embed เมื่ออัปโหลดภาพใหม่
+└── VP_SYSTEM_INSTRUCTIONS.md             ← ไฟล์นี้
 ```
+
+---
+
+## Security Architecture (v7 — 2026-04-15)
+
+### RLS Policy ปัจจุบัน
+
+| Table | SELECT | INSERT | UPDATE/DELETE |
+|-------|--------|--------|---------------|
+| `scenes` | public | auth only | auth only |
+| `collections` | public | auth only | auth only |
+| `equipment` | public | auth only | auth only |
+| `shows` | public | auth only | auth only |
+| `ref_images` | public | auth only | auth only |
+| `service_requests` | public | **anon OK** | auth only |
+| `users` | auth only | auth only | auth only |
+
+**"auth only"** = ต้อง login ผ่าน Google OAuth (@thestandard.co) ก่อน
+— Supabase Auth ออก JWT พร้อม `role = 'authenticated'`
+— Policy ตรวจ `auth.role() = 'authenticated'`
+
+### วิธี Apply Security Fix
+รัน section **13** ใน `supabase_migration.sql` ผ่าน Supabase SQL Editor
+
+---
+
+## Auto-Embed Edge Function (v7)
+
+### หลักการทำงาน
+
+```
+Admin อัปโหลดภาพใหม่ใน vp-admin.html
+    ↓
+Supabase Database Webhook (INSERT/UPDATE on scenes)
+    ↓
+Edge Function: supabase/functions/auto-embed/index.ts
+    ↓  (download image → HuggingFace CLIP API)
+mclip_vector + mclip_indexed_at อัปเดตอัตโนมัติ
+    ↓
+ค้นหาได้เลยใน vp-search.html
+```
+
+ไม่ต้องเปิด Google Colab อีกต่อไปสำหรับภาพใหม่แต่ละรูป
+
+### วิธี Deploy
+
+**1. ติดตั้ง Supabase CLI:**
+```bash
+npm install -g supabase
+supabase login
+supabase link --project-ref pgaqdqbjyewwckpslyvx
+```
+
+**2. ตั้ง Secrets:**
+```bash
+supabase secrets set HF_TOKEN=hf_xxxxxxxxxxxxxxxx
+```
+(รับ HF token ฟรีที่ https://huggingface.co/settings/tokens)
+
+**3. Deploy:**
+```bash
+supabase functions deploy auto-embed --no-verify-jwt
+```
+
+**4. สร้าง Database Webhook ใน Supabase Dashboard:**
+- Dashboard → Database → Webhooks → Create new webhook
+- Name: `auto-embed-on-scene-upsert`
+- Table: `scenes`
+- Events: `INSERT`, `UPDATE`
+- URL: `https://pgaqdqbjyewwckpslyvx.supabase.co/functions/v1/auto-embed`
+- HTTP Headers: `{ "Authorization": "Bearer <SUPABASE_ANON_KEY>" }`
+
+**หมายเหตุ:** Google Colab ยังใช้งานได้เสมอสำหรับ re-embed ทั้งหมด (เช่น เปลี่ยน model)
+
+---
+
+## Video Preview on Hover (v7)
+
+### วิธีทำงาน
+
+เมื่อ scene มี `video_url` (YouTube / Vimeo):
+- Card จะแสดง badge "▶ Video" มุมล่างขวา
+- Hover ค้าง 600ms → โหลด iframe autoplay+muted ซ้อนบนภาพ
+- Mouse ออก → หยุดวิดีโอ + ลบ iframe ทันที (ป้องกัน audio ค้าง)
+
+### วิธีเพิ่ม video_url ให้ฉาก
+1. เปิด `vp-admin.html`
+2. เลือกฉาก → แท็บ "Video / Motion"
+3. วาง YouTube URL เช่น `https://www.youtube.com/watch?v=xxxxx`
+4. Save
 
 ---
 
 ## หมายเหตุสำคัญ
 
-- **ไม่ต้องมี Python server** — ทุกอย่างทำงานบน browser + Google Colab
-- **ไม่ต้องมี HF API Key** — ไม่ได้ใช้ HuggingFace Inference API
-- **Embed ต้องทำครั้งเดียว** — หลังจาก embed แล้ว ค้นหาได้ทุกครั้งโดยไม่ต้อง embed ใหม่
-- **Service Role Key** — ใช้เฉพาะใน Colab เท่านั้น (มีสิทธิ์ write) ห้ามใส่ใน HTML ที่ deploy บน GitHub Pages
+- **ไม่ต้องมี Python server** — ทุกอย่างทำงานบน browser + Supabase Edge Functions
+- **Auto-Embed ต้องการ HF Token** — รับฟรีที่ huggingface.co, ใส่เป็น Edge Function secret
+- **Service Role Key** — ใช้เฉพาะใน Colab / Edge Function เท่านั้น ห้ามใส่ใน HTML
+- **Google Colab ยังใช้ได้** — ใช้สำหรับ batch re-embed ทั้งหมดหรือเปลี่ยน model
