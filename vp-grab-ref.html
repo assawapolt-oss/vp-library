@@ -563,6 +563,42 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   PAGINATION
+══════════════════════════════════════════════════════════════ */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.pg-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  border: 1px solid var(--line-hi);
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.pg-btn:hover:not(:disabled) { color: var(--gold); border-color: var(--gold-dim); }
+.pg-btn:disabled { opacity: .3; cursor: default; }
+.pg-info {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  min-width: 120px;
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════════════════════
    BATCH EMBED MODAL
 ══════════════════════════════════════════════════════════════ */
 .btn-batch-embed {
@@ -1510,6 +1546,13 @@ body {
   <!-- Masonry Grid -->
   <div class="masonry-grid" id="masonryGrid"></div>
 
+  <!-- Pagination -->
+  <div class="pagination-bar" id="paginationBar" style="display:none">
+    <button class="pg-btn" id="pgPrev" onclick="goPage(-1)">← Prev</button>
+    <span class="pg-info" id="pgInfo"></span>
+    <button class="pg-btn" id="pgNext" onclick="goPage(+1)">Next →</button>
+  </div>
+
 </div>
 
 <!-- ══ CROP MODAL ══ -->
@@ -1876,19 +1919,62 @@ async function loadRefs() {
   updateStatsBar();
 }
 
-function renderGrid(refs) {
+const PAGE_SIZE = 30;
+let _currentPage = 0;
+let _displayRefs = [];       // full sorted list currently being displayed
+let _displayScoreMap = null; // similarity scores if in AI search mode
+
+function renderGrid(refs, scoreMap) {
+  _displayRefs    = refs;
+  _displayScoreMap = scoreMap || null;
+  _currentPage    = 0;
+  renderPage();
+}
+
+function renderPage() {
   const grid = document.getElementById('masonryGrid');
-  if (!refs.length) {
+  const pgBar = document.getElementById('paginationBar');
+
+  if (!_displayRefs.length) {
     grid.classList.add('empty-state');
     grid.innerHTML = `<div class="empty-wrap">
       <div class="e-rule"></div>
       <div class="e-title">No references yet</div>
       <div class="e-sub">Drop or paste images above to begin your collection</div>
     </div>`;
+    pgBar.style.display = 'none';
     return;
   }
+
+  const totalPages = Math.ceil(_displayRefs.length / PAGE_SIZE);
+  const start = _currentPage * PAGE_SIZE;
+  const slice = _displayRefs.slice(start, start + PAGE_SIZE);
+
   grid.classList.remove('empty-state');
-  grid.innerHTML = refs.slice(0, 50).map(r => cardHTML(r)).join('');
+  if (_displayScoreMap) {
+    grid.innerHTML = slice.map(r => {
+      const simPct = Math.round((_displayScoreMap[r.id] || 0) * 100);
+      return cardHTMLWithSim(r, simPct);
+    }).join('');
+  } else {
+    grid.innerHTML = slice.map(r => cardHTML(r)).join('');
+  }
+
+  // Pagination bar
+  const end = Math.min(start + PAGE_SIZE, _displayRefs.length);
+  document.getElementById('pgInfo').textContent =
+    `${start + 1}–${end} of ${_displayRefs.length}`;
+  document.getElementById('pgPrev').disabled = (_currentPage === 0);
+  document.getElementById('pgNext').disabled = (_currentPage >= totalPages - 1);
+  pgBar.style.display = _displayRefs.length > PAGE_SIZE ? 'flex' : 'none';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goPage(delta) {
+  const totalPages = Math.ceil(_displayRefs.length / PAGE_SIZE);
+  _currentPage = Math.max(0, Math.min(totalPages - 1, _currentPage + delta));
+  renderPage();
 }
 
 function prependCard(ref) {
@@ -1940,7 +2026,7 @@ function shuffleGrid() {
     const j = Math.floor(Math.random() * (i + 1));
     [_allRefs[i], _allRefs[j]] = [_allRefs[j], _allRefs[i]];
   }
-  renderGrid(_allRefs);
+  renderGrid(_allRefs, null);
 }
 
 let _gridCols = 3; // default column count
@@ -2574,16 +2660,13 @@ async function doClipRefSearch() {
       .filter(r => scoreMap[r.id] !== undefined)
       .sort((a, b) => scoreMap[b.id] - scoreMap[a.id]);
 
-    // 5. Render with similarity badge
-    const grid = document.getElementById('masonryGrid');
+    // 5. Render with similarity badge + pagination
     if (!ranked.length) {
+      const grid = document.getElementById('masonryGrid');
       grid.innerHTML = `<div class="empty-wrap"><div class="e-rule"></div><div class="e-title">No matches</div><div class="e-sub">Try a different description</div></div>`;
+      document.getElementById('paginationBar').style.display = 'none';
     } else {
-      grid.classList.remove('empty-state');
-      grid.innerHTML = ranked.slice(0, 50).map(r => {
-        const simPct = Math.round((scoreMap[r.id] || 0) * 100);
-        return cardHTMLWithSim(r, simPct);
-      }).join('');
+      renderGrid(ranked, scoreMap);
     }
 
     const label = q !== query ? ` [searched: "${q}"]` : '';
@@ -2609,7 +2692,7 @@ function clearClipRefSearch() {
   document.getElementById('clipSearchInput').value = '';
   document.getElementById('clipClearBtn').style.display = 'none';
   document.getElementById('searchMeta').textContent = '';
-  renderGrid(_allRefs);
+  renderGrid(_allRefs, null);
 }
 
 // (keyword search removed — AI Semantic Search only)
