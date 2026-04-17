@@ -845,17 +845,17 @@ body {
    MASONRY GRID
 ══════════════════════════════════════════════════════════════ */
 .masonry-grid {
-  columns: 3 320px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
+  align-items: start;
 }
-.masonry-grid.empty-state { columns: unset; }
+.masonry-grid.empty-state { display: block; }
 
 .ref-card {
-  break-inside: avoid;
   background: var(--card);
   border: 1px solid var(--line);
   overflow: hidden;
-  margin-bottom: 12px;
   cursor: pointer;
   position: relative;
   display: block;
@@ -1418,8 +1418,7 @@ body {
   .nav-bar { padding: 0 16px; }
   .page-wrap { padding: 24px 16px 80px; }
   .drop-zone { padding: 36px 20px; }
-  .masonry-grid { columns: 2 160px; gap: 8px; }
-  .ref-card { margin-bottom: 8px; }
+  .masonry-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 </style>
 </head>
@@ -1479,37 +1478,21 @@ body {
     <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
   </div>
 
-  <!-- Search bar (collapsible) -->
+  <!-- AI Semantic Search (always visible) -->
   <div class="search-wrap" id="searchWrap" style="display:none">
-    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()">
-      <span>Search References</span>
-      <span class="search-toggle-caret">▾</span>
-    </button>
-    <div class="search-panel" id="searchPanel">
-      <!-- Keyword search -->
-      <div class="search-row">
-        <input class="search-input-ref" id="refSearchInput" type="text"
-          placeholder="filename, notes, uploader, backlink…"
-          oninput="onRefSearch(this.value)">
-        <button class="search-clear" onclick="clearRefSearch()">Clear</button>
-      </div>
-      <div class="search-meta" id="searchMeta"></div>
-
-      <!-- AI Semantic Search (CLIP) -->
-      <hr class="clip-divider">
-      <div class="clip-section-label">AI Semantic Search</div>
-      <div class="clip-search-row">
-        <input class="clip-search-input" id="clipSearchInput" type="text"
-          placeholder="describe the image… เช่น 'โรงงานกลางคืน', 'woman portrait studio'"
-          onkeydown="if(event.key==='Enter') doClipRefSearch()">
-        <button class="clip-search-btn" id="clipSearchBtn" onclick="doClipRefSearch()">Search</button>
-        <button class="clip-clear" id="clipClearBtn" onclick="clearClipRefSearch()" style="display:none">Clear</button>
-      </div>
-      <div class="clip-ai-status" id="clipAiStatus">
-        <span class="clip-ai-dot loading" id="clipAiDot"></span>
-        <span id="clipAiText">Loading AI models…</span>
-      </div>
+    <div class="clip-section-label">AI Semantic Search</div>
+    <div class="clip-search-row">
+      <input class="clip-search-input" id="clipSearchInput" type="text"
+        placeholder="describe the image… เช่น 'โรงงานกลางคืน', 'woman portrait studio'"
+        onkeydown="if(event.key==='Enter') doClipRefSearch()">
+      <button class="clip-search-btn" id="clipSearchBtn" onclick="doClipRefSearch()">Search</button>
+      <button class="clip-clear" id="clipClearBtn" onclick="clearClipRefSearch()" style="display:none">Clear</button>
     </div>
+    <div class="clip-ai-status" id="clipAiStatus">
+      <span class="clip-ai-dot loading" id="clipAiDot"></span>
+      <span id="clipAiText">Loading AI models…</span>
+    </div>
+    <div class="search-meta" id="searchMeta"></div>
   </div>
 
   <!-- Stats bar -->
@@ -1963,8 +1946,7 @@ function shuffleGrid() {
 let _gridCols = 3; // default column count
 function resizeGrid(delta) {
   _gridCols = Math.min(6, Math.max(1, _gridCols + delta));
-  const minW = Math.round(1200 / _gridCols);
-  document.getElementById('masonryGrid').style.columns = `${_gridCols} ${minW}px`;
+  document.getElementById('masonryGrid').style.gridTemplateColumns = `repeat(${_gridCols}, 1fr)`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2630,48 +2612,7 @@ function clearClipRefSearch() {
   renderGrid(_allRefs);
 }
 
-// ══════════════════════════════════════════════════════════════
-// SEARCH BAR
-// ══════════════════════════════════════════════════════════════
-let _searchQuery = '';
-
-function toggleSearch() {
-  const toggle = document.getElementById('searchToggle');
-  const panel  = document.getElementById('searchPanel');
-  const open   = panel.classList.toggle('open');
-  toggle.classList.toggle('open', open);
-  if (open) setTimeout(() => document.getElementById('refSearchInput').focus(), 80);
-}
-
-function onRefSearch(q) {
-  _searchQuery = q.trim().toLowerCase();
-  applySearch();
-}
-
-function clearRefSearch() {
-  _searchQuery = '';
-  document.getElementById('refSearchInput').value = '';
-  document.getElementById('searchMeta').textContent = '';
-  applySearch();
-}
-
-function applySearch() {
-  if (!_searchQuery) {
-    renderGrid(_allRefs);
-    document.getElementById('searchMeta').textContent = '';
-    return;
-  }
-  const q = _searchQuery;
-  const filtered = _allRefs.filter(r =>
-    (r.original_name || '').toLowerCase().includes(q) ||
-    (r.notes         || '').toLowerCase().includes(q) ||
-    (r.backlink      || '').toLowerCase().includes(q) ||
-    (r.uploaded_by   || '').toLowerCase().includes(q)
-  );
-  renderGrid(filtered);
-  document.getElementById('searchMeta').textContent =
-    `${filtered.length} of ${_allRefs.length} match`;
-}
+// (keyword search removed — AI Semantic Search only)
 
 // ══════════════════════════════════════════════════════════════
 // AUTH — shared session with vp-search.html
