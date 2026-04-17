@@ -7,422 +7,285 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&family=Instrument+Sans:wght@400;600&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,700&family=Instrument+Sans:wght@400;600&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
-
 :root {
-  --bg:        #0A0A0C;
-  --bone:      #F0ECE4;
-  --bone-dim:  #A09C94;
-  --bone-faint:#3C3C40;
-  --gold:      #C4A266;
-  --gold-dim:  #6B5633;
-  --muted:     #58585E;
-  --font-sans: 'Instrument Sans', system-ui, sans-serif;
-  --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
-  --font-serif:'Instrument Serif', Georgia, serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --card-h:    clamp(140px, 22vh, 210px);
-  --card-w:    calc(var(--card-h) * 16 / 9);
-  --gap:       14px;
+  --bg:       #0A0A0C;
+  --bone:     #F0ECE4;
+  --bone-dim: #A09C94;
+  --bone-fnt: #3C3C40;
+  --gold:     #C4A266;
+  --gold-dim: #6B5633;
+  --muted:    #58585E;
+  --f-sans:   'Instrument Sans', system-ui, sans-serif;
+  --f-disp:   'Bricolage Grotesque', system-ui, sans-serif;
+  --f-serif:  'Instrument Serif', Georgia, serif;
+  --f-mono:   'IBM Plex Mono', monospace;
 }
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--bone); font-family: var(--f-sans); -webkit-font-smoothing: antialiased; }
 
-html, body {
-  width: 100%; height: 100%;
-  background: var(--bg);
-  color: var(--bone);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
-}
-
-/* ══════════════════════════════════════════════════
-   MARQUEE STAGE
-══════════════════════════════════════════════════ */
+/* ── Stage ─────────────────────────────────────── */
 #stage {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--gap);
-  z-index: 0;
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; gap: 20px;
+  padding: 0;
 }
 
-/* One row wrapper — clips overflow */
-.row-wrap {
-  overflow: hidden;
-  height: var(--card-h);
-  flex-shrink: 0;
-}
+/* ── Row ────────────────────────────────────────── */
+.row-wrap { overflow: hidden; flex-shrink: 0; height: 200px; }
 
-/* The scrolling track — width set by JS */
+/* track: must be width: max-content so % translate works on its OWN width */
 .row-track {
   display: flex;
-  gap: var(--gap);
-  will-change: transform;
+  gap: 18px;
+  width: max-content;
   height: 100%;
 }
 
-.row-track.left  { animation: scrollLeft  var(--dur, 18s) linear infinite; }
-.row-track.right { animation: scrollRight var(--dur, 18s) linear infinite; }
-
-@keyframes scrollLeft  {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes scrollRight {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
-
-/* Pause on hover */
-#stage:hover .row-track { animation-play-state: paused; }
-
-/* Individual card */
-.scene-card {
+/* ── Card ────────────────────────────────────────── */
+.sc {
   flex-shrink: 0;
-  width: var(--card-w);
-  height: var(--card-h);
-  border-radius: 3px;
+  width: 356px;      /* 200 × 16/9 */
+  height: 200px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 1px 4px rgba(0,0,0,.4);
+  background: #111116;
   position: relative;
-  background: #111;
+  transition: transform .25s ease, box-shadow .25s ease;
 }
-
-.scene-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: opacity .4s ease;
-}
-
-/* Bottom micro-label */
-.scene-card-title {
-  position: absolute;
-  bottom: 6px; left: 8px; right: 8px;
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(240,236,228,.3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-/* ══════════════════════════════════════════════════
-   OVERLAYS
-══════════════════════════════════════════════════ */
-/* Dark fade top/bottom */
-.ov-top {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 28vh;
-  z-index: 1;
-  background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
-  pointer-events: none;
-}
-.ov-bottom {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 28vh;
-  z-index: 1;
-  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
-  pointer-events: none;
-}
-/* Center fog — makes credit text readable */
-.ov-center {
-  position: fixed;
-  inset: 0;
+.sc:hover {
+  transform: scale(1.03) translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.8), 0 1px 4px rgba(0,0,0,.4);
   z-index: 2;
-  background: radial-gradient(
-    ellipse 55% 55% at 50% 50%,
-    rgba(10,10,12,.82) 0%,
-    rgba(10,10,12,.38) 60%,
-    transparent 100%
-  );
+}
+.sc img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+/* bottom fade + title */
+.sc::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,10,12,.55) 0%, transparent 50%);
   pointer-events: none;
 }
-/* Left/right edge fade */
-.ov-left {
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  width: 120px;
-  z-index: 1;
-  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
-  pointer-events: none;
-}
-.ov-right {
-  position: fixed;
-  top: 0; right: 0; bottom: 0;
-  width: 120px;
-  z-index: 1;
-  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+.sc-title {
+  position: absolute;
+  bottom: 9px; left: 11px; right: 11px;
+  z-index: 2;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(240,236,228,.4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   pointer-events: none;
 }
 
-/* ══════════════════════════════════════════════════
-   CREDIT
-══════════════════════════════════════════════════ */
-#credit {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+/* ── Overlays ────────────────────────────────────── */
+.ov { position: fixed; pointer-events: none; z-index: 5; }
+.ov-t { top:0;left:0;right:0;height:32vh; background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%); }
+.ov-b { bottom:0;left:0;right:0;height:32vh; background:linear-gradient(to top,var(--bg) 0%,transparent 100%); }
+.ov-l { top:0;left:0;bottom:0;width:100px; background:linear-gradient(to right,var(--bg) 0%,transparent 100%); }
+.ov-r { top:0;right:0;bottom:0;width:100px; background:linear-gradient(to left,var(--bg) 0%,transparent 100%); }
+.ov-c {
+  inset:0;
+  background: radial-gradient(ellipse 48% 52% at 50% 50%,
+    rgba(10,10,12,.88) 0%,
+    rgba(10,10,12,.50) 55%,
+    transparent 100%);
+}
+
+/* ── Credit ──────────────────────────────────────── */
+#cred {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
   padding: 40px 24px;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity .9s ease .3s;
+  opacity: 0; transition: opacity .9s ease .2s;
 }
-#credit.visible { opacity: 1; }
+#cred.on { opacity: 1; }
 
-.cr-rule-top {
-  width: 1px; height: 40px;
-  background: linear-gradient(to bottom, transparent, var(--gold-dim));
-  margin: 0 auto 26px;
+.c-rule { width: 1px; height: 40px; margin: 0 auto; }
+.c-rule.top { background: linear-gradient(to bottom, transparent, var(--gold-dim)); margin-bottom: 24px; }
+.c-rule.bot { background: linear-gradient(to top,   transparent, var(--gold-dim)); margin-top: 24px; }
+
+.c-eye {
+  font-family: var(--f-mono); font-size: 8px;
+  letter-spacing: .26em; text-transform: uppercase;
+  color: var(--gold); opacity: .7; margin-bottom: 16px;
 }
-.cr-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--gold);
-  opacity: .75;
-  margin-bottom: 18px;
+.c-name {
+  font-family: var(--f-disp);
+  font-size: clamp(26px, 3.6vw, 48px);
+  font-weight: 300; letter-spacing: .1em;
+  color: var(--bone); line-height: 1.1; margin-bottom: 5px;
 }
-.cr-name {
-  font-family: var(--font-disp);
-  font-size: clamp(26px, 3.8vw, 50px);
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  color: var(--bone);
-  line-height: 1.1;
-  margin-bottom: 5px;
+.c-nameth {
+  font-family: var(--f-serif); font-style: italic;
+  font-size: clamp(12px, 1.2vw, 15px);
+  color: var(--bone-dim); letter-spacing: .06em; margin-bottom: 18px;
 }
-.cr-name-th {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: clamp(12px, 1.3vw, 15px);
-  color: var(--bone-dim);
-  letter-spacing: .06em;
-  margin-bottom: 20px;
+.c-div { width: 28px; height: 1px; background: var(--gold-dim); margin: 0 auto 14px; }
+.c-role {
+  font-family: var(--f-mono); font-size: clamp(9px,.9vw,10px);
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--bone-dim); line-height: 2.2; margin-bottom: 5px;
 }
-.cr-divider {
-  width: 28px; height: 1px;
-  background: var(--gold-dim);
-  margin: 0 auto 16px;
+.c-org {
+  font-family: var(--f-mono); font-size: clamp(7px,.75vw,9px);
+  letter-spacing: .26em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 26px;
 }
-.cr-roles {
-  font-family: var(--font-mono);
-  font-size: clamp(9px, .95vw, 11px);
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--bone-dim);
-  line-height: 2.1;
-  margin-bottom: 6px;
-}
-.cr-org {
-  font-family: var(--font-mono);
-  font-size: clamp(7px, .8vw, 9px);
-  letter-spacing: .24em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 28px;
-}
-.cr-linkedin {
+.c-li {
   pointer-events: all;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-decoration: none;
-  border: 1px solid var(--bone-faint);
-  padding: 8px 20px;
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--f-mono); font-size: 9px;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  border: 1px solid var(--bone-fnt); padding: 8px 20px;
   transition: color .2s, border-color .2s, background .2s;
 }
-.cr-linkedin:hover {
-  color: var(--gold);
-  border-color: var(--gold-dim);
-  background: rgba(196,162,102,.05);
-}
-.cr-linkedin svg { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
-.cr-rule-bottom {
-  width: 1px; height: 40px;
-  background: linear-gradient(to top, transparent, var(--gold-dim));
-  margin: 26px auto 0;
-}
+.c-li:hover { color: var(--gold); border-color: var(--gold-dim); background: rgba(196,162,102,.05); }
+.c-li svg { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
 
-/* ══════════════════════════════════════════════════
-   CHROME
-══════════════════════════════════════════════════ */
-.back-link {
-  position: fixed;
-  top: 24px; left: 24px;
-  z-index: 20;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-decoration: none;
+/* ── Chrome ──────────────────────────────────────── */
+.back {
+  position: fixed; top: 24px; left: 24px; z-index: 20;
+  font-family: var(--f-mono); font-size: 9px;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
   display: flex; align-items: center; gap: 7px;
   transition: color .2s;
 }
-.back-link:hover { color: var(--bone-dim); }
-.back-link::before { content: '←'; }
+.back:hover { color: var(--bone-dim); }
+.back::before { content: '←'; }
 
-.project-label {
-  position: fixed;
-  bottom: 22px; right: 24px;
-  z-index: 20;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--bone-faint);
-  text-align: right;
-  line-height: 2;
+.badge {
+  position: fixed; bottom: 22px; right: 24px; z-index: 20;
+  font-family: var(--f-mono); font-size: 8px;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--bone-fnt); text-align: right; line-height: 2;
   pointer-events: none;
 }
 
-/* ══════════════════════════════════════════════════
-   LOADER
-══════════════════════════════════════════════════ */
-#loader {
-  position: fixed; inset: 0; z-index: 100;
+/* ── Loader ──────────────────────────────────────── */
+#ld {
+  position: fixed; inset: 0; z-index: 200;
   background: var(--bg);
   display: flex; align-items: center; justify-content: center;
   transition: opacity .8s ease;
 }
-#loader.fade { opacity: 0; pointer-events: none; }
-.ld { display: flex; gap: 8px; }
-.ld span {
-  width: 4px; height: 4px;
+#ld.out { opacity: 0; pointer-events: none; }
+.ld-dots { display: flex; gap: 8px; }
+.ld-dots span {
+  width: 4px; height: 4px; border-radius: 50%;
   background: var(--gold-dim);
-  border-radius: 50%;
-  animation: ldp 1.4s infinite;
+  animation: ldblink 1.4s infinite;
 }
-.ld span:nth-child(2) { animation-delay: .2s; }
-.ld span:nth-child(3) { animation-delay: .4s; }
-@keyframes ldp { 0%,100%{opacity:.15} 50%{opacity:1} }
+.ld-dots span:nth-child(2) { animation-delay: .2s; }
+.ld-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes ldblink { 0%,100%{opacity:.12} 50%{opacity:1} }
 
-/* ══════════════════════════════════════════════════
-   MOBILE
-══════════════════════════════════════════════════ */
-@media (max-width: 640px) {
-  :root { --card-h: 120px; --gap: 10px; }
-  .ov-top, .ov-bottom { height: 20vh; }
-  .ov-left, .ov-right { width: 60px; }
-}
+/* ── Keyframes (defined statically, duration set via JS) ── */
+@keyframes toLeft  { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes toRight { from{transform:translateX(-50%)} to{transform:translateX(0)} }
 
 </style>
 </head>
 <body>
 
-<div id="loader"><div class="ld">
-  <span></span><span></span><span></span>
-</div></div>
+<div id="ld"><div class="ld-dots"><span></span><span></span><span></span></div></div>
 
-<!-- Marquee rows injected by JS -->
 <div id="stage"></div>
 
-<!-- Overlays -->
-<div class="ov-top"></div>
-<div class="ov-bottom"></div>
-<div class="ov-left"></div>
-<div class="ov-right"></div>
-<div class="ov-center"></div>
+<div class="ov ov-t"></div>
+<div class="ov ov-b"></div>
+<div class="ov ov-l"></div>
+<div class="ov ov-r"></div>
+<div class="ov ov-c"></div>
 
-<!-- Back -->
-<a href="index.html" class="back-link">VP Library</a>
+<a href="index.html" class="back">VP Library</a>
 
-<!-- Credit -->
-<div id="credit">
-  <div class="cr-rule-top"></div>
-  <div class="cr-eyebrow">Designed &amp; Built by</div>
-  <div class="cr-name">ASSAWAPOL TULANON</div>
-  <div class="cr-name-th">อัศวพล ตุลานนท์</div>
-  <div class="cr-divider"></div>
-  <div class="cr-roles">Video Director<br>Virtual Production Developer</div>
-  <div class="cr-org">THE STANDARD</div>
-  <a class="cr-linkedin"
-     href="https://www.linkedin.com/in/assawapol-tulanon-0a5745200"
-     target="_blank" rel="noopener">
+<div id="cred">
+  <div class="c-rule top"></div>
+  <div class="c-eye">Designed &amp; Built by</div>
+  <div class="c-name">ASSAWAPOL TULANON</div>
+  <div class="c-nameth">อัศวพล ตุลานนท์</div>
+  <div class="c-div"></div>
+  <div class="c-role">Video Director<br>Virtual Production Developer</div>
+  <div class="c-org">THE STANDARD</div>
+  <a class="c-li" href="https://www.linkedin.com/in/assawapol-tulanon-0a5745200" target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-    LinkedIn
-    <span style="opacity:.4">↗</span>
+    LinkedIn <span style="opacity:.4">↗</span>
   </a>
-  <div class="cr-rule-bottom"></div>
+  <div class="c-rule bot"></div>
 </div>
 
-<div class="project-label">VP Library<br>THE STANDARD</div>
+<div class="badge">VP Library<br>THE STANDARD</div>
 
 <script>
 const SB_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
 const _SB = supabase.createClient(SB_URL, SB_ANON);
 
-// Row configs: direction + speed (seconds per full loop)
-const ROWS = [
-  { dir: 'left',  dur: 28 },
-  { dir: 'right', dur: 22 },
-  { dir: 'left',  dur: 32 },
-  { dir: 'right', dur: 25 },
+// 3 rows: direction + speed in seconds
+const ROW_CFG = [
+  { dir: 'toLeft',  dur: 35 },
+  { dir: 'toRight', dur: 28 },
+  { dir: 'toLeft',  dur: 42 },
 ];
 
-const CARDS_PER_SET = 10; // cards per half-track (duplicated for seamless loop)
+const CARD_W   = 356;  // px  (200 × 16/9)
+const CARD_H   = 200;  // px
+const CARD_GAP = 18;   // px
+const PER_SET  = 12;   // cards per half-track
 
 function shuffle(arr) {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
   }
   return a;
 }
 
-function cardHTML(scene) {
-  const url = scene.thumb_url || scene.image_url || '';
+function makeCard(scene) {
+  const url   = scene.thumb_url || scene.image_url || '';
   const title = scene.title || '';
-  return `<div class="scene-card">
-    <img src="${url}" alt="${title}" loading="lazy" decoding="async">
-    <div class="scene-card-title">${title}</div>
-  </div>`;
+  const card  = document.createElement('div');
+  card.className = 'sc';
+  card.innerHTML = `<img src="${url}" alt="${title}" loading="lazy" decoding="async"><div class="sc-title">${title}</div>`;
+  return card;
 }
 
-function buildRow(scenes, rowCfg, rowIdx) {
-  // Slice a unique chunk for this row, fallback to repeat if fewer scenes
-  const total = scenes.length;
-  const start = (rowIdx * CARDS_PER_SET) % total;
-  const pool = [];
-  for (let i = 0; i < CARDS_PER_SET; i++) {
-    pool.push(scenes[(start + i) % total]);
-  }
-
-  const wrap = document.createElement('div');
+function buildRow(cfg, scenes, rowIdx) {
+  const wrap  = document.createElement('div');
   wrap.className = 'row-wrap';
 
   const track = document.createElement('div');
-  track.className = `row-track ${rowCfg.dir}`;
-  track.style.setProperty('--dur', `${rowCfg.dur}s`);
+  track.className = 'row-track';
 
-  // Two identical sets for seamless loop
-  const set = pool.map(cardHTML).join('');
-  track.innerHTML = set + set;
+  // Pick a unique slice of scenes for this row
+  const total = scenes.length;
+  const pool  = [];
+  for (let i = 0; i < PER_SET; i++) {
+    pool.push(scenes[(rowIdx * PER_SET + i) % total]);
+  }
+
+  // Two identical sets → seamless loop (track width = 2× set width)
+  // translateX(-50%) = exactly -1 set width
+  const setWidth = PER_SET * (CARD_W + CARD_GAP); // px per set (no trailing gap simplification)
+
+  [...pool, ...pool].forEach(s => track.appendChild(makeCard(s)));
+
+  // Set animation via JS — avoids CSS-variable-in-animation-duration issues
+  track.style.animation = `${cfg.dir} ${cfg.dur}s linear infinite`;
 
   wrap.appendChild(track);
   return wrap;
@@ -438,9 +301,8 @@ async function init() {
       .eq('active', true)
       .limit(120);
     if (!error && data && data.length) scenes = shuffle(data);
-  } catch(e) { console.warn('[about]', e); }
+  } catch(e) { console.warn('[about] scenes', e); }
 
-  // Fallback without active filter
   if (!scenes.length) {
     try {
       const { data } = await _SB
@@ -448,23 +310,26 @@ async function init() {
         .select('id, title, image_url, thumb_url')
         .limit(120);
       if (data && data.length) scenes = shuffle(data);
-    } catch(e) { console.warn('[about fallback]', e); }
+    } catch(e) { console.warn('[about] fallback', e); }
   }
 
-  const stage = document.getElementById('stage');
-
-  if (scenes.length) {
-    ROWS.forEach((cfg, i) => {
-      stage.appendChild(buildRow(scenes, cfg, i));
-    });
+  // Need at least a few scenes to fill rows
+  if (!scenes.length) {
+    // No scenes — just show credit on dark bg
+    document.getElementById('stage').style.display = 'none';
+  } else {
+    // Pad if needed
+    while (scenes.length < PER_SET * ROW_CFG.length) {
+      scenes = [...scenes, ...scenes];
+    }
+    const stage = document.getElementById('stage');
+    ROW_CFG.forEach((cfg, i) => stage.appendChild(buildRow(cfg, scenes, i)));
   }
 
-  // Show credit
-  setTimeout(() => document.getElementById('credit').classList.add('visible'), 100);
+  setTimeout(() => document.getElementById('cred').classList.add('on'), 150);
 
-  // Hide loader
-  const ld = document.getElementById('loader');
-  ld.classList.add('fade');
+  const ld = document.getElementById('ld');
+  ld.classList.add('out');
   setTimeout(() => ld.remove(), 900);
 }
 
