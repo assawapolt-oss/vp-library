@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — THE STANDARD VP Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --bg:        #0A0A0C;
+  --bone:      #F0ECE4;
+  --bone-dim:  #A09C94;
+  --bone-faint:#3C3C40;
+  --gold:      #C4A266;
+  --gold-dim:  #6B5633;
+  --line:      #222226;
+  --muted:     #58585E;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-serif:'Instrument Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ══════════════════ FILM LAYERS ══════════════════ */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.film-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+  will-change: transform, opacity;
+}
+.film-layer.active {
+  opacity: 1;
+  animation: kenBurns 9s ease-out forwards;
+}
+
+@keyframes kenBurns {
+  from { transform: scale(1.0) translate(0%, 0%); }
+  to   { transform: scale(1.1) translate(-1.5%, -1%); }
+}
+
+/* Alternate direction every other slide */
+.film-layer.alt {
+  animation-name: kenBurnsAlt;
+}
+@keyframes kenBurnsAlt {
+  from { transform: scale(1.0) translate(0%, 0%); }
+  to   { transform: scale(1.1) translate(1.5%, 1%); }
+}
+
+/* ══════════════════ OVERLAYS ══════════════════ */
+.overlay-base {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(10, 10, 12, 0.62);
+}
+
+.overlay-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(10,10,12,0.7) 100%);
+}
+
+.overlay-top {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 180px;
+  z-index: 3;
+  background: linear-gradient(to bottom, rgba(10,10,12,0.9) 0%, transparent 100%);
+}
+
+.overlay-bottom {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 220px;
+  z-index: 3;
+  background: linear-gradient(to top, rgba(10,10,12,0.95) 0%, transparent 100%);
+}
+
+/* ══════════════════ BACK LINK ══════════════════ */
+.back-link {
+  position: fixed;
+  top: 28px;
+  left: 28px;
+  z-index: 10;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color .2s;
+}
+.back-link:hover { color: var(--bone-dim); }
+.back-link::before {
+  content: '←';
+  font-size: 11px;
+}
+
+/* ══════════════════ CREDIT BLOCK ══════════════════ */
+#credit {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease 0.4s;
+}
+#credit.visible { opacity: 1; }
+
+.credit-rule {
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--gold-dim));
+  margin: 0 auto 32px;
+}
+
+.credit-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 28px;
+  opacity: 0.8;
+}
+
+.credit-name {
+  font-family: var(--font-disp);
+  font-size: clamp(32px, 5vw, 58px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--bone);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.credit-name-th {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(13px, 1.6vw, 17px);
+  color: var(--bone-dim);
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+
+.credit-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dim);
+  margin: 0 auto 20px;
+}
+
+.credit-role {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.1vw, 11px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  line-height: 2;
+  margin-bottom: 36px;
+}
+
+.credit-linkedin {
+  pointer-events: all;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--bone-faint);
+  padding: 8px 20px;
+  transition: color .2s, border-color .2s;
+}
+.credit-linkedin:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+.credit-linkedin svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.credit-rule-bottom {
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to top, transparent, var(--gold-dim));
+  margin: 32px auto 0;
+}
+
+/* ══════════════════ PROJECT LABEL ══════════════════ */
+.project-label {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 10;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+  text-align: right;
+  line-height: 1.9;
+}
+
+/* ══════════════════ IMAGE COUNTER ══════════════════ */
+.img-counter {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 10;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--bone-faint);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.img-counter-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.img-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--bone-faint);
+  transition: background .4s, transform .4s;
+}
+.img-dot.active {
+  background: var(--gold);
+  transform: scale(1.4);
+}
+
+/* ══════════════════ LOADING ══════════════════ */
+#loadScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s ease;
+}
+#loadScreen.fade {
+  opacity: 0;
+  pointer-events: none;
+}
+.load-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--gold-dim);
+  border-radius: 50%;
+  animation: dotPulse 1.4s infinite;
+}
+.load-dot:nth-child(2) { animation-delay: .2s; }
+.load-dot:nth-child(3) { animation-delay: .4s; }
+#loadScreen > div { display: flex; gap: 8px; align-items: center; }
+@keyframes dotPulse { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loadScreen"><div>
+  <div class="load-dot"></div>
+  <div class="load-dot"></div>
+  <div class="load-dot"></div>
+</div></div>
+
+<!-- Film stage -->
+<div id="stage">
+  <div class="film-layer" id="layerA"></div>
+  <div class="film-layer" id="layerB"></div>
+</div>
+
+<!-- Overlays -->
+<div class="overlay-base"></div>
+<div class="overlay-vignette"></div>
+<div class="overlay-top"></div>
+<div class="overlay-bottom"></div>
+
+<!-- Back -->
+<a href="index.html" class="back-link">VP Library</a>
+
+<!-- Credit block -->
+<div id="credit">
+  <div class="credit-rule"></div>
+
+  <div class="credit-eyebrow">Designed &amp; Built by</div>
+
+  <div class="credit-name">ASSAWAPOL TULANON</div>
+  <div class="credit-name-th">อัสวภัทร ตุลานนท์</div>
+
+  <div class="credit-divider"></div>
+
+  <div class="credit-role">
+    Visual Production<br>
+    The Standard
+  </div>
+
+  <a class="credit-linkedin"
+     href="https://www.linkedin.com/in/assawapol-tulanon-0a5745200"
+     target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+    LinkedIn
+    <span style="opacity:.45">↗</span>
+  </a>
+
+  <div class="credit-rule-bottom"></div>
+</div>
+
+<!-- Project label -->
+<div class="project-label">
+  VP Library<br>
+  THE STANDARD
+</div>
+
+<!-- Image counter -->
+<div class="img-counter">
+  <div class="img-counter-dots" id="dotsWrap"></div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const SLIDE_DURATION = 7000;   // ms per slide
+const FADE_DURATION  = 1600;   // ms crossfade (matches CSS)
+const MAX_IMAGES     = 12;
+
+let images    = [];
+let current   = 0;
+let altFlag   = false;
+let layerAEl  = document.getElementById('layerA');
+let layerBEl  = document.getElementById('layerB');
+let activeLayer = 'A';
+let timer     = null;
+
+// ── Shuffle array ────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── Build dot indicators ─────────────────────────────────────
+function buildDots(n) {
+  const wrap = document.getElementById('dotsWrap');
+  wrap.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div');
+    d.className = 'img-dot' + (i === 0 ? ' active' : '');
+    d.id = `dot-${i}`;
+    wrap.appendChild(d);
+  }
+}
+function setActiveDot(i) {
+  document.querySelectorAll('.img-dot').forEach(d => d.classList.remove('active'));
+  const d = document.getElementById(`dot-${i}`);
+  if (d) d.classList.add('active');
+}
+
+// ── Preload an image ─────────────────────────────────────────
+function preload(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = img.onerror = () => resolve();
+    img.src = url;
+  });
+}
+
+// ── Show slide n ─────────────────────────────────────────────
+async function showSlide(n) {
+  const url = images[n];
+  if (!url) return;
+
+  const incoming = activeLayer === 'A' ? layerBEl : layerAEl;
+  const outgoing = activeLayer === 'A' ? layerAEl : layerBEl;
+
+  // Reset incoming layer
+  incoming.classList.remove('active', 'alt');
+  incoming.style.backgroundImage = `url('${url}')`;
+  // Force reflow so animation restarts
+  void incoming.offsetWidth;
+
+  // Trigger Ken Burns (alternate direction each slide)
+  if (altFlag) incoming.classList.add('alt');
+  incoming.classList.add('active');
+  altFlag = !altFlag;
+
+  // Fade out outgoing
+  outgoing.style.transition = `opacity ${FADE_DURATION}ms ease`;
+  outgoing.style.opacity = '0';
+
+  // Fade in incoming
+  incoming.style.transition = `opacity ${FADE_DURATION}ms ease`;
+  incoming.style.opacity = '1';
+
+  activeLayer = activeLayer === 'A' ? 'B' : 'A';
+  setActiveDot(n);
+}
+
+// ── Advance slideshow ────────────────────────────────────────
+function advance() {
+  current = (current + 1) % images.length;
+  showSlide(current);
+}
+
+// ── Start slideshow ──────────────────────────────────────────
+function startShow() {
+  showSlide(0);
+  timer = setInterval(advance, SLIDE_DURATION);
+
+  // Show credit block
+  setTimeout(() => {
+    document.getElementById('credit').classList.add('visible');
+  }, 300);
+
+  // Hide loading screen
+  const ls = document.getElementById('loadScreen');
+  ls.classList.add('fade');
+  setTimeout(() => ls.remove(), 900);
+}
+
+// ── Fetch images ─────────────────────────────────────────────
+async function init() {
+  try {
+    // Try ref_images first
+    const { data: refs, error } = await _SB
+      .from('ref_images')
+      .select('thumb_url, url')
+      .not('thumb_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(60);
+
+    if (!error && refs && refs.length) {
+      const pool = shuffle(refs.map(r => r.thumb_url || r.url)).slice(0, MAX_IMAGES);
+      // Preload first 2
+      await Promise.all([preload(pool[0]), preload(pool[1] || pool[0])]);
+      images = pool;
+      buildDots(images.length);
+      startShow();
+      return;
+    }
+  } catch(e) {
+    console.warn('[about] ref_images fetch failed', e);
+  }
+
+  // Fallback: try vp_scenes table
+  try {
+    const { data: scenes, error } = await _SB
+      .from('scenes')
+      .select('thumb_url, image_url')
+      .not('thumb_url', 'is', null)
+      .limit(60);
+
+    if (!error && scenes && scenes.length) {
+      const pool = shuffle(scenes.map(s => s.thumb_url || s.image_url)).slice(0, MAX_IMAGES);
+      await Promise.all([preload(pool[0]), preload(pool[1] || pool[0])]);
+      images = pool;
+      buildDots(images.length);
+      startShow();
+      return;
+    }
+  } catch(e) {
+    console.warn('[about] scenes fetch failed', e);
+  }
+
+  // Final fallback: no images — show credit on dark BG
+  document.getElementById('loadScreen').classList.add('fade');
+  setTimeout(() => document.getElementById('loadScreen').remove(), 900);
+  document.getElementById('credit').classList.add('visible');
+}
+
+init();
+</script>
+</body>
+</html>
