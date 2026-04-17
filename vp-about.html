@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&family=Instrument+Sans:wght@400;600&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 
 :root {
@@ -17,12 +17,14 @@
   --bone-faint:#3C3C40;
   --gold:      #C4A266;
   --gold-dim:  #6B5633;
-  --line:      #222226;
   --muted:     #58585E;
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-serif:'Instrument Serif', Georgia, serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  --card-h:    clamp(140px, 22vh, 210px);
+  --card-w:    calc(var(--card-h) * 16 / 9);
+  --gap:       14px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,94 +36,140 @@ html, body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
-  cursor: default;
-  user-select: none;
 }
 
-/* ══════════════════ CARDS STAGE ══════════════════ */
+/* ══════════════════════════════════════════════════
+   MARQUEE STAGE
+══════════════════════════════════════════════════ */
 #stage {
   position: fixed;
   inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--gap);
   z-index: 0;
-  will-change: transform;
-  transition: transform 0.12s cubic-bezier(.25,.46,.45,.94);
 }
 
-/* Each card: position is set via inline style (left/top as % of vp) */
-.scene-card {
-  position: absolute;
-  border-radius: 3px;
+/* One row wrapper — clips overflow */
+.row-wrap {
   overflow: hidden;
-  box-shadow: 0 12px 48px rgba(0,0,0,.72), 0 2px 8px rgba(0,0,0,.5);
-  border: 1px solid rgba(255,255,255,.07);
-  transition: transform 0.14s cubic-bezier(.25,.46,.45,.94), opacity 0.5s ease;
-  transform-style: preserve-3d;
-  will-change: transform;
+  height: var(--card-h);
+  flex-shrink: 0;
 }
 
-/* Inner: holds two layers for crossfade */
-.card-inner {
-  position: relative;
-  width: 100%;
+/* The scrolling track — width set by JS */
+.row-track {
+  display: flex;
+  gap: var(--gap);
+  will-change: transform;
   height: 100%;
 }
 
-.card-layer {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0;
-  transition: opacity 1.2s ease;
-}
-.card-layer.active { opacity: 1; }
+.row-track.left  { animation: scrollLeft  var(--dur, 18s) linear infinite; }
+.row-track.right { animation: scrollRight var(--dur, 18s) linear infinite; }
 
-/* Bottom gradient on each card */
-.card-inner::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 40%;
-  background: linear-gradient(to top, rgba(10,10,12,.7) 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 2;
+@keyframes scrollLeft  {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes scrollRight {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
 }
 
-/* Card title label */
-.card-label {
+/* Pause on hover */
+#stage:hover .row-track { animation-play-state: paused; }
+
+/* Individual card */
+.scene-card {
+  flex-shrink: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  background: #111;
+}
+
+.scene-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity .4s ease;
+}
+
+/* Bottom micro-label */
+.scene-card-title {
   position: absolute;
-  bottom: 8px;
-  left: 10px;
-  z-index: 3;
+  bottom: 6px; left: 8px; right: 8px;
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 7px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(240,236,228,.45);
-  pointer-events: none;
+  color: rgba(240,236,228,.3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 16px);
-}
-
-/* ══════════════════ PAGE OVERLAY ══════════════════ */
-.overlay-dark {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background: rgba(10,10,12,0.55);
   pointer-events: none;
 }
-.overlay-vignette {
+
+/* ══════════════════════════════════════════════════
+   OVERLAYS
+══════════════════════════════════════════════════ */
+/* Dark fade top/bottom */
+.ov-top {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 28vh;
+  z-index: 1;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+  pointer-events: none;
+}
+.ov-bottom {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 28vh;
+  z-index: 1;
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+  pointer-events: none;
+}
+/* Center fog — makes credit text readable */
+.ov-center {
   position: fixed;
   inset: 0;
   z-index: 2;
-  background: radial-gradient(ellipse 75% 75% at 50% 50%, transparent 20%, rgba(10,10,12,.85) 100%);
+  background: radial-gradient(
+    ellipse 55% 55% at 50% 50%,
+    rgba(10,10,12,.82) 0%,
+    rgba(10,10,12,.38) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+/* Left/right edge fade */
+.ov-left {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 120px;
+  z-index: 1;
+  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+  pointer-events: none;
+}
+.ov-right {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 120px;
+  z-index: 1;
+  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
   pointer-events: none;
 }
 
-/* ══════════════════ CREDIT ══════════════════ */
+/* ══════════════════════════════════════════════════
+   CREDIT
+══════════════════════════════════════════════════ */
 #credit {
   position: fixed;
   inset: 0;
@@ -132,131 +180,118 @@ html, body {
   justify-content: center;
   text-align: center;
   padding: 40px 24px;
-  opacity: 0;
-  transition: opacity 1s ease 0.5s;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .9s ease .3s;
 }
 #credit.visible { opacity: 1; }
 
-.credit-rule-top {
-  width: 1px;
-  height: 44px;
+.cr-rule-top {
+  width: 1px; height: 40px;
   background: linear-gradient(to bottom, transparent, var(--gold-dim));
-  margin: 0 auto 28px;
+  margin: 0 auto 26px;
 }
-
-.credit-eyebrow {
+.cr-eyebrow {
   font-family: var(--font-mono);
   font-size: 8px;
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 22px;
-  opacity: 0.75;
+  opacity: .75;
+  margin-bottom: 18px;
 }
-
-.credit-name {
+.cr-name {
   font-family: var(--font-disp);
-  font-size: clamp(28px, 4.2vw, 52px);
+  font-size: clamp(26px, 3.8vw, 50px);
   font-weight: 300;
   letter-spacing: 0.1em;
   color: var(--bone);
   line-height: 1.1;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
-
-.credit-name-th {
+.cr-name-th {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: clamp(12px, 1.4vw, 16px);
+  font-size: clamp(12px, 1.3vw, 15px);
   color: var(--bone-dim);
-  letter-spacing: 0.06em;
-  margin-bottom: 22px;
+  letter-spacing: .06em;
+  margin-bottom: 20px;
 }
-
-.credit-divider {
-  width: 28px;
-  height: 1px;
+.cr-divider {
+  width: 28px; height: 1px;
   background: var(--gold-dim);
-  margin: 0 auto 18px;
+  margin: 0 auto 16px;
 }
-
-.credit-roles {
+.cr-roles {
   font-family: var(--font-mono);
-  font-size: clamp(9px, 1vw, 11px);
-  letter-spacing: 0.2em;
+  font-size: clamp(9px, .95vw, 11px);
+  letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--bone-dim);
   line-height: 2.1;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-
-.credit-org {
+.cr-org {
   font-family: var(--font-mono);
-  font-size: clamp(8px, 0.85vw, 9px);
-  letter-spacing: 0.22em;
+  font-size: clamp(7px, .8vw, 9px);
+  letter-spacing: .24em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
-
-.credit-linkedin {
+.cr-linkedin {
   pointer-events: all;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.14em;
+  letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--muted);
   text-decoration: none;
   border: 1px solid var(--bone-faint);
-  padding: 9px 22px;
+  padding: 8px 20px;
   transition: color .2s, border-color .2s, background .2s;
 }
-.credit-linkedin:hover {
+.cr-linkedin:hover {
   color: var(--gold);
   border-color: var(--gold-dim);
   background: rgba(196,162,102,.05);
 }
-.credit-linkedin svg {
-  width: 11px; height: 11px;
-  fill: currentColor;
-  flex-shrink: 0;
-}
-
-.credit-rule-bottom {
-  width: 1px;
-  height: 44px;
+.cr-linkedin svg { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
+.cr-rule-bottom {
+  width: 1px; height: 40px;
   background: linear-gradient(to top, transparent, var(--gold-dim));
-  margin: 28px auto 0;
+  margin: 26px auto 0;
 }
 
-/* ══════════════════ BACK + PROJECT ══════════════════ */
+/* ══════════════════════════════════════════════════
+   CHROME
+══════════════════════════════════════════════════ */
 .back-link {
   position: fixed;
-  top: 26px; left: 26px;
-  z-index: 15;
+  top: 24px; left: 24px;
+  z-index: 20;
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.16em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--muted);
   text-decoration: none;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 7px;
   transition: color .2s;
 }
 .back-link:hover { color: var(--bone-dim); }
-.back-link::before { content: '←'; font-size: 10px; }
+.back-link::before { content: '←'; }
 
 .project-label {
   position: fixed;
-  bottom: 24px; right: 26px;
-  z-index: 15;
+  bottom: 22px; right: 24px;
+  z-index: 20;
   font-family: var(--font-mono);
   font-size: 8px;
-  letter-spacing: 0.2em;
+  letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--bone-faint);
   text-align: right;
@@ -264,129 +299,93 @@ html, body {
   pointer-events: none;
 }
 
-/* ══════════════════ SCENE COUNTER ══════════════════ */
-.scene-counter {
-  position: fixed;
-  bottom: 24px; left: 26px;
-  z-index: 15;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  color: var(--bone-faint);
-  pointer-events: none;
-}
-
-/* ══════════════════ LOADING ══════════════════ */
-#loadScreen {
+/* ══════════════════════════════════════════════════
+   LOADER
+══════════════════════════════════════════════════ */
+#loader {
   position: fixed; inset: 0; z-index: 100;
   background: var(--bg);
   display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.9s ease;
+  transition: opacity .8s ease;
 }
-#loadScreen.fade { opacity: 0; pointer-events: none; }
-.load-wrap { display: flex; gap: 8px; }
-.load-dot {
+#loader.fade { opacity: 0; pointer-events: none; }
+.ld { display: flex; gap: 8px; }
+.ld span {
   width: 4px; height: 4px;
   background: var(--gold-dim);
   border-radius: 50%;
-  animation: dotPulse 1.4s infinite;
+  animation: ldp 1.4s infinite;
 }
-.load-dot:nth-child(2) { animation-delay: .2s; }
-.load-dot:nth-child(3) { animation-delay: .4s; }
-@keyframes dotPulse { 0%,100%{opacity:.2} 50%{opacity:1} }
+.ld span:nth-child(2) { animation-delay: .2s; }
+.ld span:nth-child(3) { animation-delay: .4s; }
+@keyframes ldp { 0%,100%{opacity:.15} 50%{opacity:1} }
 
-/* ══════════════════ MOBILE ══════════════════ */
-@media (max-width: 768px) {
-  .credit-name { font-size: 26px; }
-  .overlay-vignette {
-    background: radial-gradient(ellipse 95% 75% at 50% 50%, transparent 5%, rgba(10,10,12,.9) 100%);
-  }
+/* ══════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  :root { --card-h: 120px; --gap: 10px; }
+  .ov-top, .ov-bottom { height: 20vh; }
+  .ov-left, .ov-right { width: 60px; }
 }
 
 </style>
 </head>
 <body>
 
-<div id="loadScreen"><div class="load-wrap">
-  <div class="load-dot"></div>
-  <div class="load-dot"></div>
-  <div class="load-dot"></div>
+<div id="loader"><div class="ld">
+  <span></span><span></span><span></span>
 </div></div>
 
+<!-- Marquee rows injected by JS -->
 <div id="stage"></div>
 
-<div class="overlay-dark"></div>
-<div class="overlay-vignette"></div>
+<!-- Overlays -->
+<div class="ov-top"></div>
+<div class="ov-bottom"></div>
+<div class="ov-left"></div>
+<div class="ov-right"></div>
+<div class="ov-center"></div>
 
+<!-- Back -->
 <a href="index.html" class="back-link">VP Library</a>
 
+<!-- Credit -->
 <div id="credit">
-  <div class="credit-rule-top"></div>
-
-  <div class="credit-eyebrow">Designed &amp; Built by</div>
-
-  <div class="credit-name">ASSAWAPOL TULANON</div>
-  <div class="credit-name-th">อัศวพล ตุลานนท์</div>
-
-  <div class="credit-divider"></div>
-
-  <div class="credit-roles">
-    Video Director<br>
-    Virtual Production Developer
-  </div>
-  <div class="credit-org">THE STANDARD</div>
-
-  <a class="credit-linkedin"
+  <div class="cr-rule-top"></div>
+  <div class="cr-eyebrow">Designed &amp; Built by</div>
+  <div class="cr-name">ASSAWAPOL TULANON</div>
+  <div class="cr-name-th">อัศวพล ตุลานนท์</div>
+  <div class="cr-divider"></div>
+  <div class="cr-roles">Video Director<br>Virtual Production Developer</div>
+  <div class="cr-org">THE STANDARD</div>
+  <a class="cr-linkedin"
      href="https://www.linkedin.com/in/assawapol-tulanon-0a5745200"
      target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
     LinkedIn
     <span style="opacity:.4">↗</span>
   </a>
-
-  <div class="credit-rule-bottom"></div>
+  <div class="cr-rule-bottom"></div>
 </div>
 
 <div class="project-label">VP Library<br>THE STANDARD</div>
-<div class="scene-counter" id="sceneCounter"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════════════
-const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
-const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const SB_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _SB = supabase.createClient(SB_URL, SB_ANON);
 
-// Card definitions — (cx, cy) = center % of vp, w = width px,
-// rot = base rotation deg, depth = parallax factor (0=far, 1=close)
-const CARD_DEFS = [
-  { cx: 12,  cy: 22,  w: 300, rot: -2.4, depth: 0.25, floatAmp: 7,  floatSpd: 5.2 },
-  { cx: 38,  cy: 12,  w: 360, rot:  1.2, depth: 0.45, floatAmp: 5,  floatSpd: 6.8 },
-  { cx: 72,  cy: 18,  w: 320, rot:  2.8, depth: 0.35, floatAmp: 9,  floatSpd: 4.6 },
-  { cx: 92,  cy: 38,  w: 280, rot: -1.6, depth: 0.55, floatAmp: 6,  floatSpd: 7.1 },
-  { cx: 8,   cy: 62,  w: 340, rot:  1.8, depth: 0.4,  floatAmp: 8,  floatSpd: 5.9 },
-  { cx: 32,  cy: 78,  w: 310, rot: -2.0, depth: 0.6,  floatAmp: 5,  floatSpd: 6.3 },
-  { cx: 62,  cy: 72,  w: 350, rot:  1.4, depth: 0.3,  floatAmp: 7,  floatSpd: 4.9 },
-  { cx: 88,  cy: 68,  w: 290, rot: -3.0, depth: 0.5,  floatAmp: 6,  floatSpd: 5.5 },
+// Row configs: direction + speed (seconds per full loop)
+const ROWS = [
+  { dir: 'left',  dur: 28 },
+  { dir: 'right', dur: 22 },
+  { dir: 'left',  dur: 32 },
+  { dir: 'right', dur: 25 },
 ];
 
-const UPDATE_INTERVAL = 5000; // ms — how often a random card refreshes
-const PARALLAX_STRENGTH = 18; // px max movement at full mouse edge
+const CARDS_PER_SET = 10; // cards per half-track (duplicated for seamless loop)
 
-// ══════════════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════════════
-let scenes   = [];
-let cards    = [];   // { el, layerA, layerB, activeLayer, currentIdx }
-let mouseX   = 0.5;
-let mouseY   = 0.5;
-let rafId    = null;
-let updateTimer = null;
-
-// ══════════════════════════════════════════════════════════════
-// UTILITIES
-// ══════════════════════════════════════════════════════════════
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -396,227 +395,77 @@ function shuffle(arr) {
   return a;
 }
 
-function preload(url) {
-  return new Promise(r => {
-    const img = new Image();
-    img.onload = img.onerror = r;
-    img.src = url;
-  });
+function cardHTML(scene) {
+  const url = scene.thumb_url || scene.image_url || '';
+  const title = scene.title || '';
+  return `<div class="scene-card">
+    <img src="${url}" alt="${title}" loading="lazy" decoding="async">
+    <div class="scene-card-title">${title}</div>
+  </div>`;
 }
 
-function rand(min, max) { return min + Math.random() * (max - min); }
-
-// ══════════════════════════════════════════════════════════════
-// BUILD CARDS
-// ══════════════════════════════════════════════════════════════
-function buildCards() {
-  const stage = document.getElementById('stage');
-  stage.innerHTML = '';
-  cards = [];
-
-  CARD_DEFS.forEach((def, i) => {
-    const w = def.w;
-    const h = Math.round(w / (16 / 9));
-
-    const card = document.createElement('div');
-    card.className = 'scene-card';
-    card.style.cssText = `
-      width: ${w}px;
-      height: ${h}px;
-      left: calc(${def.cx}% - ${w / 2}px);
-      top: calc(${def.cy}% - ${h / 2}px);
-      --base-rot: ${def.rot}deg;
-      z-index: ${Math.round(def.depth * 10)};
-    `;
-
-    const inner = document.createElement('div');
-    inner.className = 'card-inner';
-
-    const layerA = document.createElement('div');
-    layerA.className = 'card-layer active';
-    const layerB = document.createElement('div');
-    layerB.className = 'card-layer';
-
-    const label = document.createElement('div');
-    label.className = 'card-label';
-
-    inner.appendChild(layerA);
-    inner.appendChild(layerB);
-    inner.appendChild(label);
-    card.appendChild(inner);
-    stage.appendChild(card);
-
-    cards.push({
-      el: card,
-      layerA, layerB,
-      label,
-      activeLayer: 'A',
-      def,
-      floatOffset: rand(0, Math.PI * 2), // phase offset for float animation
-      sceneIdx: i % Math.max(scenes.length, 1),
-    });
-  });
-}
-
-// ══════════════════════════════════════════════════════════════
-// SET CARD IMAGE
-// ══════════════════════════════════════════════════════════════
-async function setCardScene(cardObj, sceneIdx, animate) {
-  const scene = scenes[sceneIdx % scenes.length];
-  if (!scene) return;
-  const url = scene.thumb_url || scene.image_url;
-  if (!url) return;
-
-  await preload(url);
-
-  const incoming = cardObj.activeLayer === 'A' ? cardObj.layerB : cardObj.layerA;
-  const outgoing = cardObj.activeLayer === 'A' ? cardObj.layerA : cardObj.layerB;
-
-  incoming.style.backgroundImage = `url('${url}')`;
-
-  if (animate) {
-    incoming.classList.remove('active');
-    void incoming.offsetWidth;
-    incoming.classList.add('active');
-    setTimeout(() => outgoing.classList.remove('active'), 1200);
-  } else {
-    incoming.classList.add('active');
-    outgoing.classList.remove('active');
+function buildRow(scenes, rowCfg, rowIdx) {
+  // Slice a unique chunk for this row, fallback to repeat if fewer scenes
+  const total = scenes.length;
+  const start = (rowIdx * CARDS_PER_SET) % total;
+  const pool = [];
+  for (let i = 0; i < CARDS_PER_SET; i++) {
+    pool.push(scenes[(start + i) % total]);
   }
 
-  cardObj.activeLayer = cardObj.activeLayer === 'A' ? 'B' : 'A';
-  cardObj.sceneIdx = sceneIdx;
-  cardObj.label.textContent = scene.title || '';
+  const wrap = document.createElement('div');
+  wrap.className = 'row-wrap';
+
+  const track = document.createElement('div');
+  track.className = `row-track ${rowCfg.dir}`;
+  track.style.setProperty('--dur', `${rowCfg.dur}s`);
+
+  // Two identical sets for seamless loop
+  const set = pool.map(cardHTML).join('');
+  track.innerHTML = set + set;
+
+  wrap.appendChild(track);
+  return wrap;
 }
 
-// ══════════════════════════════════════════════════════════════
-// INITIAL FILL
-// ══════════════════════════════════════════════════════════════
-async function fillCards() {
-  const pool = shuffle(scenes);
-  await Promise.all(
-    cards.map((c, i) => setCardScene(c, i % pool.length, false))
-  );
-  // reassign scenes pool indices
-  cards.forEach((c, i) => { c.sceneIdx = i % pool.length; });
-}
-
-// ══════════════════════════════════════════════════════════════
-// RANDOM UPDATE — cycle a random card to a new scene
-// ══════════════════════════════════════════════════════════════
-let _usedIdxs = new Set();
-
-function refreshRandomCard() {
-  if (!scenes.length || !cards.length) return;
-
-  // Pick a random card
-  const cardIdx = Math.floor(Math.random() * cards.length);
-  const card = cards[cardIdx];
-
-  // Pick a scene different from current
-  let tries = 0;
-  let nextIdx;
-  do {
-    nextIdx = Math.floor(Math.random() * scenes.length);
-    tries++;
-  } while (nextIdx === card.sceneIdx && tries < 20);
-
-  setCardScene(card, nextIdx, true);
-}
-
-// ══════════════════════════════════════════════════════════════
-// PARALLAX + FLOAT ANIMATION
-// ══════════════════════════════════════════════════════════════
-let _mx = 0.5, _my = 0.5;   // actual mouse (lerp target)
-let _cx = 0.5, _cy = 0.5;   // current (lerped)
-
-document.addEventListener('mousemove', e => {
-  _mx = e.clientX / window.innerWidth;
-  _my = e.clientY / window.innerHeight;
-});
-
-// Lerp
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function tick(ts) {
-  rafId = requestAnimationFrame(tick);
-
-  _cx = lerp(_cx, _mx, 0.055);
-  _cy = lerp(_cy, _my, 0.055);
-
-  const dx = (_cx - 0.5) * PARALLAX_STRENGTH * 2;
-  const dy = (_cy - 0.5) * PARALLAX_STRENGTH * 2;
-
-  cards.forEach(c => {
-    const depth = c.def.depth;
-    const px = dx * depth;
-    const py = dy * depth;
-    const amp = c.def.floatAmp;
-    const spd = c.def.floatSpd;
-    const phase = c.floatOffset;
-    const floatY = Math.sin(ts * 0.001 * (1 / spd) * Math.PI * 2 + phase) * amp;
-    const floatX = Math.cos(ts * 0.001 * (1 / (spd * 1.3)) * Math.PI * 2 + phase) * (amp * 0.4);
-
-    const rot = c.def.rot + (_cx - 0.5) * 1.2 * depth;
-
-    c.el.style.transform = `
-      translate(${px + floatX}px, ${py + floatY}px)
-      rotate(${rot}deg)
-    `;
-  });
-}
-
-// ══════════════════════════════════════════════════════════════
-// FETCH SCENES
-// ══════════════════════════════════════════════════════════════
 async function init() {
+  let scenes = [];
+
   try {
     const { data, error } = await _SB
       .from('scenes')
       .select('id, title, image_url, thumb_url')
       .eq('active', true)
-      .order('created_at', { ascending: false });
+      .limit(120);
+    if (!error && data && data.length) scenes = shuffle(data);
+  } catch(e) { console.warn('[about]', e); }
 
-    if (!error && data && data.length) {
-      scenes = shuffle(data);
-    }
-  } catch(e) {
-    console.warn('[about] scenes fetch failed', e);
-  }
-
-  // Fallback: try without active filter
+  // Fallback without active filter
   if (!scenes.length) {
     try {
       const { data } = await _SB
         .from('scenes')
         .select('id, title, image_url, thumb_url')
-        .limit(60);
+        .limit(120);
       if (data && data.length) scenes = shuffle(data);
-    } catch(e) { console.warn('[about] fallback failed', e); }
+    } catch(e) { console.warn('[about fallback]', e); }
   }
 
-  document.getElementById('sceneCounter').textContent =
-    scenes.length ? `${scenes.length} scenes` : '';
-
-  buildCards();
+  const stage = document.getElementById('stage');
 
   if (scenes.length) {
-    await fillCards();
+    ROWS.forEach((cfg, i) => {
+      stage.appendChild(buildRow(scenes, cfg, i));
+    });
   }
 
-  // Start animation loop
-  rafId = requestAnimationFrame(tick);
-
-  // Start random card updates
-  updateTimer = setInterval(refreshRandomCard, UPDATE_INTERVAL);
-
-  // Reveal credit
-  setTimeout(() => document.getElementById('credit').classList.add('visible'), 200);
+  // Show credit
+  setTimeout(() => document.getElementById('credit').classList.add('visible'), 100);
 
   // Hide loader
-  const ls = document.getElementById('loadScreen');
-  ls.classList.add('fade');
-  setTimeout(() => ls.remove(), 1000);
+  const ld = document.getElementById('loader');
+  ld.classList.add('fade');
+  setTimeout(() => ld.remove(), 900);
 }
 
 init();
