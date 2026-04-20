@@ -266,8 +266,7 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <input class="form-input" id="f_team" placeholder="เช่น Editorial, Content, News">
           </div>
           <div class="form-group full">
-            <label class="form-label">Email ติดต่อ <span class="req">*</span></label>
-            <input class="form-input" id="f_email" type="email" placeholder="email@thestandard.co">
+
           </div>
         </div>
       </div>
@@ -687,7 +686,7 @@ function ucc(el,cid,max){
 function togglePill(label){const cb=label.querySelector('input');cb.checked=!cb.checked;label.classList.toggle('checked',cb.checked);}
 
 function resetForm(){
-  ['f_show','f_shoot_date','f_team','f_email','f_key_messages','f_mood_tone',
+  ['f_show','f_shoot_date','f_team','f_key_messages','f_mood_tone',
    'f_scene_count','f_clip_val','f_host_count','f_tailor_desc','f_references','f_notes']
     .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('.checkbox-pill').forEach(p=>{p.classList.remove('checked');const cb=p.querySelector('input');if(cb)cb.checked=false;});
@@ -762,12 +761,10 @@ function buildCalendarUrl(row, allAttendees) {
 
 async function submitRequest(){
   const show=document.getElementById('f_show').value.trim();
-  const email=document.getElementById('f_email').value.trim();
   const shootDate=document.getElementById('f_shoot_date').value;
   const keyMsg=document.getElementById('f_key_messages').value.trim();
   const sceneCount=parseInt(document.getElementById('f_scene_count').value)||0;
   if(!show){toast('กรุณากรอกชื่อ Show','red');return;}
-  if(!email){toast('กรุณากรอก Email ติดต่อ','red');return;}
   if(!shootDate){toast('กรุณาเลือกวันที่ถ่ายทำ','red');return;}
   const timeStart=document.getElementById('f_time_start').value;
   const timeEnd=document.getElementById('f_time_end').value;
@@ -782,7 +779,6 @@ async function submitRequest(){
   const clipUnit=document.getElementById('f_clip_unit').value;
   const clipLength=clipVal?clipVal+' '+clipUnit:'';
   const notesRaw=document.getElementById('f_notes').value.trim();
-  const notesWithEmail=email?('[Email: '+email+']\n'+notesRaw).trim():notesRaw;
   const row={
     show_name:show,requester:_user.name||_user.username,
     team:document.getElementById('f_team').value.trim(),
@@ -794,12 +790,12 @@ async function submitRequest(){
     scene_ids:_sceneOpt==='library'?Array.from(_picked).join(', '):'',
     tailor_desc:_sceneOpt==='tailor'?document.getElementById('f_tailor_desc').value.trim():'',
     ref_links:document.getElementById('f_references').value.trim(),
-    notes:notesWithEmail,
+    notes:notesRaw,
     status:'brief',created_at:new Date().toISOString(),
   };
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='⏳ กำลังส่ง...';
   try{
-    const requesterEmail = email;
+    const requesterEmail = (_user.username||'').includes('@') ? _user.username : '';
     const allAttendees = ['assawapol.t@thestandard.co'];
     if(requesterEmail && !allAttendees.includes(requesterEmail)) allAttendees.push(requesterEmail);
     _attendees.forEach(e => { if(!allAttendees.includes(e)) allAttendees.push(e); });
