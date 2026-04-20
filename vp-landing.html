@@ -106,48 +106,50 @@ nav{
 .stat-num{font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
 .stat-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 
-/* Hero deck — 16:9 landscape slideshow stack */
-.hero-right{position:relative;height:480px;display:flex;align-items:center;justify-content:center}
-.deck-wrap{
-  position:relative;
-  width:min(480px,45vw);
-  aspect-ratio:16/9;
-  filter:drop-shadow(0 32px 80px rgba(0,0,0,.85));
-}
-/* Each card is absolute, full size, 16:9 */
+/* Hero deck — stacked portrait cards, front crossfades image */
+.hero-right{position:relative;height:520px;display:flex;align-items:center;justify-content:center}
+.deck-wrap{position:relative;width:300px;height:420px}
+
+/* Back cards: static, slightly rotated, no image change */
 .deck-card{
-  position:absolute;inset:0;
-  border-radius:16px;overflow:hidden;
-  border:1.5px solid rgba(255,255,255,.15);
-  background:#0a0a0a;
+  position:absolute;top:0;left:0;
+  width:260px;height:370px;border-radius:18px;overflow:hidden;
+  border:1.5px solid rgba(255,255,255,.12);
+  background:#111;
   opacity:0;
-  transition:opacity 0.8s cubic-bezier(.4,0,.2,1);
-  transform:rotate(var(--rot,0deg)) scale(var(--sc,1));
   transform-origin:center bottom;
+  will-change:transform;
 }
-.deck-card.deck-active{opacity:1}
-.deck-card img{width:100%;height:100%;object-fit:cover;display:block}
+/* Stacked offsets — back to front */
+.deck-card:nth-child(1){transform:translateX(-28px) rotate(-8deg) scale(.88);z-index:1;opacity:.55}
+.deck-card:nth-child(2){transform:translateX(-14px) rotate(-4deg) scale(.94);z-index:2;opacity:.75}
+.deck-card:nth-child(3){transform:translateX(14px)  rotate(4deg)  scale(.94);z-index:2;opacity:.75}
+.deck-card:nth-child(4){transform:translateX(28px)  rotate(8deg)  scale(.88);z-index:1;opacity:.55}
+/* Front card — center, full opacity, floating */
+.deck-card.deck-front{
+  transform:translateX(0) rotate(0deg) scale(1);
+  z-index:10;opacity:1;
+  animation:deck-bob 4s ease-in-out infinite;
+}
+@keyframes deck-bob{0%,100%{transform:translateX(0) rotate(0deg) scale(1) translateY(0)}50%{transform:translateX(0) rotate(0deg) scale(1) translateY(-10px)}}
+
+/* img crossfade inside front card */
+.deck-card img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  opacity:0;transition:opacity 1.0s cubic-bezier(.4,0,.2,1);
+}
+.deck-card img.img-active{opacity:1}
 .deck-card .card-label{
   position:absolute;bottom:0;left:0;right:0;
-  padding:16px 16px 14px;
+  padding:14px 14px 12px;
   background:linear-gradient(transparent,rgba(0,0,0,.88));
-  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);
+  font-size:10px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(255,255,255,.75);
+  z-index:2;
 }
-/* stacked behind cards for depth */
-.deck-card:nth-child(1){--rot:-4deg;--sc:.92;z-index:1}
-.deck-card:nth-child(2){--rot:-2deg;--sc:.96;z-index:2}
-.deck-card:nth-child(3){--rot:0deg; --sc:1;  z-index:3}
-.deck-card:nth-child(4){--rot:2deg; --sc:.96;z-index:2}
-.deck-card:nth-child(5){--rot:4deg; --sc:.92;z-index:1}
-/* floating bob */
-@keyframes deck-float{0%,100%{transform:rotate(var(--rot,0deg)) scale(var(--sc,1)) translateY(0)}50%{transform:rotate(var(--rot,0deg)) scale(var(--sc,1)) translateY(-8px)}}
-.deck-active{animation:deck-float 4s ease-in-out infinite}
 
 /* ─── APPLE GLASS EFFECTS ────────────────────────── */
-@keyframes liquid-shimmer{
-  0%{transform:translateX(-120%) skewX(-15deg)}
-  100%{transform:translateX(220%) skewX(-15deg)}
-}
+
 @keyframes orb-drift-a{
   0%,100%{transform:translate(0,0) scale(1)}
   40%{transform:translate(40px,-30px) scale(1.12)}
@@ -170,14 +172,7 @@ nav{
   background:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 55%,transparent 100%);
   pointer-events:none;z-index:3;
 }
-.glass-shimmer{
-  position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:4;
-}
-.glass-shimmer::after{
-  content:'';position:absolute;top:0;bottom:0;width:40%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);
-  animation:liquid-shimmer 4.5s ease-in-out infinite;
-}
+.glass-shimmer{display:none}
 .glass-rim{
   position:absolute;inset:0;border-radius:inherit;
   border:1px solid rgba(255,255,255,.22);
@@ -332,8 +327,9 @@ footer{
   .hero-stats{justify-content:center}
   .hero-title{font-size:clamp(36px,9vw,56px)}
 
-  .hero-right{height:auto;order:-1;padding:20px 0}
-  .deck-wrap{width:min(360px,85vw)}
+  .hero-right{height:380px;order:-1}
+  .deck-wrap{width:220px;height:310px}
+  .deck-card{width:190px;height:270px}
 
   #fan-section{height:100vh}
   .fan-card{width:200px;height:113px}
@@ -350,8 +346,9 @@ footer{
 @media(max-width:480px){
   .hero-title{font-size:clamp(30px,10vw,44px)}
   .shows-grid{grid-template-columns:1fr 1fr}
-  .hero-right{height:auto}
-  .deck-wrap{width:min(280px,90vw)}
+  .hero-right{height:300px}
+  .deck-wrap{width:180px;height:250px}
+  .deck-card{width:156px;height:220px}
   #fan-section{height:100vh}
   .fan-card{width:160px;height:90px}
   .btn-primary,.btn-ghost{padding:11px 20px;font-size:12px}
@@ -461,85 +458,100 @@ const CARD_COLORS = ['#C41E2A','#2563EB','#F59E0B','#10B981','#8B5CF6'];
 /* ─── BUILD HERO DECK ────────────────────────────── */
 function buildDeck(scenes) {
   const wrap = document.getElementById('hero-deck');
-  // Use all scenes, prefer presenter images
   const withP = scenes.filter(s => s.presenter_image_url && s.presenter_image_url.startsWith('http'));
   const rest  = scenes.filter(s => !s.presenter_image_url || !s.presenter_image_url.startsWith('http'));
   const pool  = shuffle([...withP, ...rest]);
-  // Build 5 stacked placeholder cards
-  const CARD_COUNT = 5;
-  wrap.innerHTML = '';
-  const cards = Array.from({length: CARD_COUNT}, (_, i) => {
-    const card = document.createElement('div');
-    card.className = 'deck-card';
-    const color = CARD_COLORS[i % CARD_COLORS.length];
-    card.style.borderColor = color + '55';
-    card.style.boxShadow = `0 0 32px ${color}33, 0 20px 60px rgba(0,0,0,.8)`;
-    // accent line
-    const accent = document.createElement('div');
-    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:6`;
-    card.appendChild(accent);
-    // img
-    const img = document.createElement('img');
-    img.loading = i === 0 ? 'eager' : 'lazy';
-    card.appendChild(img);
-    // label
-    const lbl = document.createElement('div');
-    lbl.className = 'card-label';
-    card.appendChild(lbl);
-    // glass
-    ['glass-spec','glass-shimmer','glass-rim'].forEach(cls => {
-      const el = document.createElement('div'); el.className = cls; card.appendChild(el);
-    });
-    wrap.appendChild(card);
-    return {card, img, lbl};
-  });
 
   if (!pool.length) return;
 
-  // Slideshow: cycle through all scenes, 1 card active at a time
-  let current = 0;
-  let sceneIdx = 0;
+  // 4 back cards (static bg) + 1 front card (slideshow)
+  const BACK = 4;
+  const backScenes = shuffle([...pool]).slice(0, BACK);
+  wrap.innerHTML = '';
 
-  function showScene(cardIdx, scene) {
-    const {card, img, lbl} = cards[cardIdx];
-    const url = presenterImg(scene) || imgUrl(scene);
-    if (url) img.src = url;
-    img.alt = scene.title || scene.id || '';
-    lbl.textContent = scene.title || scene.id || '';
-    card.classList.remove('deck-active');
-    void card.offsetWidth; // reflow
-    card.classList.add('deck-active');
-  }
-
-  // Pre-load first 5 scenes
-  cards.forEach((c, i) => {
-    if (pool[i]) showScene(i, pool[i]);
+  // Build back cards (static, just background image)
+  backScenes.forEach((s, i) => {
+    const color = CARD_COLORS[i % CARD_COLORS.length];
+    const card = document.createElement('div');
+    card.className = 'deck-card';
+    card.style.borderColor = color + '44';
+    card.style.boxShadow = `0 0 20px ${color}22, 0 16px 48px rgba(0,0,0,.7)`;
+    const url = presenterImg(s) || imgUrl(s);
+    if (url) {
+      const img = document.createElement('img');
+      img.src = url; img.alt = ''; img.loading = 'lazy';
+      img.classList.add('img-active');
+      card.appendChild(img);
+    }
+    const accent = document.createElement('div');
+    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:6`;
+    card.appendChild(accent);
+    ['glass-spec','glass-rim'].forEach(cls => {
+      const el = document.createElement('div'); el.className = cls; card.appendChild(el);
+    });
+    wrap.appendChild(card);
   });
 
-  // Start with card 0 active
-  cards[0].card.classList.add('deck-active');
-  sceneIdx = CARD_COUNT;
+  // Build FRONT card — this one crossfades images
+  const frontColor = CARD_COLORS[0];
+  const front = document.createElement('div');
+  front.className = 'deck-card deck-front';
+  front.style.borderColor = frontColor + '66';
+  front.style.boxShadow = `0 0 36px ${frontColor}44, 0 0 80px ${frontColor}22, 0 28px 72px rgba(0,0,0,.9)`;
 
-  // Cycle every 1.8s — crossfade to next card
+  // Two img elements — crossfade between them
+  const imgA = document.createElement('img'); imgA.loading = 'eager'; imgA.classList.add('img-active');
+  const imgB = document.createElement('img'); imgB.loading = 'lazy';
+  const lbl  = document.createElement('div'); lbl.className = 'card-label';
+  const accent2 = document.createElement('div');
+  accent2.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${frontColor};z-index:6`;
+  front.appendChild(imgA); front.appendChild(imgB); front.appendChild(lbl); front.appendChild(accent2);
+  ['glass-spec','glass-rim'].forEach(cls => {
+    const el = document.createElement('div'); el.className = cls; front.appendChild(el);
+  });
+  wrap.appendChild(front);
+
+  // Load first scene into imgA
+  let sceneIdx = 0;
+  let useA = true;
+
+  function loadScene(s, imgEl, lblEl) {
+    const url = presenterImg(s) || imgUrl(s);
+    if (url) imgEl.src = url;
+    imgEl.alt = s.title || s.id || '';
+    if (lblEl) lblEl.textContent = s.title || s.id || '';
+  }
+
+  loadScene(pool[sceneIdx % pool.length], imgA, lbl);
+  sceneIdx++;
+
+  // Preload second
+  loadScene(pool[sceneIdx % pool.length], imgB, null);
+
+  // Entrance: fade in all cards
+  gsap.to('.deck-card', { opacity: (i) => {
+    const opacities = [.55, .75, .75, .55, 1];
+    return opacities[i] ?? 1;
+  }, duration: 0.7, stagger: 0.1, delay: 0.4, ease: 'power2.out' });
+
+  // Crossfade every 2.2s on front card only
   setInterval(() => {
-    const nextCard = (current + 1) % CARD_COUNT;
-    const nextScene = pool[sceneIdx % pool.length];
+    const next = pool[(sceneIdx + 1) % pool.length];
+    if (useA) {
+      // A is showing → fade B in, fade A out
+      loadScene(pool[sceneIdx % pool.length], imgB, lbl);
+      imgB.classList.add('img-active');
+      imgA.classList.remove('img-active');
+    } else {
+      loadScene(pool[sceneIdx % pool.length], imgA, lbl);
+      imgA.classList.add('img-active');
+      imgB.classList.remove('img-active');
+    }
+    // Preload next
+    setTimeout(() => { loadScene(next, useA ? imgA : imgB, null); }, 1200);
+    useA = !useA;
     sceneIdx++;
-    // Load new scene into next card while hidden
-    const {img, lbl} = cards[nextCard];
-    const url = presenterImg(nextScene) || imgUrl(nextScene);
-    if (url) img.src = url;
-    lbl.textContent = nextScene.title || nextScene.id || '';
-    // Fade out current, fade in next
-    cards[current].card.classList.remove('deck-active');
-    cards[nextCard].card.classList.add('deck-active');
-    current = nextCard;
-  }, 1800);
-
-  // Entrance
-  setTimeout(() => {
-    cards[0].card.classList.add('deck-active');
-  }, 400);
+  }, 2200);
 }
 
 /* ─── BUILD FAN ──────────────────────────────────── */
