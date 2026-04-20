@@ -106,47 +106,62 @@ nav{
 .stat-num{font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
 .stat-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 
-/* Hero deck — stacked portrait cards, front crossfades image */
-.hero-right{position:relative;height:520px;display:flex;align-items:center;justify-content:center}
-.deck-wrap{position:relative;width:300px;height:420px}
-
-/* Back cards: static, slightly rotated, no image change */
+/* Hero deck — 3-card 16:9 perspective stack */
+.hero-right{position:relative;height:460px;display:flex;align-items:center;justify-content:center;perspective:1000px}
+.deck-wrap{
+  position:relative;
+  width:min(520px,46vw);
+  height:auto;
+  display:flex;align-items:center;justify-content:center;
+}
 .deck-card{
-  position:absolute;top:0;left:0;
-  width:260px;height:370px;border-radius:18px;overflow:hidden;
-  border:1.5px solid rgba(255,255,255,.12);
+  position:absolute;
+  width:100%;aspect-ratio:16/9;
+  border-radius:14px;overflow:hidden;
   background:#111;
-  opacity:0;
-  transform-origin:center bottom;
-  will-change:transform;
+  border:1.5px solid rgba(255,255,255,.12);
+  will-change:transform,opacity;
+  transition:transform .9s cubic-bezier(.4,0,.2,1), opacity .9s cubic-bezier(.4,0,.2,1), box-shadow .9s;
 }
-/* Stacked offsets — back to front */
-.deck-card:nth-child(1){transform:translateX(-28px) rotate(-8deg) scale(.88);z-index:1;opacity:.55}
-.deck-card:nth-child(2){transform:translateX(-14px) rotate(-4deg) scale(.94);z-index:2;opacity:.75}
-.deck-card:nth-child(3){transform:translateX(14px)  rotate(4deg)  scale(.94);z-index:2;opacity:.75}
-.deck-card:nth-child(4){transform:translateX(28px)  rotate(8deg)  scale(.88);z-index:1;opacity:.55}
-/* Front card — center, full opacity, floating */
-.deck-card.deck-front{
-  transform:translateX(0) rotate(0deg) scale(1);
-  z-index:10;opacity:1;
-  animation:deck-bob 4s ease-in-out infinite;
+/* Left card */
+.deck-card.pos-left{
+  transform:translateX(-52%) rotateY(14deg) scale(.82);
+  opacity:.5;z-index:1;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
 }
-@keyframes deck-bob{0%,100%{transform:translateX(0) rotate(0deg) scale(1) translateY(0)}50%{transform:translateX(0) rotate(0deg) scale(1) translateY(-10px)}}
-
-/* img crossfade inside front card */
+/* Right card */
+.deck-card.pos-right{
+  transform:translateX(52%) rotateY(-14deg) scale(.82);
+  opacity:.5;z-index:1;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+}
+/* Center/front card */
+.deck-card.pos-center{
+  transform:translateX(0) rotateY(0deg) scale(1);
+  opacity:1;z-index:10;
+  box-shadow:0 0 60px rgba(0,0,0,.5), 0 24px 80px rgba(0,0,0,.8);
+  animation:deck-bob 5s ease-in-out infinite;
+}
+@keyframes deck-bob{
+  0%,100%{transform:translateX(0) rotateY(0deg) scale(1) translateY(0)}
+  50%{transform:translateX(0) rotateY(0deg) scale(1) translateY(-10px)}
+}
+/* Two img layers per card — crossfade */
 .deck-card img{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
-  opacity:0;transition:opacity 1.0s cubic-bezier(.4,0,.2,1);
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;
+  opacity:0;transition:opacity 1.1s cubic-bezier(.4,0,.2,1);
 }
 .deck-card img.img-active{opacity:1}
 .deck-card .card-label{
   position:absolute;bottom:0;left:0;right:0;
   padding:14px 14px 12px;
-  background:linear-gradient(transparent,rgba(0,0,0,.88));
-  font-size:10px;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;color:rgba(255,255,255,.75);
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  font-size:10px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.8);
   z-index:2;
 }
+.deck-card .card-accent{position:absolute;top:0;left:0;right:0;height:3px;z-index:6}
 
 /* ─── APPLE GLASS EFFECTS ────────────────────────── */
 
@@ -327,9 +342,9 @@ footer{
   .hero-stats{justify-content:center}
   .hero-title{font-size:clamp(36px,9vw,56px)}
 
-  .hero-right{height:380px;order:-1}
-  .deck-wrap{width:220px;height:310px}
-  .deck-card{width:190px;height:270px}
+  .hero-right{height:280px;order:-1}
+  .deck-wrap{width:min(320px,82vw)}
+  .deck-card.pos-left,.deck-card.pos-right{transform:translateX(0) rotateY(0) scale(1);opacity:0}
 
   #fan-section{height:100vh}
   .fan-card{width:200px;height:113px}
@@ -346,9 +361,8 @@ footer{
 @media(max-width:480px){
   .hero-title{font-size:clamp(30px,10vw,44px)}
   .shows-grid{grid-template-columns:1fr 1fr}
-  .hero-right{height:300px}
-  .deck-wrap{width:180px;height:250px}
-  .deck-card{width:156px;height:220px}
+  .hero-right{height:240px}
+  .deck-wrap{width:min(260px,86vw)}
   #fan-section{height:100vh}
   .fan-card{width:160px;height:90px}
   .btn-primary,.btn-ghost{padding:11px 20px;font-size:12px}
@@ -461,97 +475,97 @@ function buildDeck(scenes) {
   const withP = scenes.filter(s => s.presenter_image_url && s.presenter_image_url.startsWith('http'));
   const rest  = scenes.filter(s => !s.presenter_image_url || !s.presenter_image_url.startsWith('http'));
   const pool  = shuffle([...withP, ...rest]);
-
   if (!pool.length) return;
 
-  // 4 back cards (static bg) + 1 front card (slideshow)
-  const BACK = 4;
-  const backScenes = shuffle([...pool]).slice(0, BACK);
   wrap.innerHTML = '';
 
-  // Build back cards (static, just background image)
-  backScenes.forEach((s, i) => {
+  // Build 3 cards: left, center, right
+  const positions = ['pos-left','pos-center','pos-right'];
+  const cards = positions.map((pos, i) => {
     const color = CARD_COLORS[i % CARD_COLORS.length];
-    const card = document.createElement('div');
-    card.className = 'deck-card';
-    card.style.borderColor = color + '44';
-    card.style.boxShadow = `0 0 20px ${color}22, 0 16px 48px rgba(0,0,0,.7)`;
-    const url = presenterImg(s) || imgUrl(s);
-    if (url) {
-      const img = document.createElement('img');
-      img.src = url; img.alt = ''; img.loading = 'lazy';
-      img.classList.add('img-active');
-      card.appendChild(img);
-    }
+    const card  = document.createElement('div');
+    card.className = 'deck-card ' + pos;
+
     const accent = document.createElement('div');
-    accent.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${color};z-index:6`;
+    accent.className = 'card-accent';
+    accent.style.background = color;
     card.appendChild(accent);
+    card.style.borderColor = color + '44';
+
+    // Two img layers for crossfade
+    const imgA = document.createElement('img'); imgA.loading = 'eager';
+    const imgB = document.createElement('img'); imgB.loading = 'lazy';
+    card.appendChild(imgA); card.appendChild(imgB);
+
+    const lbl = document.createElement('div'); lbl.className = 'card-label';
+    card.appendChild(lbl);
     ['glass-spec','glass-rim'].forEach(cls => {
       const el = document.createElement('div'); el.className = cls; card.appendChild(el);
     });
     wrap.appendChild(card);
+    return {card, imgA, imgB, lbl, useA: true};
   });
 
-  // Build FRONT card — this one crossfades images
-  const frontColor = CARD_COLORS[0];
-  const front = document.createElement('div');
-  front.className = 'deck-card deck-front';
-  front.style.borderColor = frontColor + '66';
-  front.style.boxShadow = `0 0 36px ${frontColor}44, 0 0 80px ${frontColor}22, 0 28px 72px rgba(0,0,0,.9)`;
+  // Assign initial scenes — stagger indices so each card shows a different scene
+  let sceneIdx = [0, 1, 2];
 
-  // Two img elements — crossfade between them
-  const imgA = document.createElement('img'); imgA.loading = 'eager'; imgA.classList.add('img-active');
-  const imgB = document.createElement('img'); imgB.loading = 'lazy';
-  const lbl  = document.createElement('div'); lbl.className = 'card-label';
-  const accent2 = document.createElement('div');
-  accent2.style.cssText = `position:absolute;top:0;left:0;right:0;height:3px;background:${frontColor};z-index:6`;
-  front.appendChild(imgA); front.appendChild(imgB); front.appendChild(lbl); front.appendChild(accent2);
-  ['glass-spec','glass-rim'].forEach(cls => {
-    const el = document.createElement('div'); el.className = cls; front.appendChild(el);
-  });
-  wrap.appendChild(front);
-
-  // Load first scene into imgA
-  let sceneIdx = 0;
-  let useA = true;
-
-  function loadScene(s, imgEl, lblEl) {
-    const url = presenterImg(s) || imgUrl(s);
-    if (url) imgEl.src = url;
-    imgEl.alt = s.title || s.id || '';
-    if (lblEl) lblEl.textContent = s.title || s.id || '';
+  function loadImg(cardObj, scene, showLabel) {
+    const url = presenterImg(scene) || imgUrl(scene);
+    if (cardObj.useA) {
+      if (url) cardObj.imgB.src = url;
+      cardObj.imgB.classList.add('img-active');
+      cardObj.imgA.classList.remove('img-active');
+    } else {
+      if (url) cardObj.imgA.src = url;
+      cardObj.imgA.classList.add('img-active');
+      cardObj.imgB.classList.remove('img-active');
+    }
+    if (showLabel) cardObj.lbl.textContent = scene.title || scene.id || '';
+    cardObj.useA = !cardObj.useA;
   }
 
-  loadScene(pool[sceneIdx % pool.length], imgA, lbl);
-  sceneIdx++;
+  // Init: preload first images using img-active on imgA
+  cards.forEach((c, i) => {
+    const s = pool[i % pool.length];
+    const url = presenterImg(s) || imgUrl(s);
+    if (url) c.imgA.src = url;
+    c.imgA.classList.add('img-active');
+    if (i === 1) c.lbl.textContent = s.title || s.id || '';
+  });
 
-  // Preload second
-  loadScene(pool[sceneIdx % pool.length], imgB, null);
+  // Entrance animation
+  gsap.from('.deck-card', { opacity:0, scale:.9, duration:.8, stagger:.12, delay:.5, ease:'power3.out' });
 
-  // Entrance: fade in all cards
-  gsap.to('.deck-card', { opacity: (i) => {
-    const opacities = [.55, .75, .75, .55, 1];
-    return opacities[i] ?? 1;
-  }, duration: 0.7, stagger: 0.1, delay: 0.4, ease: 'power2.out' });
+  // Rotate: every 2.5s cycle all 3 cards to next scene
+  // Center card gets new scene, then shifts: right→center→left, new→right
+  let nextSceneIdx = 3;
 
-  // Crossfade every 2.2s on front card only
   setInterval(() => {
-    const next = pool[(sceneIdx + 1) % pool.length];
-    if (useA) {
-      // A is showing → fade B in, fade A out
-      loadScene(pool[sceneIdx % pool.length], imgB, lbl);
-      imgB.classList.add('img-active');
-      imgA.classList.remove('img-active');
-    } else {
-      loadScene(pool[sceneIdx % pool.length], imgA, lbl);
-      imgA.classList.add('img-active');
-      imgB.classList.remove('img-active');
-    }
-    // Preload next
-    setTimeout(() => { loadScene(next, useA ? imgA : imgB, null); }, 1200);
-    useA = !useA;
-    sceneIdx++;
-  }, 2200);
+    // Step 1: rotate positions — center goes left, left exits (goes right), right comes to center
+    // Actually simpler: assign new scenes to each slot cyclically
+    cards.forEach((c, i) => {
+      const s = pool[sceneIdx[i] % pool.length];
+      loadImg(c, s, i === 1);
+      sceneIdx[i] = (sceneIdx[i] + 3) % pool.length; // advance by 3 so each shows unique
+    });
+    // Also rotate positions every 2 ticks for variety
+  }, 2500);
+
+  // Separately: rotate which card is "center" every 5s for movement feel
+  let tick = 0;
+  setInterval(() => {
+    tick++;
+    // Shuffle position classes for visual dynamism
+    const posOrders = [
+      ['pos-left','pos-center','pos-right'],
+      ['pos-center','pos-right','pos-left'],
+      ['pos-right','pos-left','pos-center'],
+    ];
+    const order = posOrders[tick % posOrders.length];
+    cards.forEach((c, i) => {
+      c.card.className = 'deck-card ' + order[i];
+    });
+  }, 5000);
 }
 
 /* ─── BUILD FAN ──────────────────────────────────── */
