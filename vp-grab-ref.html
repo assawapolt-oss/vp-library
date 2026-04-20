@@ -2175,6 +2175,7 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay) {
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed vectors for images that have no mclip_vector yet">Batch Embed</button>
+      <button class="btn-batch-embed" id="convertWebpBtn" onclick="openConvertWebp()" style="display:none" title="Convert non-WebP images to WebP and replace originals">Convert WebP</button>
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
       <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
@@ -2346,6 +2347,26 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay) {
     <div class="batch-actions">
       <button class="btn-cancel" id="batchCancelBtn" onclick="cancelBatchEmbed()">Close</button>
       <button class="btn-start" id="batchStartBtn" onclick="startBatchEmbed()" disabled>Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BATCH CONVERT WEBP MODAL ══ -->
+<div class="batch-overlay" id="convertOverlay">
+  <div class="batch-box">
+    <div class="batch-title">Convert to WebP — GrabREF</div>
+    <div class="batch-desc" id="convertDesc">กำลังนับรูปที่ยังไม่เป็น WebP…</div>
+    <div class="batch-progress-wrap">
+      <div class="batch-progress-bar" id="convertProgressBar" style="width:0%"></div>
+    </div>
+    <div class="batch-counters">
+      <span id="convertDone">0</span> / <span id="convertTotal">—</span>
+      &nbsp;·&nbsp; <span id="convertErrors">0 errors</span>
+    </div>
+    <div class="batch-log" id="convertLog">—</div>
+    <div class="batch-actions">
+      <button class="btn-cancel" id="convertCancelBtn" onclick="cancelConvertWebp()">Close</button>
+      <button class="btn-start" id="convertStartBtn" onclick="startConvertWebp()" disabled>Start</button>
     </div>
   </div>
 </div>
@@ -2753,6 +2774,8 @@ function updateStatsBar() {
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
   const batchBtn = document.getElementById('batchEmbedBtn');
   if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
+  const convertBtn = document.getElementById('convertWebpBtn');
+  if (convertBtn) convertBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
   // Rebuild collection filter (strip only if open)
   if (show) {
     _rebuildCollectionFilter();
@@ -3424,6 +3447,192 @@ function cancelBatchEmbed() {
     setTimeout(wait, 300);
   } else {
     document.getElementById('batchOverlay').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BATCH CONVERT TO WEBP
+// ══════════════════════════════════════════════════════════════
+let _convertRunning = false;
+let _convertCancel  = false;
+
+async function openConvertWebp() {
+  _convertCancel = false;
+  const descEl   = document.getElementById('convertDesc');
+  const startBtn = document.getElementById('convertStartBtn');
+  document.getElementById('convertDone').textContent     = '0';
+  document.getElementById('convertTotal').textContent    = '—';
+  document.getElementById('convertErrors').textContent   = '0 errors';
+  document.getElementById('convertProgressBar').style.width = '0%';
+  document.getElementById('convertLog').textContent      = '—';
+  startBtn.disabled = true;
+  document.getElementById('convertCancelBtn').textContent = 'Close';
+  descEl.textContent = 'กำลังนับรูปที่ยังไม่เป็น WebP…';
+  document.getElementById('convertOverlay').classList.add('open');
+
+  // Count non-webp: url doesn't end with .webp
+  // Fetch all urls and filter client-side (Supabase can't do "NOT LIKE %.webp" easily)
+  const { data, error } = await _SB.from(REF_TABLE).select('id, url, thumb_url, storage_path, thumb_path');
+  if (error) { descEl.textContent = 'Error: ' + error.message; return; }
+
+  const toConvert = (data || []).filter(r => r.url && !r.url.toLowerCase().includes('.webp'));
+  const n = toConvert.length;
+  document.getElementById('convertTotal').textContent = n;
+  if (n === 0) {
+    descEl.textContent = '✅ ทุกรูปเป็น WebP แล้ว';
+  } else {
+    descEl.textContent = `พบ ${n} รูปที่ยังไม่เป็น WebP — กด Start เพื่อแปลง`;
+    startBtn.disabled = false;
+  }
+}
+
+async function startConvertWebp() {
+  if (_convertRunning) return;
+  _convertRunning = true;
+  _convertCancel  = false;
+
+  const startBtn  = document.getElementById('convertStartBtn');
+  const cancelBtn = document.getElementById('convertCancelBtn');
+  const descEl    = document.getElementById('convertDesc');
+  const logEl     = document.getElementById('convertLog');
+  const doneEl    = document.getElementById('convertDone');
+  const errEl     = document.getElementById('convertErrors');
+  const barEl     = document.getElementById('convertProgressBar');
+
+  startBtn.disabled     = true;
+  cancelBtn.textContent = 'Stop';
+
+  // Re-fetch list to convert
+  const { data, error } = await _SB.from(REF_TABLE)
+    .select('id, url, thumb_url, storage_path, thumb_path');
+  if (error || !data?.length) {
+    descEl.textContent = error ? 'Error: ' + error.message : '✅ ไม่มีรูปที่ต้องแปลง';
+    _convertRunning = false; cancelBtn.textContent = 'Close'; return;
+  }
+
+  const toConvert = data.filter(r => r.url && !r.url.toLowerCase().includes('.webp'));
+  const total = toConvert.length;
+  document.getElementById('convertTotal').textContent = total;
+  let done = 0, errors = 0;
+
+  for (const ref of toConvert) {
+    if (_convertCancel) { descEl.textContent = `หยุดกลางคัน (${done}/${total})`; break; }
+
+    const shortId = String(ref.id).slice(0, 10);
+    logEl.textContent = `⏳ ${shortId}…`;
+
+    try {
+      // 1. Download original image
+      const resp = await fetch(ref.url);
+      if (!resp.ok) throw new Error('fetch failed: ' + resp.status);
+      const origBlob = await resp.blob();
+
+      // 2. Convert to WebP via canvas
+      const bmp = await createImageBitmap(origBlob);
+      const cv  = document.createElement('canvas');
+      cv.width  = bmp.width; cv.height = bmp.height;
+      cv.getContext('2d').drawImage(bmp, 0, 0);
+      bmp.close();
+      const webpBlob = await blobFromCanvas(cv, 0.88);
+      const mime = webpBlob.type || 'image/webp';
+      const ext  = mime === 'image/webp' ? 'webp' : 'jpg';
+
+      // 3. Build new paths
+      const ts   = Date.now();
+      const rand = Math.random().toString(36).slice(2, 7);
+      const newPath      = `refs/${ts}-${rand}.${ext}`;
+      const newThumbPath = `refs/thumbs/${ts}-${rand}_t.${ext}`;
+
+      // 4. Convert thumbnail too
+      let newThumbUrl = ref.thumb_url;
+      let newThumbPath2 = ref.thumb_path;
+      if (ref.thumb_url && !ref.thumb_url.toLowerCase().includes('.webp')) {
+        try {
+          const tr = await fetch(ref.thumb_url);
+          if (tr.ok) {
+            const tb = await tr.blob();
+            const tbmp = await createImageBitmap(tb);
+            const tcv = document.createElement('canvas');
+            tcv.width = tbmp.width; tcv.height = tbmp.height;
+            tcv.getContext('2d').drawImage(tbmp, 0, 0);
+            tbmp.close();
+            const tWebp = await blobFromCanvas(tcv, 0.75);
+            const { error: tErr } = await _SB.storage.from(REF_BUCKET)
+              .upload(newThumbPath, tWebp, { contentType: tWebp.type, cacheControl: '31536000', upsert: false });
+            if (!tErr) {
+              newThumbUrl   = _SB.storage.from(REF_BUCKET).getPublicUrl(newThumbPath).data?.publicUrl || ref.thumb_url;
+              newThumbPath2 = newThumbPath;
+            }
+          }
+        } catch(e) { /* non-fatal */ }
+      }
+
+      // 5. Upload new WebP
+      const { error: upErr } = await _SB.storage.from(REF_BUCKET)
+        .upload(newPath, webpBlob, { contentType: mime, cacheControl: '31536000', upsert: false });
+      if (upErr) throw new Error('upload: ' + upErr.message);
+
+      const newUrl = _SB.storage.from(REF_BUCKET).getPublicUrl(newPath).data?.publicUrl || '';
+
+      // 6. Update DB
+      const { error: dbErr } = await _SB.from(REF_TABLE).update({
+        url: newUrl,
+        thumb_url: newThumbUrl,
+        storage_path: newPath,
+        thumb_path: newThumbPath2
+      }).eq('id', ref.id);
+      if (dbErr) throw new Error('db: ' + dbErr.message);
+
+      // 7. Delete old files from storage (non-fatal)
+      if (ref.storage_path) await _SB.storage.from(REF_BUCKET).remove([ref.storage_path]).catch(() => {});
+      if (ref.thumb_path && ref.thumb_path !== newThumbPath2)
+        await _SB.storage.from(REF_BUCKET).remove([ref.thumb_path]).catch(() => {});
+
+      // 8. Update local cache
+      const idx = _allRefs.findIndex(r => r.id === ref.id);
+      if (idx !== -1) Object.assign(_allRefs[idx], { url: newUrl, thumb_url: newThumbUrl, storage_path: newPath, thumb_path: newThumbPath2 });
+
+      // Update card thumbnail on screen
+      const cardImg = document.querySelector(`.ref-card[data-id="${ref.id}"] img`);
+      if (cardImg) cardImg.src = newThumbUrl || newUrl;
+
+      done++;
+      logEl.textContent = `✅ ${shortId} → ${ext.toUpperCase()}`;
+
+    } catch(e) {
+      errors++;
+      logEl.textContent = `⚠️ ${shortId}: ${e.message.slice(0, 55)}`;
+      console.warn('[ConvertWebP]', ref.id, e.message);
+    }
+
+    doneEl.textContent = done;
+    errEl.textContent  = `${errors} error${errors !== 1 ? 's' : ''}`;
+    barEl.style.width  = `${Math.round((done + errors) / total * 100)}%`;
+  }
+
+  _convertRunning = false;
+  cancelBtn.textContent = 'Close';
+  if (!_convertCancel) {
+    descEl.textContent = `✅ เสร็จแล้ว! แปลง ${done} รูป${errors ? ` (${errors} errors)` : ''}`;
+    barEl.style.width = '100%';
+  }
+}
+
+function cancelConvertWebp() {
+  if (_convertRunning) {
+    _convertCancel = true;
+    const btn = document.getElementById('convertCancelBtn');
+    btn.textContent = 'Stopping…';
+    btn.disabled = true;
+    const wait = () => {
+      if (!_convertRunning) {
+        document.getElementById('convertOverlay').classList.remove('open');
+        btn.disabled = false;
+      } else setTimeout(wait, 300);
+    };
+    setTimeout(wait, 300);
+  } else {
+    document.getElementById('convertOverlay').classList.remove('open');
   }
 }
 
