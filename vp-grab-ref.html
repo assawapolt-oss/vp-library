@@ -3470,18 +3470,21 @@ async function openConvertWebp() {
   descEl.textContent = 'กำลังนับรูปที่ยังไม่เป็น WebP…';
   document.getElementById('convertOverlay').classList.add('open');
 
-  // Count non-webp: url doesn't end with .webp
-  // Fetch all urls and filter client-side (Supabase can't do "NOT LIKE %.webp" easily)
-  const { data, error } = await _SB.from(REF_TABLE).select('id, url, thumb_url, storage_path, thumb_path');
+  const SIZE_LIMIT_KB = 500; // re-encode anything over this
+  const { data, error } = await _SB.from(REF_TABLE).select('id, url, thumb_url, storage_path, thumb_path, file_size_kb');
   if (error) { descEl.textContent = 'Error: ' + error.message; return; }
 
-  const toConvert = (data || []).filter(r => r.url && !r.url.toLowerCase().includes('.webp'));
+  const toConvert = (data || []).filter(r =>
+    r.url && (!r.url.toLowerCase().includes('.webp') || (r.file_size_kb || 0) > SIZE_LIMIT_KB)
+  );
   const n = toConvert.length;
   document.getElementById('convertTotal').textContent = n;
   if (n === 0) {
-    descEl.textContent = '✅ ทุกรูปเป็น WebP แล้ว';
+    descEl.textContent = `✅ ทุกรูปเป็น WebP และขนาดไม่เกิน ${SIZE_LIMIT_KB} KB แล้ว`;
   } else {
-    descEl.textContent = `พบ ${n} รูปที่ยังไม่เป็น WebP — กด Start เพื่อแปลง`;
+    const nonWebp = toConvert.filter(r => !r.url.toLowerCase().includes('.webp')).length;
+    const tooBig  = toConvert.filter(r => (r.file_size_kb||0) > SIZE_LIMIT_KB).length;
+    descEl.textContent = `พบ ${n} รูปที่ต้องแปลง (non-WebP: ${nonWebp}, ใหญ่เกิน ${SIZE_LIMIT_KB}KB: ${tooBig}) — กด Start`;
     startBtn.disabled = false;
   }
 }
@@ -3503,14 +3506,17 @@ async function startConvertWebp() {
   cancelBtn.textContent = 'Stop';
 
   // Re-fetch list to convert
+  const SIZE_LIMIT_KB = 500;
   const { data, error } = await _SB.from(REF_TABLE)
-    .select('id, url, thumb_url, storage_path, thumb_path');
+    .select('id, url, thumb_url, storage_path, thumb_path, file_size_kb');
   if (error || !data?.length) {
     descEl.textContent = error ? 'Error: ' + error.message : '✅ ไม่มีรูปที่ต้องแปลง';
     _convertRunning = false; cancelBtn.textContent = 'Close'; return;
   }
 
-  const toConvert = data.filter(r => r.url && !r.url.toLowerCase().includes('.webp'));
+  const toConvert = data.filter(r =>
+    r.url && (!r.url.toLowerCase().includes('.webp') || (r.file_size_kb||0) > SIZE_LIMIT_KB)
+  );
   const total = toConvert.length;
   document.getElementById('convertTotal').textContent = total;
   let done = 0, errors = 0;
@@ -3529,11 +3535,18 @@ async function startConvertWebp() {
 
       // 2. Convert to WebP via canvas
       const bmp = await createImageBitmap(origBlob);
+      // Scale down to max 1920×1080 (same as processImage)
+      const scaleW = bmp.width  > MAX_W ? MAX_W / bmp.width  : 1;
+      const scaleH = bmp.height > MAX_H ? MAX_H / bmp.height : 1;
+      const scale  = Math.min(scaleW, scaleH);
       const cv  = document.createElement('canvas');
-      cv.width  = bmp.width; cv.height = bmp.height;
-      cv.getContext('2d').drawImage(bmp, 0, 0);
+      cv.width  = Math.round(bmp.width * scale);
+      cv.height = Math.round(bmp.height * scale);
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
       bmp.close();
-      const webpBlob = await blobFromCanvas(cv, 0.88);
+      // Use lower quality for large images to target ~300KB
+      const quality = (ref.file_size_kb||0) > 1000 ? 0.72 : 0.82;
+      const webpBlob = await blobFromCanvas(cv, quality);
       const mime = webpBlob.type || 'image/webp';
       const ext  = mime === 'image/webp' ? 'webp' : 'jpg';
 
