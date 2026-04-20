@@ -265,6 +265,16 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <label class="form-label">ทีม / ฝ่าย</label>
             <input class="form-input" id="f_team" placeholder="เช่น Editorial, Content, News">
           </div>
+          <div class="form-group">
+            <label class="form-label">📧 ผู้ที่เกี่ยวข้อง <span style="font-weight:400;font-size:11px;color:var(--muted)">จะได้รับ Calendar invite</span></label>
+            <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" id="f_attendee_input" type="email" placeholder="email@thestandard.co" style="flex:1"
+                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAttendee();}">
+              <button type="button" onclick="addAttendee()" style="padding:0 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">+ เพิ่ม</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">กด Enter หรือกดปุ่ม + เพื่อเพิ่ม — ระบบจะส่ง Calendar invite ให้อัตโนมัติ</div>
+          </div>
           <div class="form-group full">
 
           </div>
@@ -384,16 +394,7 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <textarea class="form-textarea" id="f_notes" placeholder="ข้อมูลที่อยากให้ทีม VP รู้เพิ่มเติม..." style="min-height:60px" oninput="ucc(this,'nc',400)"></textarea>
             <div class="char-count" id="nc">0 / 400 chars</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">📧 ผู้ที่เกี่ยวข้อง <span style="font-weight:400;font-size:11px;color:var(--muted)">จะได้รับ Calendar invite</span></label>
-            <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-            <div style="display:flex;gap:8px">
-              <input class="form-input" id="f_attendee_input" type="email" placeholder="email@thestandard.co" style="flex:1"
-                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAttendee();}">
-              <button type="button" onclick="addAttendee()" style="padding:0 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">+ เพิ่ม</button>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">กด Enter หรือกดปุ่ม + เพื่อเพิ่ม — ระบบจะส่ง Calendar invite ให้อัตโนมัติ</div>
-          </div>
+
         </div>
       </div>
 
