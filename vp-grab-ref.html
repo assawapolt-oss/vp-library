@@ -3587,12 +3587,16 @@ async function startConvertWebp() {
 
       const newUrl = _SB.storage.from(REF_BUCKET).getPublicUrl(newPath).data?.publicUrl || '';
 
-      // 6. Update DB
+      // 6. Update DB — include new size, dimensions
+      const newSizeKB = Math.round(webpBlob.size / 1024);
       const { error: dbErr } = await _SB.from(REF_TABLE).update({
         url: newUrl,
         thumb_url: newThumbUrl,
         storage_path: newPath,
-        thumb_path: newThumbPath2
+        thumb_path: newThumbPath2,
+        file_size_kb: newSizeKB,
+        width: cv.width,
+        height: cv.height
       }).eq('id', ref.id);
       if (dbErr) throw new Error('db: ' + dbErr.message);
 
@@ -3600,9 +3604,6 @@ async function startConvertWebp() {
       if (ref.storage_path) await _SB.storage.from(REF_BUCKET).remove([ref.storage_path]).catch(() => {});
       if (ref.thumb_path && ref.thumb_path !== newThumbPath2)
         await _SB.storage.from(REF_BUCKET).remove([ref.thumb_path]).catch(() => {});
-
-      // 8. Update local cache (including new file_size_kb)
-      const newSizeKB = Math.round(webpBlob.size / 1024);
       const idx = _allRefs.findIndex(r => r.id === ref.id);
       if (idx !== -1) Object.assign(_allRefs[idx], {
         url: newUrl, thumb_url: newThumbUrl,
