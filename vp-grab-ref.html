@@ -1591,6 +1591,36 @@ body {
 }
 .collection-chip-del:hover { color: var(--danger); }
 
+/* Collection input in edit pane */
+.lb-coll-input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone);
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  border-bottom: 1px solid var(--gold-dim);
+  padding: 7px 10px;
+  min-width: 0;
+  outline: none;
+  transition: border-color .15s;
+}
+.lb-coll-input:focus { border-color: var(--gold); }
+.lb-coll-input::placeholder { color: var(--muted); }
+.lb-coll-add-btn {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--bg);
+  background: var(--gold);
+  border: none;
+  padding: 7px 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.lb-coll-add-btn:hover { opacity: .82; }
+
 /* Collection filter dropdown */
 .collection-filter-wrap {
   display: flex;
@@ -1866,7 +1896,7 @@ body {
       <div id="lbDataGrid"></div>
     </div>
     <!-- Sub-images + Crop pane (always shown when logged in) -->
-    <div class="lb-pane-data" id="lbPaneEdit" style="display:none; width:320px; min-width:260px;">
+    <div class="lb-pane-data" id="lbPaneEdit" style="display:none; width:320px; min-width:260px;" onclick="event.stopPropagation()">
       <div style="padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:14px; display:flex; align-items:center; gap:10px;">
         <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);">Edit Image</span>
       </div>
@@ -1886,12 +1916,11 @@ body {
         <div class="lb-sub-label">Collection <span style="color:var(--muted);font-size:8px;">(กด Enter เพื่อเพิ่ม)</span></div>
         <div id="lbCollChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"></div>
         <div class="collection-input-row">
-          <input id="lbCollInput" type="text"
-            style="all:unset;box-sizing:border-box;flex:1;font-family:var(--font-mono);font-size:10px;color:var(--bone);background:var(--card);border:1px solid var(--line-hi);border-bottom:1px solid var(--gold-dim);padding:7px 10px;min-width:0;"
+          <input id="lbCollInput" class="lb-coll-input" type="text"
             placeholder="เช่น CEO Ep.12…"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();addCollectionTag();}">
-          <button onclick="addCollectionTag()"
-            style="all:unset;box-sizing:border-box;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--bg);background:var(--gold);padding:7px 12px;cursor:pointer;flex-shrink:0;">+</button>
+            onclick="event.stopPropagation()"
+            onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();addCollectionTag();}">
+          <button class="lb-coll-add-btn" onclick="event.stopPropagation();addCollectionTag()">+</button>
         </div>
       </div>
 
@@ -1903,8 +1932,11 @@ body {
 
       <!-- Sub-images section -->
       <div>
-        <div class="lb-sub-label">Sub-images <span style="color:var(--muted);font-size:8px;">(max 5)</span></div>
-        <div class="lb-sub-strip" id="lbSubStrip"></div>
+        <div class="lb-sub-label">Sub-images <span style="color:var(--muted);font-size:8px;">(max 5 · ลากหรือกด +)</span></div>
+        <div class="lb-sub-strip" id="lbSubStrip"
+          ondragover="event.preventDefault();event.stopPropagation();this.style.outline='1px solid var(--gold)'"
+          ondragleave="this.style.outline=''"
+          ondrop="onSubDrop(event)"></div>
       </div>
       <input type="file" id="subFileInput" accept="image/*" multiple style="display:none" onchange="handleSubFileInput(event)">
     </div>
@@ -3105,6 +3137,14 @@ function applyFilters() {
   document.getElementById('refCount').textContent = filtered.length;
 }
 
+function onSubDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('lbSubStrip').style.outline = '';
+  const files = e.dataTransfer?.files;
+  if (files?.length) handleSubFiles(Array.from(files).filter(f => f.type.startsWith('image/')));
+}
+
 function renderSubStrip(ref) {
   // Render shot type buttons
   _renderShotButtons(ref.shot_type || null);
@@ -3156,9 +3196,13 @@ function renderSubStrip(ref) {
   }
 }
 
-async function handleSubFileInput(e) {
+function handleSubFileInput(e) {
   const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
   e.target.value = '';
+  handleSubFiles(files);
+}
+
+async function handleSubFiles(files) {
   if (!files.length || !_currentRef) return;
 
   const ref = _currentRef;
@@ -3167,40 +3211,49 @@ async function handleSubFileInput(e) {
   if (slots <= 0) { showToast('error', `สูงสุด ${MAX_SUB} รูปย่อยแล้ว`, 0, true); return; }
 
   const toUpload = files.slice(0, slots);
-  showToast('loading', `Uploading sub-image${toUpload.length > 1 ? 's' : ''}…`, 20);
+  showToast('loading', `Converting & uploading…`, 10);
 
   const newSubs = [];
   for (let i = 0; i < toUpload.length; i++) {
     const file = toUpload[i];
     try {
-      const pct = Math.round(20 + ((i + 1) / toUpload.length) * 60);
-      showToast('loading', `Processing sub-image ${i + 1}/${toUpload.length}…`, pct);
+      const pct = Math.round(10 + ((i + 1) / toUpload.length) * 70);
+      showToast('loading', `Processing ${i + 1}/${toUpload.length} → WebP…`, pct);
+
+      // ✅ processImage converts to WebP, max 1920×1080, creates thumb
       const { blob, thumbBlob, width, height } = await processImage(file, null);
       const fileSizeKB = Math.round(blob.size / 1024);
+
       const ts   = Date.now() + i;
       const rand = Math.random().toString(36).slice(2, 7);
       const path      = `refs/sub/${ts}-${rand}.webp`;
       const thumbPath = `refs/sub/thumbs/${ts}-${rand}_t.webp`;
 
+      // Upload full image to Supabase Storage
       const { error: sErr } = await _SB.storage.from(REF_BUCKET)
         .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
-      if (sErr) throw new Error(sErr.message);
+      if (sErr) throw new Error('Storage: ' + sErr.message);
 
+      // Upload thumbnail (non-fatal)
       const { error: tErr } = await _SB.storage.from(REF_BUCKET)
         .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
 
       const url      = _SB.storage.from(REF_BUCKET).getPublicUrl(path).data?.publicUrl || '';
-      const thumbUrl = tErr ? '' : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || '');
+      const thumbUrl = tErr ? url : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || url);
+
       newSubs.push({ url, thumb_url: thumbUrl, storage_path: path, thumb_path: thumbPath, width, height, file_size_kb: fileSizeKB });
     } catch(err) {
       console.warn('[sub upload]', err);
-      showToast('error', 'Sub upload failed: ' + err.message, 0, true);
+      showToast('error', 'Upload failed: ' + err.message, 0, true);
     }
   }
 
   if (!newSubs.length) return;
+
   const merged = [...existing, ...newSubs];
-  showToast('loading', 'Saving…', 88);
+  showToast('loading', 'Saving to database…', 90);
+
+  // ✅ Save sub_images array to Supabase ref_images row
   const { error: dbErr } = await _SB.from(REF_TABLE)
     .update({ sub_images: merged })
     .eq('id', ref.id);
@@ -3211,11 +3264,10 @@ async function handleSubFileInput(e) {
   const idx = _allRefs.findIndex(r => r.id === ref.id);
   if (idx !== -1) _allRefs[idx].sub_images = merged;
 
-  // Re-render card badge
+  // Refresh card sub-badge
   const cardEl = document.querySelector(`.ref-card[data-id="${ref.id}"]`);
   if (cardEl) {
-    const oldBadge = cardEl.querySelector('.ref-card-sub-badge');
-    if (oldBadge) oldBadge.remove();
+    cardEl.querySelector('.ref-card-sub-badge')?.remove();
     if (merged.length > 0) {
       const badge = document.createElement('div');
       badge.className = 'ref-card-sub-badge';
@@ -3224,8 +3276,8 @@ async function handleSubFileInput(e) {
     }
   }
 
-  showToast('success', `Added ${newSubs.length} sub-image${newSubs.length > 1 ? 's' : ''}`, 100);
-  setTimeout(hideToast, 2000);
+  showToast('success', `Added ${newSubs.length} sub-image${newSubs.length > 1 ? 's' : ''} · WebP · Supabase ✓`, 100);
+  setTimeout(hideToast, 2500);
   renderSubStrip(ref);
 }
 
