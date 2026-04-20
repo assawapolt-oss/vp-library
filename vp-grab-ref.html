@@ -3899,16 +3899,15 @@ async function _renderCollManager() {
     const coverWrap = document.createElement('div');
     coverWrap.className = 'coll-cover-wrap';
     coverWrap.title = 'Click to upload cover image';
-    coverWrap.onclick = () => _pickCollCover(name);
-    if (meta.cover_url) {
-      coverWrap.innerHTML = `
-        <img class="coll-cover-img" src="${meta.cover_url}" alt="">
-        <div class="coll-cover-overlay">Change</div>`;
-    } else {
-      coverWrap.innerHTML = `
-        <div class="coll-cover-placeholder">+ Cover</div>
-        <div class="coll-cover-overlay">Upload</div>`;
-    }
+    // Embed file input directly inside coverWrap — avoids programmatic .click() blocks
+    const coverInner = meta.cover_url
+      ? `<img class="coll-cover-img" src="${meta.cover_url}" alt=""><div class="coll-cover-overlay">Change</div>`
+      : `<div class="coll-cover-placeholder">+ Cover</div><div class="coll-cover-overlay">Upload</div>`;
+    coverWrap.innerHTML = `
+      ${coverInner}
+      <input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"
+        onchange="handleCollCoverUpload(event,'${escHtml(name)}')" onclick="event.stopPropagation()">`;
+    coverWrap.style.position = 'relative';
 
     // Info
     const info = document.createElement('div');
@@ -3949,12 +3948,12 @@ function _pickCollCover(name) {
   inp.click();
 }
 
-async function handleCollCoverUpload(e) {
+async function handleCollCoverUpload(e, nameArg) {
   const file = e.target.files?.[0];
   e.target.value = '';
-  if (!file || !_collMgrPendingCover) return;
-  const { name } = _collMgrPendingCover;
+  const name = nameArg || _collMgrPendingCover?.name;
   _collMgrPendingCover = null;
+  if (!file || !name) return;
 
   showToast('loading', 'Uploading cover…', 20);
   try {
