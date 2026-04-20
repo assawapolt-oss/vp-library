@@ -317,16 +317,17 @@
   .rec-col-header.ref { background:rgba(5,150,105,.1); color:#059669; }
   /* compact rcard for 2-col */
   .rcard-compact .rcard-inner { flex-direction:column; }
-  .rcard-compact .rcard-thumb { width:100%; min-width:0; height:130px; border-radius:12px 12px 0 0; }
-  .rcard-compact .rcard-thumb-ph { width:100%; min-width:0; height:130px; border-radius:12px 12px 0 0; }
-  .rcard-compact .rcard-body { padding:8px 10px 10px; }
+  .rcard-compact .rcard-thumb { width:100%; min-width:0; aspect-ratio:16/9; height:auto; border-radius:12px 12px 0 0; object-fit:contain; background:#000; }
+  .rcard-compact .rcard-thumb-ph { width:100%; min-width:0; aspect-ratio:16/9; height:auto; border-radius:12px 12px 0 0; }
+  .rcard-compact .rcard-body { padding:6px 10px 8px; }
   .rcard-compact .rcard-title { font-size:11px; font-weight:600; margin-bottom:1px; line-height:1.3; }
   .rcard-compact .rcard-title-th { font-size:9px; margin-bottom:4px; }
   .rcard-compact .rcard-top { margin-bottom:4px; gap:4px; }
   .rcard-compact .rank-badge { font-size:9px; padding:1px 6px; }
   .rcard-compact .rcard-id { font-size:9px; }
-  .rcard-compact .score-row { margin-bottom:4px; }
-  .rcard-compact .score-pct { font-size:10px; }
+  .rcard-compact .score-row { margin-bottom:2px; margin-top:4px; }
+  .rcard-compact .score-pct { font-size:9px; color:var(--muted); font-weight:500; }
+  .rcard-compact .score-track { height:3px; }
   @media(max-width:600px){
     .rec-paired-grid { grid-template-columns:1fr; }
     .rec-col-header.ref { margin-top:16px; }
@@ -2718,8 +2719,8 @@ async function runRec() {
   setAIStatus('loading', '🧠 กำลังวิเคราะห์ข้อความ…', 10);
   box.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">🧠 กำลังค้นหาด้วย AI Semantic Search…</div>`;
 
-  const rankLabel = ['🥇 อันดับ 1 — แนะนำสูงสุด','🥈 อันดับ 2','🥉 อันดับ 3','อันดับ 4','อันดับ 5'];
-  const rankCls   = ['rank-1','rank-2','rank-3','rank-2','rank-3'];
+  const rankLabel = ['🥇 อันดับ 1','🥈 อันดับ 2','🥉 อันดับ 3','อันดับ 4','อันดับ 5','อันดับ 6','อันดับ 7','อันดับ 8','อันดับ 9','อันดับ 10'];
+  const rankCls   = ['rank-1','rank-2','rank-3','rank-2','rank-3','rank-3','rank-3','rank-3','rank-3','rank-3'];
   const modeBadge = `<span class="ai-badge" style="background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border-color:transparent">🧠 Semantic AI</span>`;
 
   try {
@@ -2772,7 +2773,7 @@ async function runRec() {
     refRaw.forEach(r => { refScores[r.id] = r.similarity; });
     const refRanked = refRaw
       .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 5);
+      .slice(0, 10);
 
     const queryInfo = (queryForCLIP !== text) ? ` [ค้นด้วย: "${queryForCLIP}"]` : '';
     setAIStatus('ready', `✅ พบ ${ranked.length} ฉาก VP + ${refRanked.length} Ref${queryInfo}`, 100);
@@ -2784,7 +2785,7 @@ async function runRec() {
     }
 
     // 5. Render top 5 VP + top 5 Grab Ref interleaved
-    const top = ranked.slice(0, 5);
+    const top = ranked.slice(0, 10);
     const vpCards = top.map((s, i) => {
       const pct = Math.round(scores[s.id] * 100);
       const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
