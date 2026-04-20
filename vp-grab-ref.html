@@ -1734,6 +1734,118 @@ body {
   letter-spacing: 0.06em;
 }
 
+/* ══ COLLECTIONS STRIP (inline, above image grid) ══ */
+.coll-strip-wrap {
+  display: none;
+  padding: 0 0 24px 0;
+}
+.coll-strip-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.coll-strip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.coll-card {
+  position: relative;
+  width: 160px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.coll-card:hover { opacity: 0.85; }
+.coll-card.active .coll-card-cover { border-color: var(--gold); }
+.coll-card-cover {
+  width: 160px;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--line-hi);
+  background: var(--card);
+  transition: border-color .15s;
+}
+.coll-card-cover-placeholder {
+  width: 160px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--bone-faint);
+  letter-spacing: 0.06em;
+  transition: border-color .15s;
+}
+.coll-card.active .coll-card-cover-placeholder { border-color: var(--gold); }
+.coll-card-meta {
+  padding: 6px 2px 4px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.coll-card-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bone);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.coll-card-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.coll-card-gear {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,.7);
+  border: 1px solid var(--line-hi);
+  color: var(--gold-dim);
+  font-size: 10px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s, color .15s;
+}
+.coll-card:hover .coll-card-gear { opacity: 1; }
+.coll-card-gear:hover { color: var(--gold); border-color: var(--gold); }
+.coll-card-all {
+  width: 160px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: border-color .15s, color .15s;
+}
+.coll-card-all:hover,
+.coll-card.active .coll-card-all { border-color: var(--gold); color: var(--gold); }
+
 /* Sub-image view strip (in lightbox image pane) */
 .lb-view-thumb {
   width: 80px;
@@ -1997,6 +2109,12 @@ body {
     <div class="search-meta" id="searchMeta"></div>
   </div>
 
+  <!-- Collections Strip -->
+  <div class="coll-strip-wrap" id="collStripWrap">
+    <div class="coll-strip-label">Collections</div>
+    <div class="coll-strip-grid" id="collStripGrid"></div>
+  </div>
+
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
@@ -2018,7 +2136,6 @@ body {
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed vectors for images that have no mclip_vector yet">Batch Embed</button>
-      <button class="btn-manage-coll" id="manageCollBtn" onclick="openCollManager()" style="display:none" title="Manage collections">Collections ⚙</button>
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
       <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
@@ -2587,10 +2704,11 @@ function updateStatsBar() {
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
   const batchBtn = document.getElementById('batchEmbedBtn');
   if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
-  const manageBtn = document.getElementById('manageCollBtn');
-  if (manageBtn) manageBtn.style.display = isAdmin ? 'inline-block' : 'none';
-  // Rebuild collection filter
-  if (show) _rebuildCollectionFilter();
+  // Rebuild collection filter + strip
+  if (show) {
+    _rebuildCollectionFilter();
+    renderCollectionsStrip();
+  }
 }
 
 function shuffleGrid() {
@@ -3401,13 +3519,24 @@ function _rebuildCollectionFilter() {
 }
 
 function applyFilters() {
-  const collVal = document.getElementById('collectionFilter')?.value || '';
+  const collSel = document.getElementById('collectionFilter');
   const shotVal = document.getElementById('shotFilter')?.value || '';
 
+  // Sync dropdown ↔ strip filter
+  const collVal = collSel?.value || '';
+  if (_activeCollFilter !== null && collVal === '') {
+    // strip filter was changed — use it
+  } else if (collVal !== (_activeCollFilter || '')) {
+    // dropdown was changed — update strip
+    _activeCollFilter = collVal || null;
+    renderCollectionsStrip();
+  }
+  const effectiveCollVal = _activeCollFilter || '';
+
   let filtered = _allRefs;
-  if (collVal) {
+  if (effectiveCollVal) {
     filtered = filtered.filter(r =>
-      Array.isArray(r.collections) ? r.collections.includes(collVal) : false
+      Array.isArray(r.collections) ? r.collections.includes(effectiveCollVal) : false
     );
   }
   if (shotVal) {
@@ -3692,15 +3821,25 @@ const COLL_TABLE  = 'ref_collections';
 const COLL_BUCKET = 'ref-images';
 let _collMgrPendingCover = null; // { name } waiting for file input
 
-async function openCollManager() {
+let _collMgrFocusName = null; // which collection to scroll to on open
+
+async function openCollManager(focusName) {
+  _collMgrFocusName = focusName || null;
   document.getElementById('collMgrOverlay').classList.add('open');
   await _renderCollManager();
+  // Scroll to focused row if given
+  if (_collMgrFocusName) {
+    const rowId = `coll-row-${_collMgrFocusName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const row = document.getElementById(rowId);
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function closeCollManager(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('collMgrOverlay').classList.remove('open');
   _collMgrPendingCover = null;
+  _collMgrFocusName = null;
 }
 
 async function _renderCollManager() {
@@ -3812,6 +3951,7 @@ async function handleCollCoverUpload(e) {
     showToast('success', 'Cover updated', 100);
     setTimeout(hideToast, 1800);
     await _renderCollManager();
+    await renderCollectionsStrip();
   } catch(err) {
     showToast('error', err.message, 0, true);
   }
@@ -3843,6 +3983,7 @@ async function saveCollName(oldName, newName, rowId) {
     setTimeout(() => { if(statusEl) statusEl.textContent = ''; }, 2000);
     _rebuildCollectionFilter();
     await _renderCollManager();
+    await renderCollectionsStrip();
   } catch(err) {
     if (statusEl) { statusEl.textContent = '✗ ' + err.message.slice(0,40); statusEl.style.color = 'var(--danger)'; }
   }
@@ -3881,9 +4022,96 @@ async function deleteCollection(name) {
     setTimeout(hideToast, 1800);
     _rebuildCollectionFilter();
     await _renderCollManager();
+    await renderCollectionsStrip();
   } catch(err) {
     showToast('error', err.message, 0, true);
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// COLLECTIONS STRIP — inline grid above image grid
+// ══════════════════════════════════════════════════════════════
+let _activeCollFilter = null; // null = all
+
+async function renderCollectionsStrip() {
+  const wrap = document.getElementById('collStripWrap');
+  const grid = document.getElementById('collStripGrid');
+  if (!wrap || !grid) return;
+
+  // Build count map from _allRefs
+  const countMap = {};
+  _allRefs.forEach(r => {
+    if (Array.isArray(r.collections)) {
+      r.collections.forEach(t => { countMap[t] = (countMap[t] || 0) + 1; });
+    }
+  });
+  const names = Object.keys(countMap).sort();
+
+  if (!names.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+
+  // Fetch cover metadata (non-fatal)
+  let coverMap = {};
+  try {
+    const { data } = await _SB.from(COLL_TABLE).select('*');
+    (data || []).forEach(row => { coverMap[row.name] = row; });
+  } catch(e) {}
+
+  const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
+  grid.innerHTML = '';
+
+  // "All" card
+  const allCard = document.createElement('div');
+  allCard.className = 'coll-card' + (_activeCollFilter === null ? ' active' : '');
+  allCard.onclick = () => filterByCollection(null);
+  allCard.innerHTML = `
+    <div class="coll-card-all">ALL</div>
+    <div class="coll-card-meta">
+      <span class="coll-card-name">ทั้งหมด</span>
+      <span class="coll-card-count">${_allRefs.length}</span>
+    </div>`;
+  grid.appendChild(allCard);
+
+  // Collection cards
+  names.forEach(name => {
+    const meta  = coverMap[name] || {};
+    const count = countMap[name] || 0;
+    const card  = document.createElement('div');
+    card.className = 'coll-card' + (_activeCollFilter === name ? ' active' : '');
+
+    const coverHtml = meta.cover_url
+      ? `<img class="coll-card-cover" src="${meta.cover_url}" alt="${escHtml(name)}">`
+      : `<div class="coll-card-cover-placeholder">${escHtml(name)}</div>`;
+
+    const gearBtn = isAdmin
+      ? `<button class="coll-card-gear" title="Edit collection" onclick="event.stopPropagation();openCollManager('${escHtml(name)}')">⚙</button>`
+      : '';
+
+    card.innerHTML = `
+      ${coverHtml}
+      ${gearBtn}
+      <div class="coll-card-meta">
+        <span class="coll-card-name">${escHtml(name)}</span>
+        <span class="coll-card-count">${count}</span>
+      </div>`;
+    card.onclick = () => filterByCollection(name);
+    grid.appendChild(card);
+  });
+}
+
+function filterByCollection(name) {
+  _activeCollFilter = name;
+
+  // Sync dropdown filter too
+  const sel = document.getElementById('collectionFilter');
+  if (sel) sel.value = name || '';
+
+  // Re-render strip to update active state
+  renderCollectionsStrip();
+  applyFilters();
 }
 
 // ── CLIP Search ────────────────────────────────────────────────
