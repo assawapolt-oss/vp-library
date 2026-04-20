@@ -310,6 +310,27 @@
   /* ── Result cards ── */
   .rec-results { margin-top:8px; }
   .rec-results-header { font-size:14px; font-weight:700; color:var(--muted); margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  /* 2-col paired grid: VP left, Grab Ref right */
+  .rec-paired-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
+  .rec-col-header { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:6px 10px; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .rec-col-header.vp  { background:rgba(204,34,41,.1); color:var(--red); }
+  .rec-col-header.ref { background:rgba(5,150,105,.1); color:#059669; }
+  /* compact rcard for 2-col */
+  .rcard-compact .rcard-inner { flex-direction:column; }
+  .rcard-compact .rcard-thumb { width:100%; min-width:0; height:130px; border-radius:12px 12px 0 0; }
+  .rcard-compact .rcard-thumb-ph { width:100%; min-width:0; height:130px; border-radius:12px 12px 0 0; }
+  .rcard-compact .rcard-body { padding:8px 10px 10px; }
+  .rcard-compact .rcard-title { font-size:11px; font-weight:600; margin-bottom:1px; line-height:1.3; }
+  .rcard-compact .rcard-title-th { font-size:9px; margin-bottom:4px; }
+  .rcard-compact .rcard-top { margin-bottom:4px; gap:4px; }
+  .rcard-compact .rank-badge { font-size:9px; padding:1px 6px; }
+  .rcard-compact .rcard-id { font-size:9px; }
+  .rcard-compact .score-row { margin-bottom:4px; }
+  .rcard-compact .score-pct { font-size:10px; }
+  @media(max-width:600px){
+    .rec-paired-grid { grid-template-columns:1fr; }
+    .rec-col-header.ref { margin-top:16px; }
+  }
   .rcard { background:var(--card); border:1.5px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:14px; transition:all .15s; cursor:pointer; }
   .rcard:hover { border-color:var(--red); box-shadow:0 4px 16px rgba(204,34,41,.1); }
   .rcard-inner { display:flex; }
@@ -2789,24 +2810,24 @@ async function runRec() {
       </div>`;
     });
 
-    const grabRefHeader = refRanked.length ? `<div class="rec-results-header" style="margin-top:24px">🖼 Grab Ref ที่เกี่ยวข้อง &nbsp;<span class="ai-badge" style="background:linear-gradient(135deg,#059669,#065F46);color:#fff;border-color:transparent;font-size:9px">GRAB REF</span></div>` : '';
-    const refCards = refRanked.map((r, i) => {
-      const pct = Math.round(r.similarity * 100);
+    // Build compact VP cards (2-col style)
+    const vpCardsCompact = top.map((s, i) => {
+      const pct = Math.round(scores[s.id] * 100);
       const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
-      const imgSrc = r.thumb_url || r.url || '';
-      const fullUrl = r.url || r.thumb_url || '';
-      return `<div class="rcard" onclick="window.open('${fullUrl}','_blank')" style="cursor:pointer">
+      const thumbSrc = s.presenter_image_url || s.thumb;
+      return `<div class="rcard rcard-compact" onclick="openModal('${s.id}')">
         <div class="rcard-inner">
-          <img class="rcard-thumb" src="${imgSrc}" alt="ref ${i+1}"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="rcard-thumb-ph" style="display:none">🖼</div>
+          <img class="rcard-thumb" src="${thumbSrc}" alt="${s.title}"
+               onerror="this.src='${s.thumb}';this.onerror=()=>{this.style.display='none';this.nextElementSibling.style.display='flex'}">
+          <div class="rcard-thumb-ph" style="display:none">🎬</div>
           <div class="rcard-body">
             <div class="rcard-top">
-              <span class="rank-badge rank-${Math.min(i+1,3)}" style="background:linear-gradient(135deg,#059669,#065F46)">${i===0?'⭐ Ref #1':'Ref #'+(i+1)}</span>
-              <span style="font-size:9px;color:var(--muted);font-family:monospace">GRAB REF</span>
+              <span class="rank-badge ${rankCls[i]}">${i+1}</span>
+              <span class="rcard-id">${s.id}</span>
             </div>
-            <div class="rcard-title" style="font-size:12px">${(r.tags||[]).slice(0,4).join(' · ') || 'Reference Image'}</div>
-            <div class="score-row" style="margin-top:8px">
+            <div class="rcard-title">${s.title}</div>
+            <div class="rcard-title-th">${s.title_th}</div>
+            <div class="score-row">
               <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
               <span class="score-pct">${pct}%</span>
             </div>
@@ -2815,11 +2836,51 @@ async function runRec() {
       </div>`;
     });
 
+    // Pad VP or Ref to same length for row pairing
+    const maxRows = Math.max(top.length, refRanked.length);
+    const refCardsCompact = Array.from({length: maxRows}, (_, i) => {
+      const r = refRanked[i];
+      if (!r) return `<div></div>`;
+      const pct = Math.round(r.similarity * 100);
+      const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
+      const imgSrc = r.thumb_url || r.url || '';
+      const fullUrl = r.url || r.thumb_url || '';
+      return `<div class="rcard rcard-compact" onclick="window.open('${fullUrl}','_blank')" style="border-color:rgba(5,150,105,.3)">
+        <div class="rcard-inner">
+          <img class="rcard-thumb" src="${imgSrc}" alt="ref ${i+1}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="rcard-thumb-ph" style="display:none">🖼</div>
+          <div class="rcard-body">
+            <div class="rcard-top">
+              <span class="rank-badge" style="background:rgba(5,150,105,.8)">${i+1}</span>
+              <span style="font-size:9px;color:#059669;font-weight:700">GRAB REF</span>
+            </div>
+            <div class="rcard-title">${(r.tags||[]).slice(0,3).join(' · ') || 'Reference Image'}</div>
+            <div class="score-row">
+              <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
+              <span class="score-pct">${pct}%</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    // Interleave: each row = [vpCard, refCard] side by side
+    const pairedRows = Array.from({length: maxRows}, (_, i) =>
+      `<div class="rec-paired-grid">${vpCardsCompact[i]||'<div></div>'}${refCardsCompact[i]}</div>`
+    ).join('');
+
     box.innerHTML =
-      `<div class="rec-results-header">พบ <strong>${ranked.length}</strong> ฉาก VP — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
-      vpCards.join('') +
-      grabRefHeader +
-      refCards.join('');
+      `<div class="rec-results-header" style="display:flex;gap:0;padding-bottom:0;border-bottom:none;margin-bottom:10px">
+        <div style="flex:1;display:flex;align-items:center;gap:8px">
+          <span class="rec-col-header vp" style="margin-bottom:0">🎬 VP Scenes <strong>${top.length}</strong></span>
+          ${modeBadge}
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+          ${refRanked.length ? `<span class="rec-col-header ref" style="margin-bottom:0">🖼 Grab Ref <strong>${refRanked.length}</strong></span>` : ''}
+        </div>
+      </div>` +
+      pairedRows;
 
     logActivity('recommend', {
       query: text,
