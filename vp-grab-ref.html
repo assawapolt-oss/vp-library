@@ -1734,6 +1734,23 @@ body {
   letter-spacing: 0.06em;
 }
 
+/* ══ COLLECTION STRIP TOGGLE BUTTON ══ */
+.btn-toggle-coll {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line-hi);
+  color: var(--muted);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.btn-toggle-coll:hover { border-color: var(--bone-faint); color: var(--bone); }
+.btn-toggle-coll.open { border-color: var(--gold-dim); color: var(--gold); }
+
 /* ══ COLLECTIONS STRIP (inline, above image grid) ══ */
 .coll-strip-wrap {
   display: none;
@@ -2109,9 +2126,8 @@ body {
     <div class="search-meta" id="searchMeta"></div>
   </div>
 
-  <!-- Collections Strip -->
-  <div class="coll-strip-wrap" id="collStripWrap">
-    <div class="coll-strip-label">Collections</div>
+  <!-- Collections Strip (hidden by default, toggled by button) -->
+  <div class="coll-strip-wrap" id="collStripWrap" style="display:none">
     <div class="coll-strip-grid" id="collStripGrid"></div>
   </div>
 
@@ -2120,6 +2136,7 @@ body {
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
     <!-- Collection + Shot filters -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button class="btn-toggle-coll" id="collStripToggle" onclick="toggleCollStrip()">Collection ▾</button>
       <div class="collection-filter-wrap">
         <select class="collection-filter-select" id="collectionFilter" onchange="applyFilters()" title="Filter by collection">
           <option value="">All collections</option>
@@ -2704,10 +2721,10 @@ function updateStatsBar() {
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
   const batchBtn = document.getElementById('batchEmbedBtn');
   if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
-  // Rebuild collection filter + strip
+  // Rebuild collection filter (strip only if open)
   if (show) {
     _rebuildCollectionFilter();
-    renderCollectionsStrip();
+    if (_collStripOpen) renderCollectionsStrip();
   }
 }
 
@@ -4032,6 +4049,16 @@ async function deleteCollection(name) {
 // COLLECTIONS STRIP — inline grid above image grid
 // ══════════════════════════════════════════════════════════════
 let _activeCollFilter = null; // null = all
+let _collStripOpen = false;
+
+function toggleCollStrip() {
+  _collStripOpen = !_collStripOpen;
+  const wrap = document.getElementById('collStripWrap');
+  const btn  = document.getElementById('collStripToggle');
+  if (wrap) wrap.style.display = _collStripOpen ? 'block' : 'none';
+  if (btn)  btn.classList.toggle('open', _collStripOpen);
+  if (_collStripOpen) renderCollectionsStrip();
+}
 
 async function renderCollectionsStrip() {
   const wrap = document.getElementById('collStripWrap');
@@ -4048,10 +4075,11 @@ async function renderCollectionsStrip() {
   const names = Object.keys(countMap).sort();
 
   if (!names.length) {
-    wrap.style.display = 'none';
+    if (_collStripOpen) wrap.style.display = 'none';
     return;
   }
-  wrap.style.display = 'block';
+  // Only show if toggled open
+  if (!_collStripOpen) return;
 
   // Fetch cover metadata (non-fatal)
   let coverMap = {};
