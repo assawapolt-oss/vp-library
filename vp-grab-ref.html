@@ -2587,6 +2587,8 @@ function updateStatsBar() {
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
   const batchBtn = document.getElementById('batchEmbedBtn');
   if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
+  const manageBtn = document.getElementById('manageCollBtn');
+  if (manageBtn) manageBtn.style.display = isAdmin ? 'inline-block' : 'none';
   // Rebuild collection filter
   if (show) _rebuildCollectionFilter();
 }
