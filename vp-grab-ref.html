@@ -1544,6 +1544,29 @@ body {
 .shot-tag-btn.active-duo     { color: var(--bg); background: var(--gold); border-color: var(--gold); }
 .shot-tag-btn.active-multi   { color: var(--bg); background: #7B5EA7; border-color: #7B5EA7; }
 
+/* Sub-image view strip (in lightbox image pane) */
+.lb-view-thumb {
+  width: 80px;
+  height: 56px;
+  object-fit: cover;
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.lb-view-thumb:hover { opacity: 1; border-color: var(--bone-faint); }
+.lb-view-thumb.active { opacity: 1; border-color: var(--gold); }
+.lb-view-thumb-main {
+  width: 80px;
+  height: 56px;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+  cursor: pointer;
+  opacity: 1;
+  flex-shrink: 0;
+}
+
 /* Shot type badge on card */
 .ref-card-shot-badge {
   position: absolute;
@@ -1885,11 +1908,13 @@ body {
       <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')" style="display:none">Data</button>
     </div>
     <!-- Image pane -->
-    <div class="lb-pane-view" id="lbPaneView">
+    <div class="lb-pane-view" id="lbPaneView" style="flex-direction:column;gap:0;padding-bottom:20px;">
       <div class="lb-inner">
         <img class="lb-img" id="lbImg" src="" alt="">
         <div class="lb-info" id="lbInfo"></div>
       </div>
+      <!-- Sub-image preview strip (shown when sub_images exist) -->
+      <div id="lbViewSubStrip" style="display:none; margin-top:20px; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;"></div>
     </div>
     <!-- Data pane (admin only) -->
     <div class="lb-pane-data" id="lbPaneData" style="display:none">
@@ -2393,9 +2418,58 @@ function openLb(ref) {
   document.getElementById('lbTabbar').style.display = 'flex';
   const dataTab = document.getElementById('lbTabData');
   if (dataTab) dataTab.style.display = isAdmin ? 'flex' : 'none';
+  // Render sub-image strip in view pane
+  _renderViewSubStrip(ref, ref.url);
   // Always start on image pane
   switchLbTab('view');
   document.getElementById('lbOverlay').classList.add('open');
+}
+
+function _renderViewSubStrip(ref, activeUrl) {
+  const strip = document.getElementById('lbViewSubStrip');
+  if (!strip) return;
+  const subs = Array.isArray(ref.sub_images) ? ref.sub_images : [];
+
+  if (subs.length === 0) {
+    strip.style.display = 'none';
+    strip.innerHTML = '';
+    return;
+  }
+
+  strip.style.display = 'flex';
+  strip.innerHTML = '';
+
+  // Main image thumb (always first)
+  const mainThumb = document.createElement('img');
+  mainThumb.src = ref.thumb_url || ref.url;
+  mainThumb.className = activeUrl === ref.url ? 'lb-view-thumb-main' : 'lb-view-thumb';
+  mainThumb.title = 'Main image';
+  mainThumb.onclick = () => {
+    document.getElementById('lbImg').src = ref.url;
+    strip.querySelectorAll('img').forEach(t => { t.className = 'lb-view-thumb'; });
+    mainThumb.className = 'lb-view-thumb-main';
+    const dim  = (ref.width && ref.height) ? `${ref.width} × ${ref.height}` : '';
+    const kb   = ref.file_size_kb ? `${ref.file_size_kb} KB` : '';
+    document.getElementById('lbInfo').textContent = [dim, kb].filter(Boolean).join('  ·  ');
+  };
+  strip.appendChild(mainThumb);
+
+  // Sub-image thumbs
+  subs.forEach((sub, idx) => {
+    const t = document.createElement('img');
+    t.src = sub.thumb_url || sub.url;
+    t.className = activeUrl === sub.url ? 'lb-view-thumb-main' : 'lb-view-thumb';
+    t.title = `Sub-image ${idx + 1}  ·  ${sub.width || '?'} × ${sub.height || '?'}`;
+    t.onclick = () => {
+      document.getElementById('lbImg').src = sub.url;
+      strip.querySelectorAll('img').forEach(th => { th.className = 'lb-view-thumb'; });
+      t.className = 'lb-view-thumb-main';
+      const dim = (sub.width && sub.height) ? `${sub.width} × ${sub.height}` : '';
+      const kb  = sub.file_size_kb ? `${sub.file_size_kb} KB` : '';
+      document.getElementById('lbInfo').textContent = [dim, kb].filter(Boolean).join('  ·  ') + '  ·  sub ' + (idx + 1);
+    };
+    strip.appendChild(t);
+  });
 }
 
 function switchLbTab(tab) {
@@ -3279,6 +3353,7 @@ async function handleSubFiles(files) {
   showToast('success', `Added ${newSubs.length} sub-image${newSubs.length > 1 ? 's' : ''} · WebP · Supabase ✓`, 100);
   setTimeout(hideToast, 2500);
   renderSubStrip(ref);
+  _renderViewSubStrip(ref, ref.url); // refresh view-pane strip too
 }
 
 async function deleteSubImage(ref, idx) {
@@ -3318,6 +3393,7 @@ async function deleteSubImage(ref, idx) {
   showToast('success', 'Removed', 100);
   setTimeout(hideToast, 1500);
   renderSubStrip(ref);
+  _renderViewSubStrip(ref, ref.url);
 }
 
 // ══════════════════════════════════════════════════════════════
