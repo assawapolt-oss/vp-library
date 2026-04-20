@@ -361,6 +361,16 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <textarea class="form-textarea" id="f_notes" placeholder="ข้อมูลที่อยากให้ทีม VP รู้เพิ่มเติม..." style="min-height:60px" oninput="ucc(this,'nc',400)"></textarea>
             <div class="char-count" id="nc">0 / 400 chars</div>
           </div>
+          <div class="form-group">
+            <label class="form-label">📧 ผู้ที่เกี่ยวข้อง <span style="font-weight:400;font-size:11px;color:var(--muted)">จะได้รับ Calendar invite</span></label>
+            <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" id="f_attendee_input" type="email" placeholder="email@thestandard.co" style="flex:1"
+                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAttendee();}">
+              <button type="button" onclick="addAttendee()" style="padding:0 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">+ เพิ่ม</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">กด Enter หรือกดปุ่ม + เพื่อเพิ่ม — ระบบจะส่ง Calendar invite ให้อัตโนมัติ</div>
+          </div>
         </div>
       </div>
 
@@ -684,10 +694,70 @@ function resetForm(){
   _picked.clear();renderPicker();renderSelTags();
   document.getElementById('f_time_start').value='';
   document.getElementById('f_time_end').value='';
+  _attendees = []; renderAttendees();
   ['morning','afternoon','fullday'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
   const avail=document.getElementById('slotAvail');if(avail)avail.textContent='';
   [{id:'kmc',max:500},{id:'mtc',max:300},{id:'nc',max:400},{id:'tdc',max:600}].forEach(({id,max})=>{const e=document.getElementById(id);if(e)e.textContent='0 / '+max+' chars';});
   setSceneOpt('library');
+}
+
+// ── Attendee management ──────────────────────────────────────
+let _attendees = []; // array of email strings
+
+function addAttendee() {
+  const inp = document.getElementById('f_attendee_input');
+  const email = inp.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { inp.value = ''; return; }
+  if (_attendees.includes(email)) { inp.value = ''; return; }
+  _attendees.push(email);
+  inp.value = '';
+  renderAttendees();
+}
+
+function removeAttendee(email) {
+  _attendees = _attendees.filter(e => e !== email);
+  renderAttendees();
+}
+
+function renderAttendees() {
+  const container = document.getElementById('attendeeList');
+  if (!container) return;
+  container.innerHTML = _attendees.map(email => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;">
+      ${email}
+      <button onclick="removeAttendee('${email}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>
+    </span>`).join('');
+}
+
+function buildCalendarUrl(row, allAttendees) {
+  // Format: YYYYMMDDTHHMMSS
+  const dateStr = row.shoot_date.replace(/-/g, '');
+  const [startH, startM] = (row.time_slot.split('-')[0] || '09:00').split(':');
+  const [endH,   endM]   = (row.time_slot.split('-')[1] || '18:00').split(':');
+  const dtStart = `${dateStr}T${String(startH).padStart(2,'0')}${String(startM||'00').padStart(2,'0')}00`;
+  const dtEnd   = `${dateStr}T${String(endH).padStart(2,'0')}${String(endM||'00').padStart(2,'0')}00`;
+
+  const title = `[VP] ${row.show_name} — ${row.team || 'Service Request'}`;
+  const details = [
+    `ผู้ยื่น: ${row.requester}`,
+    `Key Messages: ${row.key_messages || '-'}`,
+    `Mood & Tone: ${row.mood_tone || '-'}`,
+    `จำนวนฉาก: ${row.scene_count}`,
+    `Platform: ${(row.platforms || []).join(', ')}`,
+    row.tailor_desc ? `Tailor Made: ${row.tailor_desc}` : '',
+    row.ref_links ? `References: ${row.ref_links}` : '',
+    row.notes ? `หมายเหตุ: ${row.notes}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${dtStart}/${dtEnd}`,
+    details: details,
+    location: 'THE STANDARD — Virtual Production Studio',
+    add: allAttendees.join(','),
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 async function submitRequest(){
@@ -729,9 +799,15 @@ async function submitRequest(){
   };
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='⏳ กำลังส่ง...';
   try{
+    const requesterEmail = email;
+    const allAttendees = ['assawapol.t@thestandard.co'];
+    if(requesterEmail && !allAttendees.includes(requesterEmail)) allAttendees.push(requesterEmail);
+    _attendees.forEach(e => { if(!allAttendees.includes(e)) allAttendees.push(e); });
+    row.attendee_emails = allAttendees;
     const{error}=await _sc.from('service_requests').insert([row]);
     if(error)throw error;
     toast('✅ ส่ง Request สำเร็จ! ทีม VP จะติดต่อกลับ','green');
+    try { window.open(buildCalendarUrl(row, allAttendees), '_blank'); } catch(_){}
     resetForm();setTimeout(()=>loadMyRequests(),800);
   }catch(e){toast('❌ '+(e.message||'ลองอีกครั้ง'),'red');}
   finally{btn.disabled=false;btn.textContent='📤 ส่ง Service Request';}
