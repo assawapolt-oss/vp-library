@@ -3936,7 +3936,17 @@ async function _renderCollManager() {
 
 function _pickCollCover(name) {
   _collMgrPendingCover = { name };
-  document.getElementById('collCoverInput').click();
+  // Create a fresh input every time to avoid browser blocking .click() on hidden/stale inputs
+  const old = document.getElementById('collCoverInput');
+  if (old) old.remove();
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.id = 'collCoverInput';
+  inp.accept = 'image/*';
+  inp.style.display = 'none';
+  inp.onchange = handleCollCoverUpload;
+  document.body.appendChild(inp);
+  inp.click();
 }
 
 async function handleCollCoverUpload(e) {
