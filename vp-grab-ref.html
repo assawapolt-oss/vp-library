@@ -1216,13 +1216,19 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(5,5,6,.88);
-  z-index: 500;
+  background: rgba(5,5,6,.95);
+  z-index: 9999;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  /* Cannot be dismissed by clicking outside */
 }
 .auth-overlay.open { display: flex; }
+/* Lock page interaction while auth overlay is open */
+body:has(.auth-overlay.open) > *:not(.auth-overlay) {
+  pointer-events: none;
+  user-select: none;
+}
 
 .auth-box {
   background: var(--surface);
@@ -2904,6 +2910,8 @@ function closeLb(e) {
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    // Never close auth overlay with ESC
+    if (document.getElementById('authOverlay')?.classList.contains('open')) return;
     document.getElementById('lbOverlay').classList.remove('open');
     document.getElementById('confirmOverlay').classList.remove('open');
   }
@@ -4367,13 +4375,21 @@ async function doGoogleLogin() {
 // ── Handle Supabase OAuth session ─────────────────────────
 async function handleAuthSession(session) {
   if (!session) {
-    // Password login — ยังใช้งานได้ข้ามหน้า
+    // Password session — ข้ามหน้าได้
     if (localStorage.getItem(AUTH_TYPE_KEY) === 'password' && localStorage.getItem(USER_KEY)) {
       updateUserUI(localStorage.getItem(USER_KEY), localStorage.getItem(USER_KEY));
       await loadRefs();
       return;
     }
-    // ไม่มี session — แสดง login overlay (mandatory)
+    // Google session อาจยังค้างใน localStorage จากหน้าอื่น
+    if (localStorage.getItem(AUTH_TYPE_KEY) === 'google' && localStorage.getItem(USER_KEY)) {
+      // ให้ใช้ข้อมูลที่มีอยู่ แล้ว loadRefs ไปก่อน
+      const email = localStorage.getItem(USER_KEY);
+      updateUserUI(email, email);
+      await loadRefs();
+      return;
+    }
+    // ไม่มี session เลย — บังคับ login
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(USER_ROLE_KEY);
     localStorage.removeItem('vp_user_avatar');
@@ -4451,6 +4467,7 @@ function updateUserUI(uid, name) {
 // ── Listen for OAuth redirect + existing session ───────────
 let _supaAuthReady = false;
 _SB.auth.onAuthStateChange((_event, session) => {
+  if (_supaAuthReady) return; // already handled
   _supaAuthReady = true;
   handleAuthSession(session);
 });
@@ -4459,9 +4476,9 @@ _SB.auth.onAuthStateChange((_event, session) => {
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
-  // Start polling AI model status now that DOM is ready
   _updateRefAiStatus();
-  // ตรวจ localStorage session ทันที (เผื่อ login จาก vp-search.html แล้ว)
+
+  // 1. Password session — ข้ามหน้าได้ทันที
   const uid      = localStorage.getItem(USER_KEY);
   const authType = localStorage.getItem(AUTH_TYPE_KEY);
   if (uid && authType === 'password') {
@@ -4470,11 +4487,25 @@ _SB.auth.onAuthStateChange((_event, session) => {
     const name = _USERS_DB?.[uid]?.name || uid;
     updateUserUI(uid, name);
     await loadRefs();
-    return; // password session OK — skip Supabase check
+    return;
   }
-  // ตรวจ Supabase session (Google OAuth)
-  const { data: { session } } = await _SB.auth.getSession();
-  if (!_supaAuthReady) handleAuthSession(session);
+
+  // 2. Google OAuth — ให้ onAuthStateChange จัดการ (มัน fire เร็วกว่า)
+  //    แต่ถ้า 2.5 วินาทียัง silent อยู่ ค่อย getSession() เป็น fallback
+  const authTimeout = new Promise(resolve => setTimeout(resolve, 2500));
+  const authReady   = new Promise(resolve => {
+    const check = setInterval(() => {
+      if (_supaAuthReady) { clearInterval(check); resolve(); }
+    }, 50);
+  });
+  await Promise.race([authReady, authTimeout]);
+
+  if (!_supaAuthReady) {
+    // onAuthStateChange ไม่ยิง — fallback ด้วย getSession
+    _supaAuthReady = true;
+    const { data: { session } } = await _SB.auth.getSession();
+    handleAuthSession(session);
+  }
 })();
 </script>
 </body>
