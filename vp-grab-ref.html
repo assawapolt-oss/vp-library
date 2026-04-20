@@ -1544,6 +1544,196 @@ body {
 .shot-tag-btn.active-duo     { color: var(--bg); background: var(--gold); border-color: var(--gold); }
 .shot-tag-btn.active-multi   { color: var(--bg); background: #7B5EA7; border-color: #7B5EA7; }
 
+/* ══════════════════════════════════════════════════════════════
+   COLLECTION MANAGER MODAL
+══════════════════════════════════════════════════════════════ */
+.btn-manage-coll {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn-manage-coll:hover { border-color: var(--gold); color: var(--bone); }
+
+.coll-mgr-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,6,.88);
+  z-index: 450;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.coll-mgr-overlay.open { display: flex; }
+
+.coll-mgr-box {
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  border-top: 2px solid var(--gold);
+  width: 680px;
+  max-width: 96vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+.coll-mgr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.coll-mgr-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.coll-mgr-close {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 12px;
+  border: 1px solid var(--line-hi);
+  transition: all .15s;
+}
+.coll-mgr-close:hover { color: var(--bone); border-color: var(--bone-faint); }
+
+.coll-mgr-body {
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-hi) transparent;
+}
+
+/* Collection row */
+.coll-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.coll-row:last-child { border-bottom: none; }
+
+/* Cover thumbnail */
+.coll-cover-wrap {
+  position: relative;
+  width: 80px;
+  height: 52px;
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line-hi);
+}
+.coll-cover-wrap:hover .coll-cover-overlay { opacity: 1; }
+.coll-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.coll-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--bone-faint);
+  letter-spacing: 0.06em;
+}
+.coll-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Name + count */
+.coll-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.coll-name-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--bone);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 4px;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+.coll-name-input:focus { border-bottom-color: var(--gold-dim); background: var(--card); }
+.coll-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  padding-left: 4px;
+}
+.coll-save-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  padding-left: 4px;
+  min-height: 12px;
+}
+
+/* Actions */
+.coll-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.coll-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1px solid var(--line-hi);
+  color: var(--muted);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.coll-btn:hover { color: var(--bone); border-color: var(--bone-faint); }
+.coll-btn-danger:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+
+/* Empty state */
+.coll-empty {
+  text-align: center;
+  padding: 48px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
 /* Sub-image view strip (in lightbox image pane) */
 .lb-view-thumb {
   width: 80px;
@@ -1828,6 +2018,7 @@ body {
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed vectors for images that have no mclip_vector yet">Batch Embed</button>
+      <button class="btn-manage-coll" id="manageCollBtn" onclick="openCollManager()" style="display:none" title="Manage collections">Collections ⚙</button>
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
       <button class="btn-size" onclick="resizeGrid(-1)" title="Zoom in (fewer columns)">+</button>
       <button class="btn-shuffle" onclick="shuffleGrid()" title="Shuffle order">Shuffle</button>
@@ -1967,6 +2158,20 @@ body {
     </div>
   </div>
   <button class="lb-close" onclick="closeLb()">ESC</button>
+</div>
+
+<!-- ══ COLLECTION MANAGER ══ -->
+<div class="coll-mgr-overlay" id="collMgrOverlay" onclick="closeCollManager(event)">
+  <div class="coll-mgr-box" onclick="event.stopPropagation()">
+    <div class="coll-mgr-header">
+      <span class="coll-mgr-title">Collections</span>
+      <button class="coll-mgr-close" onclick="closeCollManager()">ESC</button>
+    </div>
+    <div class="coll-mgr-body" id="collMgrBody">
+      <!-- rendered by JS -->
+    </div>
+    <input type="file" id="collCoverInput" accept="image/*" style="display:none" onchange="handleCollCoverUpload(event)">
+  </div>
 </div>
 
 <!-- ══ BATCH EMBED MODAL ══ -->
@@ -3473,6 +3678,209 @@ async function _replaceCroppedMain(ref, file, cropRect) {
     console.error('[replaceCrop]', err);
     showToast('error', err.message, 0);
     setTimeout(hideToast, 4000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// COLLECTION MANAGER
+// Metadata stored in Supabase table: ref_collections
+//   id (uuid), name (text unique), cover_url (text), cover_path (text), created_at
+// ══════════════════════════════════════════════════════════════
+const COLL_TABLE  = 'ref_collections';
+const COLL_BUCKET = 'ref-images';
+let _collMgrPendingCover = null; // { name } waiting for file input
+
+async function openCollManager() {
+  document.getElementById('collMgrOverlay').classList.add('open');
+  await _renderCollManager();
+}
+
+function closeCollManager(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('collMgrOverlay').classList.remove('open');
+  _collMgrPendingCover = null;
+}
+
+async function _renderCollManager() {
+  const body = document.getElementById('collMgrBody');
+  body.innerHTML = `<div class="coll-empty">Loading…</div>`;
+
+  // Collect all unique collection names from _allRefs
+  const countMap = {};
+  _allRefs.forEach(r => {
+    if (Array.isArray(r.collections)) {
+      r.collections.forEach(t => { countMap[t] = (countMap[t] || 0) + 1; });
+    }
+  });
+  const names = Object.keys(countMap).sort();
+
+  if (!names.length) {
+    body.innerHTML = `<div class="coll-empty">ยังไม่มี collection — เพิ่มผ่าน tag ในแต่ละภาพก่อนครับ</div>`;
+    return;
+  }
+
+  // Fetch cover metadata from Supabase (non-fatal if table doesn't exist yet)
+  let coverMap = {}; // name → { cover_url, cover_path, id }
+  try {
+    const { data } = await _SB.from(COLL_TABLE).select('*');
+    (data || []).forEach(row => { coverMap[row.name] = row; });
+  } catch(e) { /* table may not exist yet */ }
+
+  body.innerHTML = '';
+  names.forEach(name => {
+    const meta   = coverMap[name] || {};
+    const count  = countMap[name] || 0;
+    const rowId  = `coll-row-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const inputId = `coll-name-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    const row = document.createElement('div');
+    row.className = 'coll-row';
+    row.id = rowId;
+
+    // Cover
+    const coverWrap = document.createElement('div');
+    coverWrap.className = 'coll-cover-wrap';
+    coverWrap.title = 'Click to upload cover image';
+    coverWrap.onclick = () => _pickCollCover(name);
+    if (meta.cover_url) {
+      coverWrap.innerHTML = `
+        <img class="coll-cover-img" src="${meta.cover_url}" alt="">
+        <div class="coll-cover-overlay">Change</div>`;
+    } else {
+      coverWrap.innerHTML = `
+        <div class="coll-cover-placeholder">+ Cover</div>
+        <div class="coll-cover-overlay">Upload</div>`;
+    }
+
+    // Info
+    const info = document.createElement('div');
+    info.className = 'coll-info';
+    info.innerHTML = `
+      <input class="coll-name-input" id="${inputId}" type="text" value="${escHtml(name)}"
+        onblur="saveCollName('${escHtml(name)}', this.value, '${rowId}')"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}event.stopPropagation();"
+        onclick="event.stopPropagation()">
+      <span class="coll-count">${count} ภาพ</span>
+      <span class="coll-save-status" id="coll-status-${rowId}"></span>`;
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'coll-actions';
+    actions.innerHTML = `
+      <button class="coll-btn coll-btn-danger" onclick="deleteCollection('${escHtml(name)}')">ลบ</button>`;
+
+    row.appendChild(coverWrap);
+    row.appendChild(info);
+    row.appendChild(actions);
+    body.appendChild(row);
+  });
+}
+
+function _pickCollCover(name) {
+  _collMgrPendingCover = { name };
+  document.getElementById('collCoverInput').click();
+}
+
+async function handleCollCoverUpload(e) {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file || !_collMgrPendingCover) return;
+  const { name } = _collMgrPendingCover;
+  _collMgrPendingCover = null;
+
+  showToast('loading', 'Uploading cover…', 20);
+  try {
+    // Process to WebP thumb (480×360 max for cover)
+    const { thumbBlob, width, height } = await processImage(file, null);
+    const ts   = Date.now();
+    const rand = Math.random().toString(36).slice(2, 6);
+    const path = `refs/collection-covers/${ts}-${rand}.webp`;
+
+    const { error: sErr } = await _SB.storage.from(COLL_BUCKET)
+      .upload(path, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+    if (sErr) throw new Error(sErr.message);
+
+    const url = _SB.storage.from(COLL_BUCKET).getPublicUrl(path).data?.publicUrl || '';
+
+    // Upsert into ref_collections
+    const { error: dbErr } = await _SB.from(COLL_TABLE)
+      .upsert({ name, cover_url: url, cover_path: path }, { onConflict: 'name' });
+    if (dbErr) throw new Error(dbErr.message);
+
+    showToast('success', 'Cover updated', 100);
+    setTimeout(hideToast, 1800);
+    await _renderCollManager();
+  } catch(err) {
+    showToast('error', err.message, 0, true);
+  }
+}
+
+async function saveCollName(oldName, newName, rowId) {
+  newName = newName.trim();
+  const statusEl = document.getElementById(`coll-status-${rowId}`);
+  if (!newName || newName === oldName) { if(statusEl) statusEl.textContent = ''; return; }
+  if (statusEl) { statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--muted)'; }
+
+  try {
+    // 1. Update ref_collections name
+    await _SB.from(COLL_TABLE).update({ name: newName }).eq('name', oldName);
+
+    // 2. Update all refs that have this collection
+    const toUpdate = _allRefs.filter(r =>
+      Array.isArray(r.collections) && r.collections.includes(oldName)
+    );
+    for (const ref of toUpdate) {
+      const newColl = ref.collections.map(c => c === oldName ? newName : c);
+      await _SB.from(REF_TABLE).update({ collections: newColl }).eq('id', ref.id);
+      ref.collections = newColl;
+      const idx = _allRefs.findIndex(r => r.id === ref.id);
+      if (idx !== -1) _allRefs[idx].collections = newColl;
+    }
+
+    if (statusEl) { statusEl.textContent = '✓ Saved'; statusEl.style.color = '#4A7C59'; }
+    setTimeout(() => { if(statusEl) statusEl.textContent = ''; }, 2000);
+    _rebuildCollectionFilter();
+    await _renderCollManager();
+  } catch(err) {
+    if (statusEl) { statusEl.textContent = '✗ ' + err.message.slice(0,40); statusEl.style.color = 'var(--danger)'; }
+  }
+}
+
+async function deleteCollection(name) {
+  const count = _allRefs.filter(r =>
+    Array.isArray(r.collections) && r.collections.includes(name)
+  ).length;
+
+  const msg = count > 0
+    ? `ลบ collection "${name}" ออกจาก ${count} ภาพด้วยไหม?`
+    : `ลบ collection "${name}"?`;
+  if (!confirm(msg)) return;
+
+  showToast('loading', `Deleting "${name}"…`, 30);
+  try {
+    // Remove from all refs
+    const toUpdate = _allRefs.filter(r =>
+      Array.isArray(r.collections) && r.collections.includes(name)
+    );
+    for (const ref of toUpdate) {
+      const newColl = ref.collections.filter(c => c !== name);
+      await _SB.from(REF_TABLE).update({ collections: newColl }).eq('id', ref.id);
+      ref.collections = newColl;
+      const idx = _allRefs.findIndex(r => r.id === ref.id);
+      if (idx !== -1) _allRefs[idx].collections = newColl;
+      // Refresh card badge
+      _refreshCardBadges(ref);
+    }
+
+    // Delete from ref_collections metadata table (non-fatal)
+    await _SB.from(COLL_TABLE).delete().eq('name', name).catch(() => {});
+
+    showToast('success', `Deleted "${name}"`, 100);
+    setTimeout(hideToast, 1800);
+    _rebuildCollectionFilter();
+    await _renderCollManager();
+  } catch(err) {
+    showToast('error', err.message, 0, true);
   }
 }
 
