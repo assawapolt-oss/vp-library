@@ -313,17 +313,17 @@
   .rcard { background:var(--card); border:1.5px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:14px; transition:all .15s; cursor:pointer; }
   .rcard:hover { border-color:var(--red); box-shadow:0 4px 16px rgba(204,34,41,.1); }
   .rcard-inner { display:flex; }
-  .rcard-thumb { width:180px; min-width:180px; height:120px; object-fit:cover; background:#E5E7EB; display:block; }
-  .rcard-thumb-ph { width:180px; min-width:180px; height:120px; background:linear-gradient(135deg,#1A1A2E,#2A2A4E); display:flex; align-items:center; justify-content:center; font-size:26px; }
-  .rcard-body { flex:1; padding:14px 16px; min-width:0; }
+  .rcard-thumb { width:240px; min-width:240px; height:160px; object-fit:cover; background:#E5E7EB; display:block; }
+  .rcard-thumb-ph { width:240px; min-width:240px; height:160px; background:linear-gradient(135deg,#1A1A2E,#2A2A4E); display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .rcard-body { flex:1; padding:10px 14px; min-width:0; }
   .rcard-top { display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
   .rank-badge { font-size:10px; font-weight:700; color:#fff; padding:2px 9px; border-radius:4px; white-space:nowrap; }
   .rank-1 { background:var(--red); }
   .rank-2 { background:#6B7280; }
   .rank-3 { background:#9CA3AF; }
   .rcard-id { font-size:10px; font-weight:700; color:var(--red); font-family:'IBM Plex Sans',monospace; }
-  .rcard-title { font-size:14px; font-weight:700; margin-bottom:2px; }
-  .rcard-title-th { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .rcard-title { font-size:13px; font-weight:600; margin-bottom:2px; }
+  .rcard-title-th { font-size:10px; color:var(--muted); margin-bottom:6px; }
   .score-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .score-track { flex:1; height:5px; background:#F3F4F6; border-radius:3px; overflow:hidden; }
   .score-fill { height:100%; border-radius:3px; }
@@ -768,7 +768,7 @@
   /* ── Recommend mode ── */
   .rec-wrap { padding:16px 12px 48px; }
   .rcard-inner { flex-direction:column; }
-  .rcard-thumb, .rcard-thumb-ph { width:100%; min-width:0; height:160px; border-radius:14px 14px 0 0; }
+  .rcard-thumb, .rcard-thumb-ph { width:100%; min-width:0; height:200px; border-radius:14px 14px 0 0; }
   .rcard-body { padding:12px; }
   .mood-grid { grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); }
 
@@ -2706,7 +2706,28 @@ async function runRec() {
     setAIStatus('loading', '🌐 แปลภาษา…', 20);
     const queryForCLIP = await _translateToEnglish(text);
     setAIStatus('loading', `🔍 ค้นหา: "${queryForCLIP}"…`, 40);
-    const apiResults = await _callSearchAPI(queryForCLIP, 100);
+    // Run VP Scenes + Grab Ref searches in parallel
+    const [apiResults, refRaw] = await Promise.all([
+      _callSearchAPI(queryForCLIP, 100),
+      (async () => {
+        try {
+          const vector = await _encodeTextLocal(queryForCLIP);
+          const { data: rpcData, error } = await _SB.rpc('match_refs_mclip', {
+            query_vector: vector, match_count: 20, match_threshold: 0.05
+          });
+          if (error) throw error;
+          if (!rpcData || !rpcData.length) return [];
+          // Fetch full row data for matched IDs
+          const ids = rpcData.map(r => r.id);
+          const { data: rows } = await _SB.from('ref_images')
+            .select('id, url, thumb_url, tags')
+            .in('id', ids);
+          const rowMap = {};
+          (rows||[]).forEach(r => { rowMap[r.id] = r; });
+          return rpcData.map(r => ({ ...r, ...(rowMap[r.id]||{}) }));
+        } catch(e) { return []; }
+      })()
+    ]);
     setAIStatus('loading', '✨ จัดเรียงผลลัพธ์…', 85);
 
     // 2. Build score map + merge with SCENES data
@@ -2716,52 +2737,89 @@ async function runRec() {
     const ranked = SCENES
       .filter(s => scores[s.id] !== undefined)
       .sort((a, b) => {
-        // Presenter-first: scenes with posture set rank higher at equal score tier
-        const aHas = a.posture ? 1 : 0;
-        const bHas = b.posture ? 1 : 0;
+        // Presenter-first: use presenter_image_url as signal
+        const aHas = a.presenter_image_url ? 1 : 0;
+        const bHas = b.presenter_image_url ? 1 : 0;
         const scoreDiff = scores[b.id] - scores[a.id];
-        // Use score as primary, but within 10% band boost presenter scenes
         const scoreBand = Math.abs(scoreDiff) < 0.10;
         if (scoreBand && bHas !== aHas) return bHas - aHas;
         return scoreDiff;
       });
 
-    const queryInfo = (queryForCLIP !== text) ? ` [ค้นด้วย: "${queryForCLIP}"]` : '';
-    setAIStatus('ready', `✅ พบ ${ranked.length} ฉากที่เกี่ยวข้อง${queryInfo}`, 100);
+    // Grab Ref results — top 5
+    const refScores = {};
+    refRaw.forEach(r => { refScores[r.id] = r.similarity; });
+    const refRanked = refRaw
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 5);
 
-    if (!ranked.length) {
+    const queryInfo = (queryForCLIP !== text) ? ` [ค้นด้วย: "${queryForCLIP}"]` : '';
+    setAIStatus('ready', `✅ พบ ${ranked.length} ฉาก VP + ${refRanked.length} Ref${queryInfo}`, 100);
+
+    if (!ranked.length && !refRanked.length) {
       box.innerHTML = `<div class="no-rec"><div class="no-rec-icon">🔍</div><div style="font-size:15px;font-weight:600;color:var(--muted)">ไม่พบฉากที่ตรงกับเนื้อหานี้ — ลองใช้คำอธิบายอื่น</div></div>`;
       box.scrollIntoView({behavior:'smooth', block:'start'});
       return;
     }
 
-    // 5. Render top 5
+    // 5. Render top 5 VP + top 5 Grab Ref interleaved
     const top = ranked.slice(0, 5);
-    box.innerHTML = `<div class="rec-results-header">พบ <strong>${ranked.length}</strong> ฉากที่เกี่ยวข้อง — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
-      top.map((s, i) => {
-        const pct = Math.round(scores[s.id] * 100);
-        const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
-        return `<div class="rcard" onclick="openModal('${s.id}')">
-          <div class="rcard-inner">
-            <img class="rcard-thumb" src="${s.thumb}" alt="${s.title}"
-                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-            <div class="rcard-thumb-ph" style="display:none">🎬</div>
-            <div class="rcard-body">
-              <div class="rcard-top">
-                <span class="rank-badge ${rankCls[i]}">${rankLabel[i]}</span>
-                <span class="rcard-id">${s.id}</span>
-              </div>
-              <div class="rcard-title">${s.title}</div>
-              <div class="rcard-title-th">${s.title_th}</div>
-              <div class="score-row">
-                <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
-                <span class="score-pct">${pct}%</span>
-              </div>
+    const vpCards = top.map((s, i) => {
+      const pct = Math.round(scores[s.id] * 100);
+      const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
+      const thumbSrc = s.presenter_image_url || s.thumb;
+      return `<div class="rcard" onclick="openModal('${s.id}')">
+        <div class="rcard-inner">
+          <img class="rcard-thumb" src="${thumbSrc}" alt="${s.title}"
+               onerror="this.src='${s.thumb}';this.onerror=()=>{this.style.display='none';this.nextElementSibling.style.display='flex'}">
+          <div class="rcard-thumb-ph" style="display:none">🎬</div>
+          <div class="rcard-body">
+            <div class="rcard-top">
+              <span class="rank-badge ${rankCls[i]}">${rankLabel[i]}</span>
+              <span class="rcard-id">${s.id}</span>
+            </div>
+            <div class="rcard-title">${s.title}</div>
+            <div class="rcard-title-th">${s.title_th}</div>
+            <div class="score-row">
+              <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
+              <span class="score-pct">${pct}%</span>
             </div>
           </div>
-          ${s.notes?`<div class="rcard-notes"><strong>📝 Production Note:</strong> ${s.notes}</div>`:''}
-        </div>`;
-      }).join('');
+        </div>
+      </div>`;
+    });
+
+    const grabRefHeader = refRanked.length ? `<div class="rec-results-header" style="margin-top:24px">🖼 Grab Ref ที่เกี่ยวข้อง &nbsp;<span class="ai-badge" style="background:linear-gradient(135deg,#059669,#065F46);color:#fff;border-color:transparent;font-size:9px">GRAB REF</span></div>` : '';
+    const refCards = refRanked.map((r, i) => {
+      const pct = Math.round(r.similarity * 100);
+      const fc  = pct>=70?'hi':pct>=40?'mid':'lo';
+      const imgSrc = r.thumb_url || r.url || '';
+      const fullUrl = r.url || r.thumb_url || '';
+      return `<div class="rcard" onclick="window.open('${fullUrl}','_blank')" style="cursor:pointer">
+        <div class="rcard-inner">
+          <img class="rcard-thumb" src="${imgSrc}" alt="ref ${i+1}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="rcard-thumb-ph" style="display:none">🖼</div>
+          <div class="rcard-body">
+            <div class="rcard-top">
+              <span class="rank-badge rank-${Math.min(i+1,3)}" style="background:linear-gradient(135deg,#059669,#065F46)">${i===0?'⭐ Ref #1':'Ref #'+(i+1)}</span>
+              <span style="font-size:9px;color:var(--muted);font-family:monospace">GRAB REF</span>
+            </div>
+            <div class="rcard-title" style="font-size:12px">${(r.tags||[]).slice(0,4).join(' · ') || 'Reference Image'}</div>
+            <div class="score-row" style="margin-top:8px">
+              <div class="score-track"><div class="score-fill ${fc}" style="width:${pct}%"></div></div>
+              <span class="score-pct">${pct}%</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    box.innerHTML =
+      `<div class="rec-results-header">พบ <strong>${ranked.length}</strong> ฉาก VP — แสดง Top ${top.length} &nbsp;${modeBadge}</div>` +
+      vpCards.join('') +
+      grabRefHeader +
+      refCards.join('');
 
     logActivity('recommend', {
       query: text,
