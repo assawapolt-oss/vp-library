@@ -2411,10 +2411,10 @@ const THUMB_Q     = 0.75;  // thumbnail quality
 
 function blobFromCanvas(canvas, quality) {
   return new Promise((resolve, reject) => {
-    // Try WebP first; fall back to JPEG on iOS/browsers that don't support WebP encoding
+    // Try WebP — iOS Safari silently returns PNG instead of WebP, so check type
     canvas.toBlob(b => {
-      if (b && b.size > 0) return resolve(b);
-      // Fallback to JPEG
+      if (b && b.size > 0 && b.type === 'image/webp') return resolve(b);
+      // WebP not supported — use JPEG instead
       canvas.toBlob(b2 => {
         if (b2 && b2.size > 0) return resolve(b2);
         reject(new Error('toBlob failed'));
