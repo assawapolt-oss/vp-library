@@ -882,7 +882,7 @@ body {
 ══════════════════════════════════════════════════════════════ */
 .masonry-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -1446,8 +1446,230 @@ body {
 .user-menu-item:hover { background: var(--card); color: var(--bone); }
 
 /* ══════════════════════════════════════════════════════════════
+   SUB-IMAGE STRIP (in lightbox)
+══════════════════════════════════════════════════════════════ */
+.lb-sub-strip {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.lb-sub-thumb {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border: 1px solid var(--line-hi);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.lb-sub-thumb:hover { opacity: 1; border-color: var(--gold-dim); }
+.lb-sub-thumb.active { opacity: 1; border-color: var(--gold); }
+.lb-sub-add {
+  width: 64px;
+  height: 48px;
+  border: 1px dashed var(--bone-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: border-color .15s, color .15s;
+}
+.lb-sub-add:hover { border-color: var(--gold-dim); color: var(--gold); }
+.lb-sub-del {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  line-height: 1;
+}
+.lb-sub-item {
+  position: relative;
+}
+.lb-sub-item:hover .lb-sub-del { display: flex; }
+.lb-sub-section {
+  margin-top: 12px;
+}
+.lb-sub-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 6px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHOT TYPE TAG
+══════════════════════════════════════════════════════════════ */
+.shot-tag-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.shot-tag-btn {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line-hi);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.shot-tag-btn:hover { color: var(--bone); border-color: var(--bone-faint); }
+.shot-tag-btn.active-solo    { color: var(--bg); background: #4A7C59; border-color: #4A7C59; }
+.shot-tag-btn.active-duo     { color: var(--bg); background: var(--gold); border-color: var(--gold); }
+.shot-tag-btn.active-multi   { color: var(--bg); background: #7B5EA7; border-color: #7B5EA7; }
+
+/* Shot type badge on card */
+.ref-card-shot-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  pointer-events: none;
+}
+.ref-card-shot-badge.solo  { background: rgba(74,124,89,.9);  color: #fff; }
+.ref-card-shot-badge.duo   { background: rgba(196,162,102,.9);color: var(--bg); }
+.ref-card-shot-badge.multi { background: rgba(123,94,167,.9); color: #fff; }
+
+/* ══════════════════════════════════════════════════════════════
+   COLLECTION TAG
+══════════════════════════════════════════════════════════════ */
+.collection-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.collection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  background: rgba(196,162,102,.1);
+  border: 1px solid var(--gold-dim);
+  padding: 3px 8px;
+  cursor: default;
+}
+.collection-chip-del {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color .12s;
+}
+.collection-chip-del:hover { color: var(--danger); }
+
+/* Collection filter dropdown */
+.collection-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.collection-filter-select {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 1px solid var(--line-hi);
+  background: var(--surface);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all .15s;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 22px;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%2358585E' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.collection-filter-select:hover { color: var(--gold); border-color: var(--gold-dim); }
+.collection-filter-select option { background: var(--surface); color: var(--bone); }
+
+/* Collection badge on card */
+.ref-card-collection-badge {
+  position: absolute;
+  bottom: 38px;
+  left: 6px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  background: rgba(196,162,102,.15);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 2px 6px;
+  pointer-events: none;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Card sub-image indicator */
+.ref-card-sub-badge {
+  position: absolute;
+  bottom: 38px;
+  right: 6px;
+  background: rgba(196,162,102,.92);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
+/* Crop-from-edit: re-use crop modal, add replace mode */
+.crop-replace-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(196,162,102,.12);
+  border: 1px solid var(--gold-dim);
+  padding: 2px 8px;
+}
+
+/* ══════════════════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .masonry-grid { grid-template-columns: repeat(3, 1fr); }
+}
 @media (max-width: 640px) {
   .topbar { padding: 0 16px; height: 48px; }
   .topbar-wordmark { display: none; }
@@ -1535,6 +1757,22 @@ body {
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stats-count"><strong id="refCount">0</strong> &nbsp;references</div>
+    <!-- Collection + Shot filters -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="collection-filter-wrap">
+        <select class="collection-filter-select" id="collectionFilter" onchange="applyFilters()" title="Filter by collection">
+          <option value="">All collections</option>
+        </select>
+      </div>
+      <div class="collection-filter-wrap">
+        <select class="collection-filter-select" id="shotFilter" onchange="applyFilters()" title="Filter by shot type">
+          <option value="">All types</option>
+          <option value="solo">👤 พิธีกร 1 คน</option>
+          <option value="duo">👥 สัมภาษณ์ 2 คน</option>
+          <option value="multi">👥+ มากกว่านี้</option>
+        </select>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed vectors for images that have no mclip_vector yet">Batch Embed</button>
       <button class="btn-size" onclick="resizeGrid(+1)" title="Zoom out (more columns)">—</button>
@@ -1610,10 +1848,11 @@ body {
 <!-- ══ LIGHTBOX ══ -->
 <div class="lb-overlay" id="lbOverlay" onclick="closeLb(event)">
   <div class="lb-body" onclick="event.stopPropagation()">
-    <!-- Vertical tab strip (admin only) -->
-    <div class="lb-tabbar" id="lbTabbar" style="display:none">
+    <!-- Vertical tab strip -->
+    <div class="lb-tabbar" id="lbTabbar" style="display:flex">
       <button class="lb-tab active" id="lbTabView" onclick="switchLbTab('view')">Image</button>
-      <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')">Data</button>
+      <button class="lb-tab"        id="lbTabEdit" onclick="switchLbTab('edit')">Edit</button>
+      <button class="lb-tab"        id="lbTabData" onclick="switchLbTab('data')" style="display:none">Data</button>
     </div>
     <!-- Image pane -->
     <div class="lb-pane-view" id="lbPaneView">
@@ -1625,6 +1864,49 @@ body {
     <!-- Data pane (admin only) -->
     <div class="lb-pane-data" id="lbPaneData" style="display:none">
       <div id="lbDataGrid"></div>
+    </div>
+    <!-- Sub-images + Crop pane (always shown when logged in) -->
+    <div class="lb-pane-data" id="lbPaneEdit" style="display:none; width:320px; min-width:260px;">
+      <div style="padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:14px; display:flex; align-items:center; gap:10px;">
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);">Edit Image</span>
+      </div>
+
+      <!-- Shot type -->
+      <div style="margin-bottom:20px;">
+        <div class="lb-sub-label">รูปแบบการถ่าย</div>
+        <div class="shot-tag-row" id="shotTagRow">
+          <button class="shot-tag-btn" data-shot="solo"  onclick="setShotType('solo')">👤 พิธีกร 1 คน</button>
+          <button class="shot-tag-btn" data-shot="duo"   onclick="setShotType('duo')">👥 สัมภาษณ์ 2 คน</button>
+          <button class="shot-tag-btn" data-shot="multi" onclick="setShotType('multi')">👥+ มากกว่านี้</button>
+        </div>
+      </div>
+
+      <!-- Collection tags -->
+      <div style="margin-bottom:20px;">
+        <div class="lb-sub-label">Collection <span style="color:var(--muted);font-size:8px;">(กด Enter เพื่อเพิ่ม)</span></div>
+        <div id="lbCollChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"></div>
+        <div class="collection-input-row">
+          <input id="lbCollInput" type="text"
+            style="all:unset;box-sizing:border-box;flex:1;font-family:var(--font-mono);font-size:10px;color:var(--bone);background:var(--card);border:1px solid var(--line-hi);border-bottom:1px solid var(--gold-dim);padding:7px 10px;min-width:0;"
+            placeholder="เช่น CEO Ep.12…"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addCollectionTag();}">
+          <button onclick="addCollectionTag()"
+            style="all:unset;box-sizing:border-box;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--bg);background:var(--gold);padding:7px 12px;cursor:pointer;flex-shrink:0;">+</button>
+        </div>
+      </div>
+
+      <!-- Crop main image -->
+      <div style="margin-bottom:20px;">
+        <div class="lb-sub-label">Crop main image</div>
+        <button class="btn btn-ghost" style="font-size:9px;padding:8px 16px;width:100%;" onclick="openCropFromLb()">✂ Crop &amp; Replace</button>
+      </div>
+
+      <!-- Sub-images section -->
+      <div>
+        <div class="lb-sub-label">Sub-images <span style="color:var(--muted);font-size:8px;">(max 5)</span></div>
+        <div class="lb-sub-strip" id="lbSubStrip"></div>
+      </div>
+      <input type="file" id="subFileInput" accept="image/*" multiple style="display:none" onchange="handleSubFileInput(event)">
     </div>
   </div>
   <button class="lb-close" onclick="closeLb()">ESC</button>
@@ -1988,6 +2270,12 @@ function prependCard(ref) {
   grid.prepend(div.firstChild);
 }
 
+const SHOT_META = {
+  solo:  { label: '1 คน',    cls: 'solo'  },
+  duo:   { label: '2 คน',    cls: 'duo'   },
+  multi: { label: '3+ คน',   cls: 'multi' },
+};
+
 function cardHTML(r) {
   const date = r.created_at
     ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
@@ -1996,8 +2284,22 @@ function cardHTML(r) {
   const kb   = r.file_size_kb ? `${r.file_size_kb} KB` : '';
   const info = [dim, kb].filter(Boolean).join('  ·  ');
   const sp   = r.storage_path ? r.storage_path.replace(/'/g, "\\'") : '';
+  const subCount = Array.isArray(r.sub_images) ? r.sub_images.length : 0;
+  const subBadge = subCount > 0 ? `<div class="ref-card-sub-badge">+${subCount}</div>` : '';
+
+  // Shot type badge
+  const shotMeta = r.shot_type ? SHOT_META[r.shot_type] : null;
+  const shotBadge = shotMeta
+    ? `<div class="ref-card-shot-badge ${shotMeta.cls}">${shotMeta.label}</div>` : '';
+
+  // Collection badge (show first tag only)
+  const tags = Array.isArray(r.collections) ? r.collections : (r.collections ? [r.collections] : []);
+  const collBadge = tags.length > 0
+    ? `<div class="ref-card-collection-badge">${escHtml(tags[0])}${tags.length > 1 ? ' +' + (tags.length - 1) : ''}</div>` : '';
+
   return `<div class="ref-card" data-id="${r.id}" onclick="openLb(_allRefs.find(x=>x.id===${r.id}))">
     <img src="${r.thumb_url || r.url}" alt="" loading="lazy" onerror="this.src=this.src==='${r.url}'?'':(this.src='${r.url}')">
+    ${shotBadge}${subBadge}${collBadge}
     <div class="ref-card-overlay">
       <button class="ref-card-del" title="Delete" onclick="event.stopPropagation();askDelete('${r.id}','${sp}')">✕</button>
     </div>
@@ -2006,6 +2308,10 @@ function cardHTML(r) {
       <span class="ref-card-size">${info}</span>
     </div>
   </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function updateStatsBar() {
@@ -2019,6 +2325,8 @@ function updateStatsBar() {
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
   const batchBtn = document.getElementById('batchEmbedBtn');
   if (batchBtn) batchBtn.style.display = (show && isAdmin) ? 'inline-block' : 'none';
+  // Rebuild collection filter
+  if (show) _rebuildCollectionFilter();
 }
 
 function shuffleGrid() {
@@ -2030,7 +2338,7 @@ function shuffleGrid() {
   renderGrid(_allRefs, null);
 }
 
-let _gridCols = 3; // default column count
+let _gridCols = 4; // default column count
 function resizeGrid(delta) {
   _gridCols = Math.min(6, Math.max(1, _gridCols + delta));
   document.getElementById('masonryGrid').style.gridTemplateColumns = `repeat(${_gridCols}, 1fr)`;
@@ -2048,9 +2356,11 @@ function openLb(ref) {
   const dim  = (ref.width && ref.height) ? `${ref.width} × ${ref.height}` : '';
   const kb   = ref.file_size_kb ? `${ref.file_size_kb} KB` : '';
   document.getElementById('lbInfo').textContent = [dim, kb].filter(Boolean).join('  ·  ');
-  // Show tab bar for admin only
+  // Show tab bar always (Edit for all, Data for admin)
   const isAdmin = localStorage.getItem('vp_user_role') === 'admin';
-  document.getElementById('lbTabbar').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('lbTabbar').style.display = 'flex';
+  const dataTab = document.getElementById('lbTabData');
+  if (dataTab) dataTab.style.display = isAdmin ? 'flex' : 'none';
   // Always start on image pane
   switchLbTab('view');
   document.getElementById('lbOverlay').classList.add('open');
@@ -2059,9 +2369,12 @@ function openLb(ref) {
 function switchLbTab(tab) {
   document.getElementById('lbPaneView').style.display = tab === 'view' ? 'flex' : 'none';
   document.getElementById('lbPaneData').style.display = tab === 'data' ? 'block' : 'none';
+  document.getElementById('lbPaneEdit').style.display = tab === 'edit' ? 'block' : 'none';
   document.getElementById('lbTabView').classList.toggle('active', tab === 'view');
-  document.getElementById('lbTabData').classList.toggle('active', tab === 'data');
+  document.getElementById('lbTabData')?.classList.toggle('active', tab === 'data');
+  document.getElementById('lbTabEdit')?.classList.toggle('active', tab === 'edit');
   if (tab === 'data' && _currentRef) renderDataPanel(_currentRef);
+  if (tab === 'edit' && _currentRef) renderSubStrip(_currentRef);
 }
 
 function renderDataPanel(ref) {
@@ -2191,6 +2504,7 @@ let _cropFile         = null;
 let _cropRatio        = 'free';
 let _cropImgNatW      = 0;
 let _cropImgNatH      = 0;
+let _cropReplaceRef   = null;           // set when cropping an existing image to replace it
 // Selection in stage-px coords (relative to cropStage element)
 let _cropSel          = { x: 0, y: 0, w: 0, h: 0 };
 // Image element bounds in stage-px coords
@@ -2267,7 +2581,13 @@ function closeCropModal() {
 }
 
 function skipCrop() {
-  const file = _cropFile; closeCropModal(); _cropFile = null;
+  const file = _cropFile;
+  const replaceRef = _cropReplaceRef;
+  closeCropModal(); _cropFile = null; _cropReplaceRef = null;
+  if (replaceRef) {
+    // Skip crop in replace mode — do nothing (original stays)
+    return;
+  }
   if (file) { _uploadQueue.push(file); if (!_uploading) drainQueue(); }
 }
 
@@ -2349,8 +2669,15 @@ async function applyCrop() {
     w: Math.round(_cropSel.w * sx),
     h: Math.round(_cropSel.h * sy),
   };
-  closeCropModal(); _cropFile = null;
-  if (file) { _uploadQueue.push({ file, cropRect: rect }); if (!_uploading) drainQueue(); }
+  const replaceRef = _cropReplaceRef;
+  closeCropModal(); _cropFile = null; _cropReplaceRef = null;
+  if (replaceRef) {
+    // Replace mode: crop & upload as new main image
+    await _replaceCroppedMain(replaceRef, file, rect);
+  } else if (file) {
+    _uploadQueue.push({ file, cropRect: rect });
+    if (!_uploading) drainQueue();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2615,6 +2942,409 @@ function cancelBatchEmbed() {
     setTimeout(wait, 300);
   } else {
     document.getElementById('batchOverlay').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SUB-IMAGES — store in ref_images.sub_images (jsonb array)
+// Each item: { url, thumb_url, storage_path, thumb_path, width, height, file_size_kb }
+// ══════════════════════════════════════════════════════════════
+const MAX_SUB = 5;
+
+// ══════════════════════════════════════════════════════════════
+// SHOT TYPE — store in ref_images.shot_type (text)
+// ══════════════════════════════════════════════════════════════
+async function setShotType(type) {
+  if (!_currentRef) return;
+  const ref = _currentRef;
+  const prev = ref.shot_type;
+  const next = prev === type ? null : type;  // toggle off if same
+
+  const { error } = await _SB.from(REF_TABLE).update({ shot_type: next }).eq('id', ref.id);
+  if (error) { showToast('error', error.message, 0, true); return; }
+
+  ref.shot_type = next;
+  const idx = _allRefs.findIndex(r => r.id === ref.id);
+  if (idx !== -1) _allRefs[idx].shot_type = next;
+
+  // Update buttons
+  _renderShotButtons(next);
+
+  // Update card badge
+  _refreshCardBadges(ref);
+  showToast('success', next ? `Tagged: ${SHOT_META[next].label}` : 'Tag removed', 100);
+  setTimeout(hideToast, 1400);
+}
+
+function _renderShotButtons(shotType) {
+  document.querySelectorAll('.shot-tag-btn').forEach(btn => {
+    btn.className = 'shot-tag-btn';
+    if (btn.dataset.shot === shotType) {
+      btn.classList.add(`active-${shotType}`);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// COLLECTION TAGS — store in ref_images.collections (jsonb array)
+// ══════════════════════════════════════════════════════════════
+function _renderCollChips(ref) {
+  const chips = document.getElementById('lbCollChips');
+  if (!chips) return;
+  const tags = Array.isArray(ref.collections) ? ref.collections : [];
+  chips.innerHTML = tags.map((t, i) => `
+    <span class="collection-chip">
+      ${escHtml(t)}
+      <span class="collection-chip-del" onclick="removeCollectionTag(${i})" title="Remove">✕</span>
+    </span>`).join('');
+}
+
+async function addCollectionTag() {
+  const input = document.getElementById('lbCollInput');
+  const val   = (input?.value || '').trim();
+  if (!val || !_currentRef) { if (input) input.value = ''; return; }
+
+  const ref  = _currentRef;
+  const tags = Array.isArray(ref.collections) ? [...ref.collections] : [];
+  if (tags.includes(val)) { input.value = ''; return; }
+  tags.push(val);
+
+  const { error } = await _SB.from(REF_TABLE).update({ collections: tags }).eq('id', ref.id);
+  if (error) { showToast('error', error.message, 0, true); return; }
+
+  ref.collections = tags;
+  const idx = _allRefs.findIndex(r => r.id === ref.id);
+  if (idx !== -1) _allRefs[idx].collections = tags;
+
+  input.value = '';
+  _renderCollChips(ref);
+  _refreshCardBadges(ref);
+  _rebuildCollectionFilter();
+}
+
+async function removeCollectionTag(tagIdx) {
+  if (!_currentRef) return;
+  const ref  = _currentRef;
+  const tags = Array.isArray(ref.collections) ? [...ref.collections] : [];
+  tags.splice(tagIdx, 1);
+
+  const { error } = await _SB.from(REF_TABLE).update({ collections: tags }).eq('id', ref.id);
+  if (error) { showToast('error', error.message, 0, true); return; }
+
+  ref.collections = tags;
+  const idx = _allRefs.findIndex(r => r.id === ref.id);
+  if (idx !== -1) _allRefs[idx].collections = tags;
+
+  _renderCollChips(ref);
+  _refreshCardBadges(ref);
+  _rebuildCollectionFilter();
+}
+
+function _refreshCardBadges(ref) {
+  const card = document.querySelector(`.ref-card[data-id="${ref.id}"]`);
+  if (!card) return;
+
+  // Shot badge
+  card.querySelector('.ref-card-shot-badge')?.remove();
+  if (ref.shot_type && SHOT_META[ref.shot_type]) {
+    const b = document.createElement('div');
+    b.className = `ref-card-shot-badge ${SHOT_META[ref.shot_type].cls}`;
+    b.textContent = SHOT_META[ref.shot_type].label;
+    card.appendChild(b);
+  }
+
+  // Collection badge
+  card.querySelector('.ref-card-collection-badge')?.remove();
+  const tags = Array.isArray(ref.collections) ? ref.collections : [];
+  if (tags.length > 0) {
+    const b = document.createElement('div');
+    b.className = 'ref-card-collection-badge';
+    b.textContent = tags[0] + (tags.length > 1 ? ' +' + (tags.length - 1) : '');
+    card.appendChild(b);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// FILTER — by collection and/or shot type
+// ══════════════════════════════════════════════════════════════
+function _rebuildCollectionFilter() {
+  const sel = document.getElementById('collectionFilter');
+  if (!sel) return;
+  const current = sel.value;
+  // Collect all unique collection names
+  const allTags = new Set();
+  _allRefs.forEach(r => {
+    if (Array.isArray(r.collections)) r.collections.forEach(t => allTags.add(t));
+  });
+  // Rebuild options
+  sel.innerHTML = '<option value="">All collections</option>';
+  [...allTags].sort().forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    if (t === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const collVal = document.getElementById('collectionFilter')?.value || '';
+  const shotVal = document.getElementById('shotFilter')?.value || '';
+
+  let filtered = _allRefs;
+  if (collVal) {
+    filtered = filtered.filter(r =>
+      Array.isArray(r.collections) ? r.collections.includes(collVal) : false
+    );
+  }
+  if (shotVal) {
+    filtered = filtered.filter(r => r.shot_type === shotVal);
+  }
+  renderGrid(filtered, null);
+  // Update count display
+  document.getElementById('refCount').textContent = filtered.length;
+}
+
+function renderSubStrip(ref) {
+  // Render shot type buttons
+  _renderShotButtons(ref.shot_type || null);
+  // Render collection chips
+  _renderCollChips(ref);
+  // Rebuild collection filter options
+  _rebuildCollectionFilter();
+
+  const strip = document.getElementById('lbSubStrip');
+  if (!strip) return;
+  const subs = Array.isArray(ref.sub_images) ? ref.sub_images : [];
+  strip.innerHTML = '';
+
+  subs.forEach((sub, idx) => {
+    const item = document.createElement('div');
+    item.className = 'lb-sub-item';
+    item.style.position = 'relative';
+
+    const thumb = document.createElement('img');
+    thumb.className = 'lb-sub-thumb';
+    thumb.src = sub.thumb_url || sub.url || '';
+    thumb.title = `${sub.width || '?'} × ${sub.height || '?'}`;
+    thumb.onclick = () => {
+      // Show sub image in main lb-img
+      document.getElementById('lbImg').src = sub.url;
+      strip.querySelectorAll('.lb-sub-thumb').forEach(t => t.classList.remove('active'));
+      strip.querySelectorAll('.lb-sub-thumb')[idx]?.classList.add('active');
+    };
+
+    const del = document.createElement('button');
+    del.className = 'lb-sub-del';
+    del.textContent = '✕';
+    del.title = 'Remove sub-image';
+    del.onclick = () => deleteSubImage(ref, idx);
+
+    item.appendChild(thumb);
+    item.appendChild(del);
+    strip.appendChild(item);
+  });
+
+  // Add button (if < MAX_SUB)
+  if (subs.length < MAX_SUB) {
+    const addBtn = document.createElement('div');
+    addBtn.className = 'lb-sub-add';
+    addBtn.innerHTML = '+';
+    addBtn.title = 'Add sub-image';
+    addBtn.onclick = () => document.getElementById('subFileInput').click();
+    strip.appendChild(addBtn);
+  }
+}
+
+async function handleSubFileInput(e) {
+  const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (!files.length || !_currentRef) return;
+
+  const ref = _currentRef;
+  const existing = Array.isArray(ref.sub_images) ? ref.sub_images : [];
+  const slots = MAX_SUB - existing.length;
+  if (slots <= 0) { showToast('error', `สูงสุด ${MAX_SUB} รูปย่อยแล้ว`, 0, true); return; }
+
+  const toUpload = files.slice(0, slots);
+  showToast('loading', `Uploading sub-image${toUpload.length > 1 ? 's' : ''}…`, 20);
+
+  const newSubs = [];
+  for (let i = 0; i < toUpload.length; i++) {
+    const file = toUpload[i];
+    try {
+      const pct = Math.round(20 + ((i + 1) / toUpload.length) * 60);
+      showToast('loading', `Processing sub-image ${i + 1}/${toUpload.length}…`, pct);
+      const { blob, thumbBlob, width, height } = await processImage(file, null);
+      const fileSizeKB = Math.round(blob.size / 1024);
+      const ts   = Date.now() + i;
+      const rand = Math.random().toString(36).slice(2, 7);
+      const path      = `refs/sub/${ts}-${rand}.webp`;
+      const thumbPath = `refs/sub/thumbs/${ts}-${rand}_t.webp`;
+
+      const { error: sErr } = await _SB.storage.from(REF_BUCKET)
+        .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+      if (sErr) throw new Error(sErr.message);
+
+      const { error: tErr } = await _SB.storage.from(REF_BUCKET)
+        .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+
+      const url      = _SB.storage.from(REF_BUCKET).getPublicUrl(path).data?.publicUrl || '';
+      const thumbUrl = tErr ? '' : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || '');
+      newSubs.push({ url, thumb_url: thumbUrl, storage_path: path, thumb_path: thumbPath, width, height, file_size_kb: fileSizeKB });
+    } catch(err) {
+      console.warn('[sub upload]', err);
+      showToast('error', 'Sub upload failed: ' + err.message, 0, true);
+    }
+  }
+
+  if (!newSubs.length) return;
+  const merged = [...existing, ...newSubs];
+  showToast('loading', 'Saving…', 88);
+  const { error: dbErr } = await _SB.from(REF_TABLE)
+    .update({ sub_images: merged })
+    .eq('id', ref.id);
+  if (dbErr) { showToast('error', 'DB: ' + dbErr.message, 0); setTimeout(hideToast, 3500); return; }
+
+  // Update local cache
+  ref.sub_images = merged;
+  const idx = _allRefs.findIndex(r => r.id === ref.id);
+  if (idx !== -1) _allRefs[idx].sub_images = merged;
+
+  // Re-render card badge
+  const cardEl = document.querySelector(`.ref-card[data-id="${ref.id}"]`);
+  if (cardEl) {
+    const oldBadge = cardEl.querySelector('.ref-card-sub-badge');
+    if (oldBadge) oldBadge.remove();
+    if (merged.length > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'ref-card-sub-badge';
+      badge.textContent = `+${merged.length}`;
+      cardEl.appendChild(badge);
+    }
+  }
+
+  showToast('success', `Added ${newSubs.length} sub-image${newSubs.length > 1 ? 's' : ''}`, 100);
+  setTimeout(hideToast, 2000);
+  renderSubStrip(ref);
+}
+
+async function deleteSubImage(ref, idx) {
+  const subs = Array.isArray(ref.sub_images) ? [...ref.sub_images] : [];
+  const sub  = subs[idx];
+  if (!sub) return;
+
+  // Remove from storage (non-fatal)
+  if (sub.storage_path) await _SB.storage.from(REF_BUCKET).remove([sub.storage_path]).catch(() => {});
+  if (sub.thumb_path)   await _SB.storage.from(REF_BUCKET).remove([sub.thumb_path]).catch(() => {});
+
+  subs.splice(idx, 1);
+  showToast('loading', 'Removing…', 50);
+  const { error } = await _SB.from(REF_TABLE).update({ sub_images: subs }).eq('id', ref.id);
+  if (error) { showToast('error', error.message, 0); setTimeout(hideToast, 3000); return; }
+
+  ref.sub_images = subs;
+  const cIdx = _allRefs.findIndex(r => r.id === ref.id);
+  if (cIdx !== -1) _allRefs[cIdx].sub_images = subs;
+
+  // Reset main image to original if was showing the deleted sub
+  document.getElementById('lbImg').src = ref.url;
+
+  // Update card badge
+  const cardEl = document.querySelector(`.ref-card[data-id="${ref.id}"]`);
+  if (cardEl) {
+    const oldBadge = cardEl.querySelector('.ref-card-sub-badge');
+    if (oldBadge) oldBadge.remove();
+    if (subs.length > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'ref-card-sub-badge';
+      badge.textContent = `+${subs.length}`;
+      cardEl.appendChild(badge);
+    }
+  }
+
+  showToast('success', 'Removed', 100);
+  setTimeout(hideToast, 1500);
+  renderSubStrip(ref);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CROP FROM LIGHTBOX — re-crop & replace the main image
+// (_cropReplaceRef is declared above with other crop state vars)
+// ══════════════════════════════════════════════════════════════
+function openCropFromLb() {
+  if (!_currentRef) return;
+  _cropReplaceRef = _currentRef;
+  // Fetch the full image as a blob to feed into crop modal
+  showToast('loading', 'Loading image…', 20);
+  fetch(_currentRef.url)
+    .then(r => r.blob())
+    .then(blob => {
+      hideToast();
+      const file = new File([blob], 'edit.webp', { type: blob.type || 'image/webp' });
+      // Close lightbox first, then open crop
+      document.getElementById('lbOverlay').classList.remove('open');
+      openCropModal(file);
+    })
+    .catch(err => {
+      showToast('error', 'Cannot load image: ' + err.message, 0, true);
+    });
+}
+
+async function _replaceCroppedMain(ref, file, cropRect) {
+  showToast('loading', 'Cropping & replacing…', 20);
+  try {
+    const { blob, thumbBlob, width, height } = await processImage(file, cropRect);
+    const fileSizeKB = Math.round(blob.size / 1024);
+    const ts   = Date.now();
+    const rand = Math.random().toString(36).slice(2, 7);
+    const newPath      = `refs/${ts}-${rand}.webp`;
+    const newThumbPath = `refs/thumbs/${ts}-${rand}_t.webp`;
+
+    showToast('loading', 'Uploading…', 45);
+    const { error: sErr } = await _SB.storage.from(REF_BUCKET)
+      .upload(newPath, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+    if (sErr) throw new Error(sErr.message);
+
+    await _SB.storage.from(REF_BUCKET)
+      .upload(newThumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+
+    const newUrl      = _SB.storage.from(REF_BUCKET).getPublicUrl(newPath).data?.publicUrl || '';
+    const newThumbUrl = _SB.storage.from(REF_BUCKET).getPublicUrl(newThumbPath).data?.publicUrl || '';
+
+    showToast('loading', 'Saving…', 78);
+    const { error: dbErr } = await _SB.from(REF_TABLE).update({
+      url: newUrl, thumb_url: newThumbUrl,
+      storage_path: newPath, thumb_path: newThumbPath,
+      width, height, file_size_kb: fileSizeKB,
+    }).eq('id', ref.id);
+    if (dbErr) throw new Error(dbErr.message);
+
+    // Delete old files (non-fatal)
+    if (ref.storage_path) await _SB.storage.from(REF_BUCKET).remove([ref.storage_path]).catch(() => {});
+    if (ref.thumb_path)   await _SB.storage.from(REF_BUCKET).remove([ref.thumb_path]).catch(() => {});
+
+    // Update local cache
+    ref.url = newUrl; ref.thumb_url = newThumbUrl;
+    ref.storage_path = newPath; ref.thumb_path = newThumbPath;
+    ref.width = width; ref.height = height; ref.file_size_kb = fileSizeKB;
+    const idx = _allRefs.findIndex(r => r.id === ref.id);
+    if (idx !== -1) Object.assign(_allRefs[idx], { url: newUrl, thumb_url: newThumbUrl, storage_path: newPath, thumb_path: newThumbPath, width, height, file_size_kb: fileSizeKB });
+
+    // Refresh card thumbnail
+    const cardImg = document.querySelector(`.ref-card[data-id="${ref.id}"] img`);
+    if (cardImg) cardImg.src = newThumbUrl || newUrl;
+
+    showToast('success', `Replaced — ${width} × ${height}  ·  ${fileSizeKB} KB`, 100);
+    setTimeout(hideToast, 2500);
+
+    // Re-open lightbox with updated ref
+    openLb(ref);
+
+  } catch(err) {
+    console.error('[replaceCrop]', err);
+    showToast('error', err.message, 0);
+    setTimeout(hideToast, 4000);
   }
 }
 
