@@ -1638,9 +1638,25 @@ body {
   height: 52px;
   flex-shrink: 0;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
   background: var(--card);
   border: 1px solid var(--line-hi);
+}
+.coll-cover-wrap > img,
+.coll-cover-wrap > .coll-cover-placeholder,
+.coll-cover-wrap > .coll-cover-overlay {
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+}
+.coll-cover-wrap > input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
 }
 .coll-cover-wrap:hover .coll-cover-overlay { opacity: 1; }
 .coll-cover-img {
@@ -3899,15 +3915,30 @@ async function _renderCollManager() {
     const coverWrap = document.createElement('div');
     coverWrap.className = 'coll-cover-wrap';
     coverWrap.title = 'Click to upload cover image';
-    // Embed file input directly inside coverWrap — avoids programmatic .click() blocks
-    const coverInner = meta.cover_url
-      ? `<img class="coll-cover-img" src="${meta.cover_url}" alt=""><div class="coll-cover-overlay">Change</div>`
-      : `<div class="coll-cover-placeholder">+ Cover</div><div class="coll-cover-overlay">Upload</div>`;
-    coverWrap.innerHTML = `
-      ${coverInner}
-      <input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"
-        onchange="handleCollCoverUpload(event,'${escHtml(name)}')" onclick="event.stopPropagation()">`;
-    coverWrap.style.position = 'relative';
+    // Build cover content with createElement (innerHTML blocks file input events in some browsers)
+    if (meta.cover_url) {
+      const img = document.createElement('img');
+      img.className = 'coll-cover-img';
+      img.src = meta.cover_url;
+      coverWrap.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'coll-cover-placeholder';
+      ph.textContent = '+ Cover';
+      coverWrap.appendChild(ph);
+    }
+    const overlay2 = document.createElement('div');
+    overlay2.className = 'coll-cover-overlay';
+    overlay2.textContent = meta.cover_url ? 'Change' : 'Upload';
+    coverWrap.appendChild(overlay2);
+    // File input — createElement ensures browser treats it as interactive
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file';
+    fileInp.accept = 'image/*';
+    fileInp.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10;';
+    fileInp.addEventListener('change', (e) => handleCollCoverUpload(e, name));
+    fileInp.addEventListener('click', (e) => e.stopPropagation());
+    coverWrap.appendChild(fileInp);
 
     // Info
     const info = document.createElement('div');
