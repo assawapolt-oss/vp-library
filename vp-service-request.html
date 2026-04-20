@@ -344,23 +344,34 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">อธิบายฉากที่ต้องการให้ทีม VP ออกแบบให้</div>
             <textarea class="form-textarea" id="f_tailor_desc" placeholder="เช่น: ต้องการฉากออฟฟิศโมเดิร์น บรรยากาศกลางคืน มีแสงสีน้ำเงิน-ขาว..." style="min-height:100px" oninput="ucc(this,'tdc',600)"></textarea>
             <div class="char-count" id="tdc">0 / 600 chars</div>
+
+            <!-- Grab Ref preview inside Tailor Made -->
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;font-weight:600;color:var(--muted)">🖼 แรงบันดาลใจจาก GRAB REF</span>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <button type="button" onclick="shuffleRefPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--muted)">🔀 สุ่มใหม่</button>
+                  <a href="https://assawapolt-oss.github.io/vp-library/vp-grab-ref.html" target="_blank" style="background:var(--primary);color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;text-decoration:none;white-space:nowrap">เปิด Grab Ref →</a>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:10px">นึกไม่ออก? ดูภาพ reference จากระบบเป็นแนวทาง — กดภาพเพื่อดูใหญ่ขึ้น แล้ว copy URL มาวางด้านล่างได้เลย</div>
+              <div id="refPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-bottom:14px">
+                <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
+              </div>
+              <!-- Pinned ref image URLs -->
+              <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">📌 ภาพที่ถูกใจ — วาง URL จาก Grab Ref</div>
+              <div id="pinnedRefList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+              <div style="display:flex;gap:8px">
+                <input id="f_refimg_input" class="form-input" type="url" placeholder="วาง URL ภาพจาก Grab Ref แล้วกด + เพิ่ม" style="flex:1;font-size:12px"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();addRefImg();}">
+                <button type="button" onclick="addRefImg()" style="padding:0 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">+ เพิ่ม</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="form-card" id="grabRefPreviewCard">
-        <div class="form-card-title" style="display:flex;align-items:center;justify-content:space-between">
-          <span>🖼 แรงบันดาลใจจาก Grab Ref</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button type="button" onclick="shuffleRefPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted)">🔀 สุ่มใหม่</button>
-            <a href="https://assawapolt-oss.github.io/vp-library/vp-grab-ref.html" target="_blank" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap">เปิด Grab Ref →</a>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">นึกไม่ออก? ดูภาพ reference จากระบบเป็นแนวทางได้เลย</div>
-        <div id="refPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
-          <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
-        </div>
-      </div>
+
       <div class="form-card">
         <div class="form-card-title">🔗 References &amp; หมายเหตุ</div>
         <div class="form-grid cols-1">
@@ -708,6 +719,7 @@ function resetForm(){
   document.getElementById('f_time_start').value='';
   document.getElementById('f_time_end').value='';
   _attendees = []; renderAttendees();
+  _refImgUrls = []; renderPinnedRefs();
   ['morning','afternoon','fullday'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
   const avail=document.getElementById('slotAvail');if(avail)avail.textContent='';
   [{id:'kmc',max:500},{id:'mtc',max:300},{id:'nc',max:400},{id:'tdc',max:600}].forEach(({id,max})=>{const e=document.getElementById(id);if(e)e.textContent='0 / '+max+' chars';});
@@ -716,6 +728,36 @@ function resetForm(){
 
 // ── Attendee management ──────────────────────────────────────
 let _attendees = []; // array of email strings
+let _refImgUrls = []; // pinned ref image URLs from Grab Ref
+
+function addRefImg() {
+  const inp = document.getElementById('f_refimg_input');
+  const url = (inp.value || '').trim();
+  if (!url || !url.startsWith('http')) { inp.value = ''; return; }
+  if (_refImgUrls.includes(url)) { inp.value = ''; return; }
+  _refImgUrls.push(url);
+  inp.value = '';
+  renderPinnedRefs();
+}
+function removeRefImg(url) {
+  _refImgUrls = _refImgUrls.filter(u => u !== url);
+  renderPinnedRefs();
+}
+function renderPinnedRefs() {
+  const c = document.getElementById('pinnedRefList');
+  if (!c) return;
+  if (!_refImgUrls.length) { c.innerHTML = ''; return; }
+  c.innerHTML = _refImgUrls.map(url => {
+    const short = url.split('/').pop().slice(0,30) + (url.length > 30 ? '…' : '');
+    return `<div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;max-width:100%">
+      <a href="${url}" target="_blank" style="color:var(--primary);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px" title="${url}">
+        <img src="${url}" style="width:36px;height:24px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">
+        ${short}
+      </a>
+      <button onclick="removeRefImg('${url.replace(/'/g,"\'")}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 0 0 2px;flex-shrink:0">×</button>
+    </div>`;
+  }).join('');
+}
 
 function addAttendee() {
   const inp = document.getElementById('f_attendee_input');
@@ -838,6 +880,7 @@ async function submitRequest(){
     scene_ids:_sceneOpt==='library'?Array.from(_picked).join(', '):'',
     tailor_desc:_sceneOpt==='tailor'?document.getElementById('f_tailor_desc').value.trim():'',
     ref_links:document.getElementById('f_references').value.trim(),
+    ref_image_urls:_refImgUrls.length ? _refImgUrls : null,
     notes:notesRaw,
     status:'brief',created_at:new Date().toISOString(),
   };
