@@ -17,7 +17,7 @@
   --text:#F2F2F2;--muted:rgba(255,255,255,.42);--font:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ─── LOADER ─────────────────────────────────────── */
 #loader{
@@ -193,7 +193,7 @@ nav{
 .hero-orb-c{width:280px;height:280px;background:rgba(245,158,11,.1);top:40%;right:55%;animation:orb-drift-c 8s ease-in-out infinite 3s}
 
 /* ─── FAN / SPREAD ─────────────────────────────── */
-#fan-section{position:relative;height:350vh}
+#fan-section{position:relative;height:100vh}
 #fan-pin{
   position:sticky;top:0;height:100vh;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
@@ -224,6 +224,18 @@ nav{
   display:flex;align-items:flex-end;padding:10px 12px;
 }
 .fan-card .fc-id{font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+/* hover state */
+.fan-card{transition:transform .3s cubic-bezier(.34,1.56,.64,1),z-index 0s,box-shadow .3s}
+.fan-card:hover .fan-card-inner,.fan-card.active .fan-card-inner{box-shadow:0 0 40px rgba(255,255,255,.18),0 24px 80px rgba(0,0,0,.9)!important}
+.fan-card-tooltip{
+  position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(6px);
+  background:rgba(10,10,10,.95);border:1px solid rgba(255,255,255,.12);border-radius:8px;
+  padding:8px 12px;white-space:nowrap;pointer-events:none;
+  font-size:11px;font-weight:600;color:#fff;letter-spacing:.04em;
+  opacity:0;transition:opacity .2s,transform .2s;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.fan-card:hover .fan-card-tooltip,.fan-card.active .fan-card-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* grad fallbacks for fan */
 .fan-card.fgrad-0{background:linear-gradient(160deg,#0f172a,#1e3a5f)}
@@ -325,7 +337,7 @@ footer{
   .deck-wrap{width:240px;height:300px}
   .deck-card{width:170px;height:240px}
 
-  #fan-section{height:220vh}
+  #fan-section{height:100vh}
   .fan-card{width:200px;height:113px}
 
   #shows{padding:80px 24px}
@@ -343,7 +355,7 @@ footer{
   .hero-right{height:260px}
   .deck-wrap{width:200px;height:260px}
   .deck-card{width:140px;height:200px}
-  #fan-section{height:180vh}
+  #fan-section{height:100vh}
   .fan-card{width:160px;height:90px}
   .btn-primary,.btn-ghost{padding:11px 20px;font-size:12px}
 }
@@ -365,7 +377,6 @@ footer{
   <div class="nav-links">
     <a href="vp-search.html">ค้นหาฉาก</a>
     <a href="vp-service-request.html">Service Request</a>
-    <a href="vp-admin.html">Admin</a>
   </div>
   <a class="nav-btn" href="vp-search.html">เปิด Library →</a>
 </nav>
@@ -406,47 +417,15 @@ footer{
   </div>
 </section>
 
-<!-- FAN / SPREAD -->
+<!-- FAN HOVER SECTION -->
 <section id="fan-section">
   <div id="fan-pin">
-    <div class="fan-label">ฉากทั้งหมดในห้องสมุด</div>
+    <div class="fan-label">ฉากทั้งหมดในห้องสมุด — hover หรือกดเพื่อดูรายละเอียด</div>
     <div class="fan-stage" id="fan-stage">
       <!-- filled by JS -->
     </div>
   </div>
 </section>
-
-<div class="section-divider"></div>
-
-<!-- SHOWS -->
-<section id="shows">
-  <div class="section-header reveal">
-    <div class="section-eyebrow">รายการ</div>
-    <h2 class="section-title">รายการที่ใช้ Virtual Production</h2>
-    <p class="section-sub">5 รายการหลักที่ใช้ฉากในห้องสมุดบ่อยที่สุด</p>
-  </div>
-  <div class="shows-grid" id="shows-grid">
-    <!-- filled by JS -->
-  </div>
-</section>
-
-<!-- CTA -->
-<section id="cta">
-  <h2 class="cta-title reveal">เริ่มต้นใช้งาน<br>VP Library วันนี้</h2>
-  <p class="cta-sub reveal">ค้นหาฉากที่ใช่ บันทึก Blueprint และบริหารการผลิตทั้งหมดในระบบเดียว</p>
-  <div class="reveal">
-    <a class="btn-primary" href="vp-search.html" style="font-size:14px;padding:14px 32px">เปิด Library →</a>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="foot-brand">
-    <div class="foot-mark">VP</div>
-    <span class="foot-name">Virtual Production Library</span>
-  </div>
-  <div class="foot-copy">© THE STANDARD 2025 — All rights reserved</div>
-</footer>
 
 <script>
 /* ─── SUPABASE ─────────────────────────────────── */
@@ -543,80 +522,91 @@ function buildDeck(scenes) {
 /* ─── BUILD FAN ──────────────────────────────────── */
 function buildFan(scenes) {
   const stage = document.getElementById('fan-stage');
-  // prefer presenter images for fan too
   const withP = scenes.filter(s => s.presenter_image_url && s.presenter_image_url.startsWith('http'));
   const pool = withP.length >= 8 ? withP : [...withP, ...scenes.filter(s => !s.presenter_image_url || !s.presenter_image_url.startsWith('http'))];
   const picks = shuffle(pool).slice(0, 8);
   const grads = ['fgrad-0','fgrad-1','fgrad-2','fgrad-3','fgrad-4','fgrad-5','fgrad-6','fgrad-7'];
   const fanColors = ['#C41E2A','#2563EB','#F59E0B','#10B981','#8B5CF6','#EC4899','#14B8A6','#F97316'];
+
+  // Spread positions (arc) — final resting positions
+  const spread = [
+    {x:-780,y:20, r:-22,s:.80},
+    {x:-520,y:-25,r:-13,s:.87},
+    {x:-260,y:-50,r:-6, s:.94},
+    {x:0,   y:-60,r:0,  s:1  },
+    {x:260, y:-50,r:6,  s:.94},
+    {x:520, y:-25,r:13, s:.87},
+    {x:780, y:20, r:22, s:.80},
+    {x:980, y:60, r:30, s:.74},
+  ].slice(0, picks.length);
+
   stage.innerHTML = '';
   const cards = picks.map((s, i) => {
     const url = presenterImg(s);
     const color = fanColors[i % fanColors.length];
+    const t = spread[i];
+
     const card = document.createElement('div');
     card.className = 'fan-card';
-    card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
-    // inner wrapper (needed for overflow:hidden on 16:9)
+    card.style.cssText = 'left:50%;top:50%';
+    // start stacked, will animate to spread
+    gsap.set(card, {x:0, y:0, rotation:0, scale:0.6, opacity:0, xPercent:-50, yPercent:-50});
+
     const inner = document.createElement('div');
     inner.className = 'fan-card-inner ' + (url ? '' : grads[i]);
     inner.style.cssText = `border:1.5px solid ${color}55;box-shadow:0 0 24px ${color}33,0 16px 48px rgba(0,0,0,.7)`;
     if (url) {
       const img = document.createElement('img');
-      img.src = url;
-      img.alt = s.title || s.id;
-      img.loading = 'lazy';
+      img.src = url; img.alt = s.title||s.id; img.loading = 'lazy';
       inner.appendChild(img);
     }
     const overlay = document.createElement('div');
     overlay.className = 'fc-overlay';
     const idEl = document.createElement('div');
     idEl.className = 'fc-id';
-    idEl.textContent = (s.title || s.id || '').slice(0, 28);
+    idEl.textContent = (s.title||s.id||'').slice(0,32);
     overlay.appendChild(idEl);
     inner.appendChild(overlay);
-    // Apple glass layers on each fan card
-    const spec2 = document.createElement('div'); spec2.className = 'glass-spec'; inner.appendChild(spec2);
-    const shim2 = document.createElement('div'); shim2.className = 'glass-shimmer'; inner.appendChild(shim2);
-    shim2.style.animationDelay = (i * 0.55) + 's';
-    const rim2 = document.createElement('div'); rim2.className = 'glass-rim'; inner.appendChild(rim2);
+
+    // Tooltip with full title
+    const tip = document.createElement('div');
+    tip.className = 'fan-card-tooltip';
+    tip.textContent = s.title || s.id || '';
+
+    ['glass-spec','glass-shimmer','glass-rim'].forEach(cls => {
+      const el = document.createElement('div'); el.className = cls; inner.appendChild(el);
+    });
     card.appendChild(inner);
+    card.appendChild(tip);
     stage.appendChild(card);
+
+    // Hover: lift this card, push others down slightly
+    card.addEventListener('mouseenter', () => {
+      gsap.to(card, {y: t.y - 30, scale: t.s * 1.08, duration:.35, ease:'power2.out', zIndex:50});
+      cards.forEach((c,j) => { if(j!==i) gsap.to(c,{opacity:.55,duration:.25}); });
+    });
+    card.addEventListener('mouseleave', () => {
+      gsap.to(card, {y: t.y, scale: t.s, duration:.4, ease:'power2.out', zIndex: picks.length - i});
+      cards.forEach((c,j) => { if(j!==i) gsap.to(c,{opacity:1,duration:.3}); });
+    });
+    // Click: go to vp-search
+    card.addEventListener('click', () => {
+      window.location.href = 'vp-search.html';
+    });
+
     return card;
   });
 
-  // Spread positions for 16:9 landscape cards (wider arc)
-  const N = cards.length;
-  const spread = [
-    {x:-780,y:-20,r:-22,s:.80},
-    {x:-520,y:-65,r:-13,s:.87},
-    {x:-260,y:-90,r:-6,s:.94},
-    {x:0,   y:-100,r:0,s:1},
-    {x:260, y:-90, r:6, s:.94},
-    {x:520, y:-65, r:13,s:.87},
-    {x:780, y:-20, r:22,s:.80},
-    {x:980, y:20,  r:30,s:.74},
-  ].slice(0, N);
-
-  // All stacked initially
-  cards.forEach(c => gsap.set(c, {x:0, y:0, rotation:0, scale:1, opacity:0}));
-
-  ScrollTrigger.create({
-    trigger: '#fan-section',
-    start: 'top top',
-    end: 'bottom bottom',
-    scrub: 1.2,
-    onUpdate(self) {
-      const p = self.progress;
-      cards.forEach((c, i) => {
-        const t = spread[i];
-        const x = p * t.x;
-        const y = p * t.y;
-        const r = p * t.r;
-        const sc = 1 - (1 - t.s) * p;
-        const op = Math.min(1, p * 3 + 0.2);
-        gsap.set(c, {x, y, rotation: r, scale: sc, opacity: op});
-      });
-    }
+  // Animate in: stacked → spread arc
+  gsap.to('#fan-section', {opacity:1, duration:.01});
+  picks.forEach((s, i) => {
+    const t = spread[i];
+    gsap.to(cards[i], {
+      x: t.x, y: t.y, rotation: t.r, scale: t.s, opacity: 1,
+      duration: 1.0, delay: 0.3 + i * 0.07,
+      ease: 'power3.out',
+      zIndex: picks.length - i,
+    });
   });
 }
 
@@ -779,17 +769,10 @@ async function init() {
   if (sceneList.length) {
     buildDeck(sceneList);
     buildFan(sceneList);
-    await buildShows(sceneList);
   } else {
-    // fallbacks without images
     buildDeck([]);
     buildFan([]);
-    document.getElementById('shows-grid').innerHTML =
-      '<div style="color:var(--muted);font-size:13px;grid-column:span 5;padding:20px 0">ไม่สามารถโหลดข้อมูลได้</div>';
   }
-
-  // Scroll reveals
-  setupReveals();
 }
 
 window.addEventListener('load', init);
