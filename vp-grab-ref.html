@@ -3601,13 +3601,25 @@ async function startConvertWebp() {
       if (ref.thumb_path && ref.thumb_path !== newThumbPath2)
         await _SB.storage.from(REF_BUCKET).remove([ref.thumb_path]).catch(() => {});
 
-      // 8. Update local cache
+      // 8. Update local cache (including new file_size_kb)
+      const newSizeKB = Math.round(webpBlob.size / 1024);
       const idx = _allRefs.findIndex(r => r.id === ref.id);
-      if (idx !== -1) Object.assign(_allRefs[idx], { url: newUrl, thumb_url: newThumbUrl, storage_path: newPath, thumb_path: newThumbPath2 });
+      if (idx !== -1) Object.assign(_allRefs[idx], {
+        url: newUrl, thumb_url: newThumbUrl,
+        storage_path: newPath, thumb_path: newThumbPath2,
+        file_size_kb: newSizeKB
+      });
 
-      // Update card thumbnail on screen
+      // Update card thumbnail — bust browser cache with timestamp
       const cardImg = document.querySelector(`.ref-card[data-id="${ref.id}"] img`);
-      if (cardImg) cardImg.src = newThumbUrl || newUrl;
+      if (cardImg) cardImg.src = (newThumbUrl || newUrl) + '?t=' + Date.now();
+
+      // Update meta text on card
+      const cardSize = document.querySelector(`.ref-card[data-id="${ref.id}"] .ref-card-size`);
+      if (cardSize) {
+        const r = _allRefs[idx] || {};
+        cardSize.textContent = `${r.width||''}×${r.height||''} · ${newSizeKB} KB`;
+      }
 
       done++;
       logEl.textContent = `✅ ${shortId} → ${ext.toUpperCase()}`;
