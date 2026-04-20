@@ -2633,6 +2633,7 @@ async function pasteFromClipboard() {
 let _allRefs = [];
 
 async function loadRefs() {
+  _refsLoaded = true;
   const grid = document.getElementById('masonryGrid');
   grid.innerHTML = `<div class="empty-wrap"><div class="e-rule"></div><div class="e-title">Loading…</div></div>`;
 
@@ -4654,8 +4655,8 @@ async function handleAuthSession(session) {
   if (avatarUrl) localStorage.setItem('vp_user_avatar', avatarUrl);
   else localStorage.removeItem('vp_user_avatar');
   document.getElementById('authOverlay').classList.remove('open');
-  updateUserUI(email, email);
-  await loadRefs();
+  updateUserUI(email, user.user_metadata?.full_name || email);
+  if (!_refsLoaded) await loadRefs();
 }
 
 function showAuthOverlay() {
@@ -4700,11 +4701,27 @@ function updateUserUI(uid, name) {
 }
 
 // ── Listen for OAuth redirect + existing session ───────────
-let _supaAuthReady = false;
-_SB.auth.onAuthStateChange((_event, session) => {
-  if (_supaAuthReady) return; // already handled
-  _supaAuthReady = true;
-  handleAuthSession(session);
+let _refsLoaded = false; // guard — loadRefs ครั้งเดียวเท่านั้น
+
+_SB.auth.onAuthStateChange((event, session) => {
+  // Clean up hash tokens from URL after OAuth redirect
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    handleAuthSession(session);
+  } else if (event === 'SIGNED_OUT') {
+    // Only show auth if not already logged in via password
+    if (localStorage.getItem(AUTH_TYPE_KEY) !== 'password') {
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(USER_ROLE_KEY);
+      localStorage.removeItem('vp_user_avatar');
+      localStorage.removeItem(AUTH_TYPE_KEY);
+      _refsLoaded = false;
+      updateUserUI(null, null);
+      showAuthOverlay();
+    }
+  }
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -4713,33 +4730,40 @@ _SB.auth.onAuthStateChange((_event, session) => {
 (async function init() {
   _updateRefAiStatus();
 
-  // 1. Password session — ข้ามหน้าได้ทันที
+  // Clean OAuth hash from URL immediately
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  // 1. Password session
   const uid      = localStorage.getItem(USER_KEY);
   const authType = localStorage.getItem(AUTH_TYPE_KEY);
   if (uid && authType === 'password') {
     updateUserUI(uid, uid);
     await loadUsers();
-    const name = _USERS_DB?.[uid]?.name || uid;
-    updateUserUI(uid, name);
+    updateUserUI(uid, _USERS_DB?.[uid]?.name || uid);
     await loadRefs();
     return;
   }
 
-  // 2. Google OAuth — ให้ onAuthStateChange จัดการ (มัน fire เร็วกว่า)
-  //    แต่ถ้า 2.5 วินาทียัง silent อยู่ ค่อย getSession() เป็น fallback
-  const authTimeout = new Promise(resolve => setTimeout(resolve, 2500));
-  const authReady   = new Promise(resolve => {
-    const check = setInterval(() => {
-      if (_supaAuthReady) { clearInterval(check); resolve(); }
-    }, 50);
-  });
-  await Promise.race([authReady, authTimeout]);
+  // 2. Google session already in localStorage (cross-page)
+  if (uid && authType === 'google') {
+    updateUserUI(uid, uid);
+    await loadRefs();
+    // onAuthStateChange will fire and refresh UI with full name/avatar
+    return;
+  }
 
-  if (!_supaAuthReady) {
-    // onAuthStateChange ไม่ยิง — fallback ด้วย getSession
-    _supaAuthReady = true;
+  // 3. No session — wait for onAuthStateChange (handles OAuth redirect)
+  //    Fallback after 3s if it never fires
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  if (!_refsLoaded) {
     const { data: { session } } = await _SB.auth.getSession();
-    handleAuthSession(session);
+    if (session) {
+      handleAuthSession(session);
+    } else {
+      showAuthOverlay();
+    }
   }
 })();
 </script>
