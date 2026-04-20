@@ -325,14 +325,14 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
         <div style="margin-top:18px">
           <label class="form-label" style="margin-bottom:10px;display:block">ฉากที่ต้องการ <span class="req">*</span></label>
           <div class="scene-opt-tabs">
-            <div class="scene-opt-tab active" id="optTab_library" onclick="setSceneOpt('library')">
+            <div class="scene-opt-tab" id="optTab_library" onclick="setSceneOpt('library')">
               <span class="ti">🗂</span>ระบุฉากจากระบบ
             </div>
-            <div class="scene-opt-tab" id="optTab_tailor" onclick="setSceneOpt('tailor')">
+            <div class="scene-opt-tab active" id="optTab_tailor" onclick="setSceneOpt('tailor')">
               <span class="ti">✏️</span>Tailor Made
             </div>
           </div>
-          <div class="scene-opt-panel active" id="panel_library">
+          <div class="scene-opt-panel" id="panel_library">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
               <input class="form-input" id="spSearch" placeholder="🔍 ค้นหาฉากด้วย ID หรือชื่อ..." style="flex:1;padding:8px 12px;font-size:13px" oninput="filterPicker()">
               <span id="spCount" style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0">— ฉาก</span>
@@ -340,7 +340,7 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
             <div class="scene-picker-list" id="spGrid"><div style="padding:24px;text-align:center;color:var(--muted)">⏳ กำลังโหลด...</div></div>
             <div class="sel-row" id="selRow" style="margin-top:10px"><span style="font-size:12px;color:var(--muted)">ยังไม่ได้เลือกฉาก</span></div>
           </div>
-          <div class="scene-opt-panel" id="panel_tailor">
+          <div class="scene-opt-panel active" id="panel_tailor">
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">อธิบายฉากที่ต้องการให้ทีม VP ออกแบบให้</div>
             <textarea class="form-textarea" id="f_tailor_desc" placeholder="เช่น: ต้องการฉากออฟฟิศโมเดิร์น บรรยากาศกลางคืน มีแสงสีน้ำเงิน-ขาว..." style="min-height:100px" oninput="ucc(this,'tdc',600)"></textarea>
             <div class="char-count" id="tdc">0 / 600 chars</div>
@@ -348,6 +348,19 @@ if(window!==window.top){document.documentElement.style.setProperty('--topbar-dis
         </div>
       </div>
 
+      <div class="form-card" id="grabRefPreviewCard">
+        <div class="form-card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>🖼 แรงบันดาลใจจาก Grab Ref</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button type="button" onclick="shuffleRefPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted)">🔀 สุ่มใหม่</button>
+            <a href="https://assawapolt-oss.github.io/vp-library/vp-grab-ref.html" target="_blank" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap">เปิด Grab Ref →</a>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">นึกไม่ออก? ดูภาพ reference จากระบบเป็นแนวทางได้เลย</div>
+        <div id="refPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+          <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
+        </div>
+      </div>
       <div class="form-card">
         <div class="form-card-title">🔗 References &amp; หมายเหตุ</div>
         <div class="form-grid cols-1">
@@ -483,7 +496,7 @@ const STAGES=[
 ];
 const STAGE_PROG={brief:10,visual:30,virtual:55,shooting:80,done:100,fixer:90};
 
-let _user=null,_allScenes=[],_myReqs=[],_allReqs=[],_detailId=null,_editMode=false,_sceneOpt='library',_picked=new Set();
+let _user=null,_allScenes=[],_myReqs=[],_allReqs=[],_detailId=null,_editMode=false,_sceneOpt='tailor',_picked=new Set();
 let _slots=new Set(); // 'morning' | 'afternoon'
 let _calYear=new Date().getFullYear(),_calMonth=new Date().getMonth();
 let _calData={}; // {YYYY-MM-DD: [{time_slot,show_name,id}]}
@@ -546,6 +559,7 @@ function showApp(){
   applyTheme();
   loadScenesForPicker();
   loadMyRequests();
+  loadRefPreview();
 }
 function handleLogout(){_user=null;localStorage.removeItem('vp_user_role');localStorage.removeItem('vp_username');localStorage.removeItem('vp_display_name');showLoginGate();}
 
@@ -697,7 +711,7 @@ function resetForm(){
   ['morning','afternoon','fullday'].forEach(s=>document.getElementById('slot_'+s)?.classList.remove('active'));
   const avail=document.getElementById('slotAvail');if(avail)avail.textContent='';
   [{id:'kmc',max:500},{id:'mtc',max:300},{id:'nc',max:400},{id:'tdc',max:600}].forEach(({id,max})=>{const e=document.getElementById(id);if(e)e.textContent='0 / '+max+' chars';});
-  setSceneOpt('library');
+  setSceneOpt('tailor');
 }
 
 // ── Attendee management ──────────────────────────────────────
@@ -726,6 +740,40 @@ function renderAttendees() {
       ${email}
       <button onclick="removeAttendee('${email}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>
     </span>`).join('');
+}
+
+// ── Grab Ref Preview ────────────────────────────────────────
+let _refPool = [];
+async function loadRefPreview() {
+  const grid = document.getElementById('refPreviewGrid');
+  if (!grid) return;
+  try {
+    // fetch 60 random-ish refs (order by random via limit)
+    const { data, error } = await _sc.from('ref_images')
+      .select('id, thumb_url, url, tags')
+      .limit(60);
+    if (error || !data || !data.length) throw error || new Error('no data');
+    _refPool = data.filter(r => r.thumb_url || r.url);
+    shuffleRefPreview();
+  } catch(e) {
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px">ไม่สามารถโหลด reference ได้</div>';
+  }
+}
+
+function shuffleRefPreview() {
+  const grid = document.getElementById('refPreviewGrid');
+  if (!grid || !_refPool.length) return;
+  // pick 12 random items
+  const pool = [..._refPool].sort(() => Math.random() - 0.5).slice(0, 12);
+  grid.innerHTML = pool.map(r => {
+    const imgSrc = r.thumb_url || r.url;
+    const fullUrl = r.url || r.thumb_url;
+    return `<a href="${fullUrl}" target="_blank" title="${(r.tags||[]).join(', ') || ''}"
+      style="display:block;aspect-ratio:16/9;overflow:hidden;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:transform .15s;background:var(--surface2)"
+      onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+      <img src="${imgSrc}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display='none'">
+    </a>`;
+  }).join('');
 }
 
 function buildCalendarUrl(row, allAttendees) {
