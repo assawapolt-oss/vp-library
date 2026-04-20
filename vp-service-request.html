@@ -486,8 +486,8 @@ let _usersDB={
 async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function _loadUsersDB(){try{const{data}=await _sc.from('users').select('*');if(data&&data.length)data.forEach(u=>{_usersDB[u.username]={role:u.role||'viewer',hash:u.password_hash||'',name:u.display_name||u.username};});}catch(e){}}
 
-function _tryParentLogin(){try{const r=window.parent.localStorage.getItem('vp_user_role'),u=window.parent.localStorage.getItem('vp_username'),n=window.parent.localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
-function _tryLocalLogin(){try{const r=localStorage.getItem('vp_user_role'),u=localStorage.getItem('vp_username'),n=localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
+function _tryParentLogin(){try{const ls=window.parent.localStorage;const r=ls.getItem('vp_user_role');const u=ls.getItem('vp_username')||ls.getItem('vp_user_id');const n=ls.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
+function _tryLocalLogin(){try{const r=localStorage.getItem('vp_user_role');const u=localStorage.getItem('vp_username')||localStorage.getItem('vp_user_id');const n=localStorage.getItem('vp_display_name')||u;if(r&&u)return{username:u,role:r,name:n};}catch(e){}return null;}
 
 // ── Build 30-min interval time selects ──────────────────────
 function _buildTimeSelects() {

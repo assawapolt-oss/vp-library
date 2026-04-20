@@ -514,8 +514,9 @@
   .ui-count-badge { font-size:10px; font-weight:700; background:var(--red); color:#fff; padding:1px 7px; border-radius:10px; margin-left:6px; }
 
   /* ══ LOGIN MODAL ══ */
-  .auth-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+  .auth-overlay { display:none; position:fixed; inset:0; background:rgba(5,5,6,.95); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(12px); }
   .auth-overlay.open { display:flex; }
+  body:has(.auth-overlay.open) > *:not(.auth-overlay) { pointer-events:none; user-select:none; }
   .auth-box { background:var(--card); border-radius:20px; padding:40px 36px 32px; width:100%; max-width:360px; box-shadow:0 32px 80px rgba(0,0,0,.45); text-align:center; position:relative; }
   .auth-logo-wrap { display:flex; justify-content:center; margin-bottom:14px; }
   .auth-logo-icon { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#8B1218,#CC2229); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff; letter-spacing:.05em; box-shadow:0 4px 20px rgba(204,34,41,.4); }
@@ -535,8 +536,6 @@
   .auth-submit { width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; transition:background .15s; }
   .auth-submit:hover { background:#B91C1C; }
   .auth-submit:disabled { background:#D1D5DB; cursor:not-allowed; }
-  .auth-close-btn { position:absolute; top:12px; right:14px; background:none; border:none; font-size:18px; color:var(--muted); cursor:pointer; padding:4px 8px; border-radius:6px; line-height:1; }
-  .auth-close-btn:hover { background:var(--bg); color:var(--dark); }
   .auth-error { background:#FFF5F5; border:1px solid #FCA5A5; color:#B91C1C; border-radius:8px; padding:9px 13px; font-size:12px; font-weight:600; margin-bottom:16px; display:none; }
   .auth-error.show { display:block; }
 
@@ -1405,7 +1404,7 @@
 <!-- LOGIN MODAL -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
-    <button class="auth-close-btn" onclick="closeAuthOverlay()" title="ปิด / Browse as guest">✕</button>
+
     <div class="auth-logo-wrap">
       <div class="auth-logo-icon">VP</div>
     </div>
@@ -3019,6 +3018,7 @@ function closeModal(e) {
 }
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
+    if(document.getElementById('authOverlay')?.classList.contains('open')) return;
     document.getElementById('modalOverlay').classList.remove('open');
     document.getElementById('lsOverlay').classList.remove('open');
     resetFalseColor('modal');
@@ -4571,7 +4571,7 @@ async function doLogin() {
   }
 }
 
-function closeAuthOverlay() {
+function closeAuthOverlay_DISABLED() {
   document.getElementById('authOverlay').classList.remove('open');
 }
 
@@ -4616,6 +4616,7 @@ async function getRoleByEmail(email) {
 
 function initUser() {
   const saved = localStorage.getItem(USER_KEY);
+  const authType = localStorage.getItem(AUTH_TYPE_KEY);
   const el = document.getElementById('userLabel');
   const menuName = document.getElementById('userMenuName');
   const menuAdmin = document.getElementById('userMenuAdmin');
@@ -4631,6 +4632,8 @@ function initUser() {
     if (menuLogout) menuLogout.style.display = 'none';
     if (avatarImg) { avatarImg.src = ''; avatarImg.style.display = 'none'; }
     if (avatarIcon) avatarIcon.style.display = 'inline';
+    // If coming from another page with existing google session, skip login overlay
+    if (authType === 'google' && saved) { return; }
     showAuthOverlay();
   } else {
     const role = localStorage.getItem(USER_ROLE_KEY) || '';
