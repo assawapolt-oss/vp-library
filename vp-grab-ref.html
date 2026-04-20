@@ -2405,7 +2405,15 @@ const THUMB_Q     = 0.75;  // thumbnail quality
 
 function blobFromCanvas(canvas, quality) {
   return new Promise((resolve, reject) => {
-    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/webp', quality);
+    // Try WebP first; fall back to JPEG on iOS/browsers that don't support WebP encoding
+    canvas.toBlob(b => {
+      if (b && b.size > 0) return resolve(b);
+      // Fallback to JPEG
+      canvas.toBlob(b2 => {
+        if (b2 && b2.size > 0) return resolve(b2);
+        reject(new Error('toBlob failed'));
+      }, 'image/jpeg', quality);
+    }, 'image/webp', quality);
   });
 }
 
@@ -2430,6 +2438,8 @@ function processImage(file, cropRect = null) {
         cv.width = w; cv.height = h;
         cv.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
         const blob = await blobFromCanvas(cv, WEBP_QUALITY);
+        const mime = blob.type || 'image/jpeg';
+        const ext  = mime === 'image/webp' ? 'webp' : 'jpg';
 
         // Thumbnail canvas (max 480×360)
         const tsW = sw > THUMB_W ? THUMB_W / sw : 1;
@@ -2442,7 +2452,7 @@ function processImage(file, cropRect = null) {
         tcv.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
         const thumbBlob = await blobFromCanvas(tcv, THUMB_Q);
 
-        resolve({ blob, thumbBlob, width: w, height: h });
+        resolve({ blob, thumbBlob, width: w, height: h, mime, ext });
       } catch(e) { reject(e); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
@@ -2482,27 +2492,27 @@ async function drainQueue() {
 async function uploadOne(file, cropRect = null) {
   showToast('loading', `Converting…`, 10);
   try {
-    const { blob, thumbBlob, width, height } = await processImage(file, cropRect);
+    const { blob, thumbBlob, width, height, mime, ext } = await processImage(file, cropRect);
     const fileSizeKB = Math.round(blob.size / 1024);
 
     showToast('loading', `Uploading…`, 40);
 
     const ts   = Date.now();
     const rand = Math.random().toString(36).slice(2, 7);
-    const path      = `refs/${ts}-${rand}.webp`;
-    const thumbPath = `refs/thumbs/${ts}-${rand}_t.webp`;
+    const path      = `refs/${ts}-${rand}.${ext}`;
+    const thumbPath = `refs/thumbs/${ts}-${rand}_t.${ext}`;
 
     // Upload full image
     const { error: storageErr } = await _SB.storage
       .from(REF_BUCKET)
-      .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+      .upload(path, blob, { contentType: mime, cacheControl: '31536000', upsert: false });
     if (storageErr) throw new Error('Storage: ' + storageErr.message);
 
     // Upload thumbnail
     showToast('loading', `Uploading thumbnail…`, 65);
     const { error: thumbErr } = await _SB.storage
       .from(REF_BUCKET)
-      .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+      .upload(thumbPath, thumbBlob, { contentType: mime, cacheControl: '31536000', upsert: false });
     // Non-fatal if thumb fails
     const thumbUrl = thumbErr ? '' : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || '');
 
@@ -3661,25 +3671,24 @@ async function handleSubFiles(files) {
     const file = toUpload[i];
     try {
       const pct = Math.round(10 + ((i + 1) / toUpload.length) * 70);
-      showToast('loading', `Processing ${i + 1}/${toUpload.length} → WebP…`, pct);
+      showToast('loading', `Processing ${i + 1}/${toUpload.length}…`, pct);
 
-      // ✅ processImage converts to WebP, max 1920×1080, creates thumb
-      const { blob, thumbBlob, width, height } = await processImage(file, null);
+      const { blob, thumbBlob, width, height, mime, ext } = await processImage(file, null);
       const fileSizeKB = Math.round(blob.size / 1024);
 
       const ts   = Date.now() + i;
       const rand = Math.random().toString(36).slice(2, 7);
-      const path      = `refs/sub/${ts}-${rand}.webp`;
-      const thumbPath = `refs/sub/thumbs/${ts}-${rand}_t.webp`;
+      const path      = `refs/sub/${ts}-${rand}.${ext}`;
+      const thumbPath = `refs/sub/thumbs/${ts}-${rand}_t.${ext}`;
 
       // Upload full image to Supabase Storage
       const { error: sErr } = await _SB.storage.from(REF_BUCKET)
-        .upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+        .upload(path, blob, { contentType: mime, cacheControl: '31536000', upsert: false });
       if (sErr) throw new Error('Storage: ' + sErr.message);
 
       // Upload thumbnail (non-fatal)
       const { error: tErr } = await _SB.storage.from(REF_BUCKET)
-        .upload(thumbPath, thumbBlob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+        .upload(thumbPath, thumbBlob, { contentType: mime, cacheControl: '31536000', upsert: false });
 
       const url      = _SB.storage.from(REF_BUCKET).getPublicUrl(path).data?.publicUrl || '';
       const thumbUrl = tErr ? url : (_SB.storage.from(REF_BUCKET).getPublicUrl(thumbPath).data?.publicUrl || url);
