@@ -117,19 +117,20 @@ nav.scrolled{
 .rise{opacity:0;transform:translateY(26px);transition:opacity .9s var(--e-out),transform 1s var(--e-out);will-change:opacity,transform}
 .rise.in{opacity:1;transform:translateY(0)}
 
-/* Line mask — key fix: extra padding so descenders + Thai marks don't clip */
+/* Line reveal — uses clip-path instead of overflow:hidden so Thai diacritics never clip */
 .lines{
-  display:block;overflow:hidden;
-  /* pad top/bottom so Thai diacritics fit; cancel with negative margin on container */
-  padding:0.12em 0 0.18em;
-  margin:-0.12em 0 -0.18em;
+  display:block;
+  clip-path:inset(0 0 100% 0);
+  transition:clip-path 1.2s var(--e-inout);
+  will-change:clip-path;
 }
+.lines.in{clip-path:inset(-20% 0 -20% 0)}
 .lines > span{
-  display:inline-block;transform:translateY(110%);
-  transition:transform 1.1s var(--e-inout);
-  will-change:transform;line-height:1.05;
+  display:inline-block;transform:translateY(40%);opacity:0;
+  transition:transform 1.1s var(--e-inout),opacity 1.1s var(--e-inout);
+  will-change:transform,opacity;line-height:inherit;
 }
-.lines.in > span{transform:translateY(0)}
+.lines.in > span{transform:translateY(0);opacity:1}
 
 /* Image reveal curtain */
 .img-reveal{position:relative;overflow:hidden;background:var(--bg-2)}
@@ -178,26 +179,18 @@ nav.scrolled{
 }
 .hero-title{
   color:#fff;line-height:1;letter-spacing:-.04em;
-  padding:0.06em 0 0.18em;
   display:flex;flex-direction:column;gap:0;
 }
 .hero-title .l-th1{
   /* dominant — ทุกที่ */
   font-size:clamp(88px,13vw,220px);font-weight:600;letter-spacing:-.05em;
-  line-height:1.12;
-  /* generous room for ไม้โท above + สระอุ below */
-  padding:0.22em 0 0.28em;
-  margin:-0.22em 0 -0.22em;
+  line-height:1.1;
 }
-.hero-title .l-th1 > span{line-height:1.12}
 .hero-title .l-th2{
   /* secondary — ในสตูดิโอของเรา */
   font-size:clamp(36px,5.2vw,84px);font-weight:400;letter-spacing:-.02em;
-  line-height:1.2;margin-top:.08em;
-  padding:0.18em 0 0.24em;
-  margin-bottom:-0.18em;
+  line-height:1.25;margin-top:.04em;
 }
-.hero-title .l-th2 > span{line-height:1.2}
 .hero-title .l-en{
   /* tertiary — caps label */
   font-size:clamp(11px,0.92vw,14px);font-weight:500;letter-spacing:.32em;text-transform:uppercase;
