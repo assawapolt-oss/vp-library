@@ -184,13 +184,20 @@ nav.scrolled{
 .hero-title .l-th1{
   /* dominant — ทุกที่ */
   font-size:clamp(88px,13vw,220px);font-weight:600;letter-spacing:-.05em;
-  line-height:.95;
+  line-height:1.12;
+  /* generous room for ไม้โท above + สระอุ below */
+  padding:0.22em 0 0.28em;
+  margin:-0.22em 0 -0.22em;
 }
+.hero-title .l-th1 > span{line-height:1.12}
 .hero-title .l-th2{
   /* secondary — ในสตูดิโอของเรา */
   font-size:clamp(36px,5.2vw,84px);font-weight:400;letter-spacing:-.02em;
-  line-height:1.05;margin-top:.02em;
+  line-height:1.2;margin-top:.08em;
+  padding:0.18em 0 0.24em;
+  margin-bottom:-0.18em;
 }
+.hero-title .l-th2 > span{line-height:1.2}
 .hero-title .l-en{
   /* tertiary — caps label */
   font-size:clamp(11px,0.92vw,14px);font-weight:500;letter-spacing:.32em;text-transform:uppercase;
