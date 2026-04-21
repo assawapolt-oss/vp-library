@@ -178,24 +178,28 @@ nav.scrolled{
   display:grid;grid-template-columns:1.3fr 1fr;gap:56px;align-items:flex-end;
 }
 .hero-title{
-  color:#fff;line-height:1;letter-spacing:-.04em;
+  color:#fff;letter-spacing:-.04em;
   display:flex;flex-direction:column;gap:0;
+  overflow:visible;
+}
+.hero-title > span{
+  display:block;overflow:visible;
 }
 .hero-title .l-th1{
   /* dominant — ทุกที่ */
-  font-size:clamp(88px,13vw,220px);font-weight:600;letter-spacing:-.05em;
-  line-height:1.1;
+  font-size:clamp(72px,10.5vw,168px);font-weight:600;letter-spacing:-.04em;
+  line-height:1.15;
 }
 .hero-title .l-th2{
   /* secondary — ในสตูดิโอของเรา */
-  font-size:clamp(36px,5.2vw,84px);font-weight:400;letter-spacing:-.02em;
-  line-height:1.25;margin-top:.04em;
+  font-size:clamp(32px,4.6vw,72px);font-weight:400;letter-spacing:-.015em;
+  line-height:1.3;margin-top:.05em;
 }
 .hero-title .l-en{
   /* tertiary — caps label */
   font-size:clamp(11px,0.92vw,14px);font-weight:500;letter-spacing:.32em;text-transform:uppercase;
   color:rgba(255,255,255,.58);margin-top:28px;
-  padding-left:.08em;
+  padding-left:.08em;line-height:1.5;
 }
 .hero-title em{font-style:normal;font-weight:300;color:rgba(255,255,255,.82)}
 
@@ -490,8 +494,8 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   .hero-body{grid-template-columns:1fr;padding:0 18px 80px;gap:28px}
   .hero-right{padding-bottom:0;gap:20px}
   .hero-sub{font-size:14px}
-  .hero-title .l-th1{font-size:clamp(60px,18vw,120px);letter-spacing:-.04em}
-  .hero-title .l-th2{font-size:clamp(24px,6.8vw,40px);margin-top:.04em}
+  .hero-title .l-th1{font-size:clamp(54px,15vw,108px);letter-spacing:-.03em;line-height:1.18}
+  .hero-title .l-th2{font-size:clamp(22px,6vw,38px);margin-top:.06em;line-height:1.35}
   .hero-title .l-en{font-size:11px;letter-spacing:.26em;margin-top:18px}
   .hero-foot{left:18px;right:18px;bottom:22px;font-size:10px}
   .btn{padding:13px 20px;font-size:12.5px}
@@ -599,9 +603,9 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   <div class="hero-scrim"></div>
   <div class="hero-body">
     <h1 class="hero-title">
-      <span class="l-th1 lines"><span class="shine">ทุกที่</span></span>
-      <span class="l-th2 lines"><span class="shine"><em>ในสตูดิโอของเรา</em></span></span>
-      <span class="l-en lines"><span>Everywhere at our studio</span></span>
+      <span class="l-th1 rise"><span class="shine">ทุกที่</span></span>
+      <span class="l-th2 rise"><span class="shine"><em>ในสตูดิโอของเรา</em></span></span>
+      <span class="l-en rise">Everywhere at our studio</span>
     </h1>
     <div class="hero-right">
       <p class="hero-sub rise">Virtual Production Library ของ THE STANDARD — คลังฉากเสมือนจริงที่ทีม production หยิบไปใช้ได้ทันที ตั้งแต่ข่าว สัมภาษณ์ ไปจนถึงคอนเทนต์สั้น</p>
@@ -772,7 +776,7 @@ function buildHero(scenes){
 
   // Entrance — after loader
   setTimeout(() => {
-    document.querySelectorAll('.hero-title .lines,.hero-sub,.hero-actions').forEach(el => el.classList.add('in'));
+    document.querySelectorAll('.hero-title .rise,.hero-sub,.hero-actions').forEach((el,i) => setTimeout(()=>el.classList.add('in'), i*120));
   }, 450);
 }
 
