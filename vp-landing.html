@@ -177,16 +177,57 @@ nav.scrolled{
   display:grid;grid-template-columns:1.3fr 1fr;gap:56px;align-items:flex-end;
 }
 .hero-title{
-  font-size:clamp(52px,7.6vw,120px);font-weight:600;line-height:1.02;letter-spacing:-.04em;
-  color:#fff;
-  /* prevent vertical clipping on Thai + descenders */
-  padding:0.08em 0 0.15em;
+  color:#fff;line-height:1;letter-spacing:-.04em;
+  padding:0.06em 0 0.18em;
+  display:flex;flex-direction:column;gap:0;
+}
+.hero-title .l-th1{
+  /* dominant — ทุกที่ */
+  font-size:clamp(88px,13vw,220px);font-weight:600;letter-spacing:-.05em;
+  line-height:.95;
+}
+.hero-title .l-th2{
+  /* secondary — ในสตูดิโอของเรา */
+  font-size:clamp(36px,5.2vw,84px);font-weight:400;letter-spacing:-.02em;
+  line-height:1.05;margin-top:.02em;
 }
 .hero-title .l-en{
-  display:block;font-size:.38em;font-weight:400;letter-spacing:.18em;text-transform:uppercase;
-  color:rgba(255,255,255,.6);margin-bottom:20px;
+  /* tertiary — caps label */
+  font-size:clamp(11px,0.92vw,14px);font-weight:500;letter-spacing:.32em;text-transform:uppercase;
+  color:rgba(255,255,255,.58);margin-top:28px;
+  padding-left:.08em;
 }
-.hero-title em{font-style:normal;font-weight:300;color:rgba(255,255,255,.7)}
+.hero-title em{font-style:normal;font-weight:300;color:rgba(255,255,255,.82)}
+
+/* ─── SHIMMER on hero Thai type ─── */
+.hero-title .shine{
+  display:inline-block;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(255,255,255,.85) 0%,
+      rgba(255,255,255,.85) 35%,
+      rgba(255,255,255,1) 48%,
+      rgba(255,255,255,.85) 62%,
+      rgba(255,255,255,.85) 100%
+    );
+  background-size:220% 100%;
+  background-position:120% 0;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  animation:hero-shine 7s var(--e-inout) 1.2s infinite;
+}
+.hero-title .l-th2 .shine{
+  animation-delay:1.8s;animation-duration:7.4s;
+}
+@keyframes hero-shine{
+  0%   { background-position:120% 0; }
+  35%  { background-position:-20% 0; }
+  100% { background-position:-20% 0; }
+}
+@media (prefers-reduced-motion: reduce){
+  .hero-title .shine{animation:none;-webkit-text-fill-color:#fff;color:#fff}
+}
 .hero-right{
   padding-bottom:12px;display:flex;flex-direction:column;gap:26px;
 }
@@ -392,13 +433,15 @@ nav.scrolled{
 .show-bottom{transform:translateY(8px);transition:transform .6s var(--e-out)}
 .show:hover .show-bottom{transform:translateY(0)}
 .show-logo-wrap{
-  /* ensure logo never touches edges — sits above the text line */
-  margin-bottom:18px;
-  min-height:44px;max-height:56px;
-  display:flex;align-items:flex-end;
+  /* fixed box — logo scales to fit entirely inside, never crops */
+  margin-bottom:14px;
+  height:42px;width:100%;
+  display:flex;align-items:flex-end;justify-content:flex-start;
+  overflow:visible;
 }
 .show-logo{
-  max-height:56px;max-width:70%;width:auto;height:auto;object-fit:contain;
+  max-height:100%;max-width:55%;width:auto;height:auto;
+  object-fit:contain;object-position:left bottom;
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
   display:block;
 }
@@ -447,8 +490,9 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   .hero-body{grid-template-columns:1fr;padding:0 18px 80px;gap:28px}
   .hero-right{padding-bottom:0;gap:20px}
   .hero-sub{font-size:14px}
-  .hero-title{font-size:clamp(42px,11.5vw,72px)}
-  .hero-title .l-en{font-size:.34em;margin-bottom:14px}
+  .hero-title .l-th1{font-size:clamp(60px,18vw,120px);letter-spacing:-.04em}
+  .hero-title .l-th2{font-size:clamp(24px,6.8vw,40px);margin-top:.04em}
+  .hero-title .l-en{font-size:11px;letter-spacing:.26em;margin-top:18px}
   .hero-foot{left:18px;right:18px;bottom:22px;font-size:10px}
   .btn{padding:13px 20px;font-size:12.5px}
 
@@ -479,8 +523,8 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   .shows-grid{grid-template-columns:1fr 1fr;gap:6px}
   .show{aspect-ratio:4/5}
   .show-body{padding:18px}
-  .show-logo-wrap{min-height:36px;max-height:44px;margin-bottom:12px}
-  .show-logo{max-height:44px;max-width:72%}
+  .show-logo-wrap{height:34px;margin-bottom:10px}
+  .show-logo{max-width:60%}
 
   #cta{padding:100px 18px}
   .cta-title{font-size:clamp(34px,9vw,56px)}
@@ -488,7 +532,8 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
 }
 
 @media(max-width:520px){
-  .hero-title{font-size:clamp(40px,12vw,56px)}
+  .hero-title .l-th1{font-size:clamp(54px,19vw,92px)}
+  .hero-title .l-th2{font-size:clamp(20px,7vw,32px)}
   .strip{grid-template-columns:repeat(4,1fr)}
   .cell.c-wide{grid-column:span 4}
   .cell.c-thin{grid-column:span 2}
@@ -554,9 +599,9 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   <div class="hero-scrim"></div>
   <div class="hero-body">
     <h1 class="hero-title">
+      <span class="l-th1 lines"><span class="shine">ทุกที่</span></span>
+      <span class="l-th2 lines"><span class="shine"><em>ในสตูดิโอของเรา</em></span></span>
       <span class="l-en lines"><span>Everywhere at our studio</span></span>
-      <span class="lines"><span>ทุกที่</span></span>
-      <span class="lines"><span><em>ในสตูดิโอของเรา</em></span></span>
     </h1>
     <div class="hero-right">
       <p class="hero-sub rise">Virtual Production Library ของ THE STANDARD — คลังฉากเสมือนจริงที่ทีม production หยิบไปใช้ได้ทันที ตั้งแต่ข่าว สัมภาษณ์ ไปจนถึงคอนเทนต์สั้น</p>
