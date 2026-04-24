@@ -979,4 +979,16 @@ async function init(){
   const showList  = showsRes.data  || [];
 
   buildHero(sceneList);
-  buildMarquee(sc
+  buildMarquee(sceneList);
+  buildStrip(sceneList);
+  setupNumbers(sceneList, showList);
+  buildShows(sceneList, showList);
+  setupCTA(sceneList);
+
+  if (!sceneList.length) console.warn('No presenter-image scenes.');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
