@@ -672,22 +672,19 @@ const escapeHtml = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const hasPresenter = s => !!(s.presenter_image_url && s.presenter_image_url.startsWith('http'));
 
 /* World → accent color for premium rim/glow */
-const WORLD_COLOR = {
-  'industrial':   '#F59E0B',
-  'commercial-retail':'#EC4899',
-  'urban-city':   '#3B82F6',
-  'scifi-future': '#8B5CF6',
-  'heritage-culture':'#F97316',
-  'interior-office':'#14B8A6',
-  'nature-outdoor':'#10B981',
-  'studio':       '#EAB308',
-  'abstract':     '#6366F1',
+const WORLD_COLOR_DEFAULT = {
+  'industrial':'#F59E0B','commercial-retail':'#EC4899','urban-city':'#3B82F6',
+  'scifi-future':'#8B5CF6','heritage-culture':'#F97316','interior-office':'#14B8A6',
+  'nature-outdoor':'#10B981','studio':'#EAB308','abstract':'#6366F1',
 };
-const worldColor = w => WORLD_COLOR[w] || '#E50914';
-const worldLabel = w => ({
-  'industrial':'Industrial','commercial-retail':'Commercial','urban-city':'Urban','scifi-future':'Sci-Fi',
-  'heritage-culture':'Heritage','interior-office':'Interior','nature-outdoor':'Nature','studio':'Studio','abstract':'Abstract'
-}[w] || (w||'Scene').replace(/-/g,' '));
+const worldColor = w => (window._WORLD_COLOR && window._WORLD_COLOR[w]) || WORLD_COLOR_DEFAULT[w] || '#E50914';
+const worldLabel = w => {
+  if (window._WORLD_MAP && window._WORLD_MAP[w]) return window._WORLD_MAP[w];
+  const def = {'industrial':'Industrial','commercial-retail':'Commercial','urban-city':'Urban',
+    'scifi-future':'Sci-Fi','heritage-culture':'Heritage','interior-office':'Interior',
+    'nature-outdoor':'Nature','studio':'Studio','abstract':'Abstract'};
+  return def[w] || (w||'Scene').replace(/-/g,' ');
+};
 
 /* hex → rgba */
 function hexToRgba(hex, a){
@@ -916,8 +913,22 @@ function setupMobileMenu(){
   menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.remove('open')));
 }
 
+
+/* ── Dynamic World Loader ── */
+async function loadWorldsFromDB(sb){
+  try {
+    const { data } = await sb.from('worlds').select('id,label_en,label_short,emoji,color').eq('active',true).order('sort_order');
+    if (!data||!data.length) return;
+    window._WORLD_MAP={};window._WORLD_COLOR={};
+    data.forEach(w=>{
+      window._WORLD_MAP[w.id]   = (w.emoji?w.emoji+' ':'')+(w.label_short||w.label_en);
+      window._WORLD_COLOR[w.id] = w.color||'#E50914';
+    });
+  } catch(e){ console.warn('[landing] worlds load failed',e); }
+}
 /* ─── INIT ─────────────── */
 async function init(){
+  await loadWorldsFromDB(sb);
   setupLenis();
   setupNavScroll();
   setupMobileMenu();

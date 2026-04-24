@@ -402,6 +402,7 @@
         <button id="tabUsers" onclick="switchAdminTab('users')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">👥 ผู้ใช้</button>
         <button id="tabEquipment" onclick="switchAdminTab('equipment')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">💡 อุปกรณ์</button>
         <button id="tabActivity" onclick="switchAdminTab('activity')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">📁 Files Manager</button>
+        <button id="tabWorlds" onclick="switchAdminTab('worlds')" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:#fff;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">🌍 Worlds</button>
       </div>
 
       <!-- Scenes panel -->
@@ -452,6 +453,15 @@
           <button class="add-scene-btn" onclick="openCollectionEditor(null)">+ สร้าง</button>
         </div>
         <div id="sidebarCollectionsList" style="padding:8px 14px;font-size:12px;color:var(--muted);">กำลังโหลด…</div>
+      </div>
+
+      <div id="sidebarWorlds" class="hidden">
+        <div class="sidebar-header">
+          <div class="sidebar-title">🌍 Worlds</div>
+          <button class="add-scene-btn" onclick="openWorldForm(null)">+ เพิ่ม</button>
+        </div>
+        <div style="padding:8px 10px;font-size:11px;color:var(--muted)">L1 WORLD — ฉากอยู่ที่ไหน<br>รองรับ 2 ชั้น: World → Sub-world</div>
+        <div id="sidebarWorldsCount" style="padding:4px 10px 8px;font-size:12px;color:var(--muted)"></div>
       </div>
 
       <div id="sidebarEquipment" class="hidden">
@@ -702,6 +712,80 @@
         </div>
       </div>
     <!-- Equipment management panel -->
+
+    <!-- ═══ WORLDS PANEL ═══ -->
+    <div id="worldsPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
+      <div style="padding:28px;max-width:960px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:18px;font-weight:700;">🌍 จัดการ Worlds</div>
+          <button class="btn-primary" style="font-size:13px" onclick="openWorldForm(null)">+ เพิ่ม World ใหม่</button>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">
+          <span style="background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px">L1</span>
+          WORLD = ฉากอยู่ที่ไหน — รองรับ 2 ชั้น: Parent World → Sub-world<br>
+          <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">⚠️ การแก้ไข id ที่ผูกกับฉากอยู่แล้ว ต้อง update ฉากด้วยตนเอง</span>
+        </div>
+        <div id="worldsTable"></div>
+      </div>
+    </div>
+
+    <!-- World Form Modal -->
+    <div id="worldFormModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9100;display:none;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:14px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px" id="worldFormTitle">+ เพิ่ม World ใหม่</div>
+        <form id="worldForm" onsubmit="return false">
+          <input type="hidden" id="wf_original_id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">ID (slug) *</label>
+              <input id="wf_id" placeholder="เช่น industrial-factory" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none" required>
+              <div style="font-size:10px;color:#888;margin-top:3px">lowercase, คั่นด้วย - เท่านั้น</div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Emoji</label>
+              <input id="wf_emoji" placeholder="🏭" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:18px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label EN *</label>
+              <input id="wf_label_en" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none" required>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label Short (ใช้ใน tag)</label>
+              <input id="wf_label_short" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label ไทย</label>
+            <input id="wf_label_th" placeholder="อุตสาหกรรม" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Accent Color</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="color" id="wf_color_picker" value="#F59E0B" style="width:44px;height:36px;border:1.5px solid #E5E7EB;border-radius:8px;padding:2px;cursor:pointer">
+                <input id="wf_color" value="#F59E0B" placeholder="#F59E0B" style="flex:1;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Sort Order</label>
+              <input type="number" id="wf_sort_order" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Parent World (ถ้าเป็น Sub-world)</label>
+            <select id="wf_parent_id" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+              <option value="">— ไม่มี (Top-level World) —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" onclick="closeWorldForm()" style="padding:10px 20px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit">ยกเลิก</button>
+            <button type="button" onclick="submitWorldForm()" id="worldFormSubmit" style="padding:10px 20px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <div id="equipmentPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
       <div style="padding:28px;max-width:900px;">
         <div style="font-size:18px;font-weight:700;margin-bottom:4px;">💡 จัดการอุปกรณ์ไฟ</div>
@@ -3064,14 +3148,14 @@ let adminTab = 'scenes';
 function switchAdminTab(tab) {
   adminTab = tab;
   // sidebar panels
-  const sidebarMap = { scenes:'sidebarScenes', shows:'sidebarShows', users:'sidebarUsers', activity:'sidebarActivity', collections:'sidebarCollections', equipment:'sidebarEquipment' };
+  const sidebarMap = { scenes:'sidebarScenes', shows:'sidebarShows', users:'sidebarUsers', activity:'sidebarActivity', collections:'sidebarCollections', equipment:'sidebarEquipment', worlds:'sidebarWorlds' };
   Object.entries(sidebarMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
   // main panels
-  const mainMap = { scenes:'editorArea', shows:'showsPanel', users:'usersPanel', activity:'activityPanel', collections:'collectionsPanel', equipment:'equipmentPanel' };
+  const mainMap = { scenes:'editorArea', shows:'showsPanel', users:'usersPanel', activity:'activityPanel', collections:'collectionsPanel', equipment:'equipmentPanel', worlds:'worldsPanel' };
   Object.entries(mainMap).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('hidden', t !== tab));
 
   // Tab button styles
-  ['scenes','shows','collections','users','activity','equipment'].forEach(t => {
+  ['scenes','shows','collections','users','activity','equipment','worlds'].forEach(t => {
     const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (!el) return;
     const active = t === tab;
@@ -3084,6 +3168,7 @@ function switchAdminTab(tab) {
   if (tab === 'shows')       renderShowsPanel();
   if (tab === 'collections') renderAdminCollections();
   if (tab === 'equipment')   renderEquipmentPanel();
+  if (tab === 'worlds')      renderWorldsPanel();
 }
 
 // ══════════════════════════════════════════════
@@ -5490,6 +5575,149 @@ function toggleSidebar() {
   const now = sidebar.classList.toggle('collapsed');
   if (btn) btn.textContent = now ? '▶' : '◀';
   localStorage.setItem('vp_admin_sidebar_collapsed', now ? '1' : '0');
+}
+
+
+// ══════════════════════════════════════════════
+// WORLDS MANAGEMENT
+// ══════════════════════════════════════════════
+let ADMIN_WORLDS = [];
+
+async function _loadAdminWorlds() {
+  if (!window._supaClient) return [];
+  const { data } = await window._supaClient.from('worlds').select('*').order('sort_order');
+  return data || [];
+}
+
+async function renderWorldsPanel() {
+  ADMIN_WORLDS = await _loadAdminWorlds();
+  const el = document.getElementById('worldsTable');
+  const countEl = document.getElementById('sidebarWorldsCount');
+  if (countEl) countEl.textContent = ADMIN_WORLDS.length + ' worlds';
+  if (!el) return;
+  if (!ADMIN_WORLDS.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:#999;font-size:13px">ยังไม่มี worlds ใน database — กด Run SQL ใน worlds_migration.sql ก่อนครับ</div>';
+    return;
+  }
+  const parents = ADMIN_WORLDS.filter(w => !w.parent_id);
+  const children = ADMIN_WORLDS.filter(w => w.parent_id);
+
+  const row = (w, isChild) => {
+    const indent = isChild ? 'padding-left:28px;' : '';
+    const prefix = isChild ? '<span style="color:#ccc;margin-right:6px">└</span>' : '';
+    const sceneCount = (window.SCENES||[]).filter(s => s.world === w.id).length;
+    return `<tr style="border-bottom:1px solid #f3f4f6;${isChild?'background:#fafafa':''}">
+      <td style="padding:10px 12px;${indent}font-size:13px;font-weight:600">${prefix}<span style="font-size:18px;margin-right:8px">${w.emoji||''}</span>${w.label_en}</td>
+      <td style="padding:10px 12px;font-size:12px;color:#666">${w.label_th||'—'}</td>
+      <td style="padding:10px 12px;font-size:11px;font-family:monospace;color:#888">${w.id}</td>
+      <td style="padding:10px 12px"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${w.color||'#ccc'};vertical-align:middle;margin-right:6px"></span><span style="font-size:11px;color:#888">${w.color||''}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:#888">${sceneCount} ฉาก</td>
+      <td style="padding:10px 12px;text-align:right">
+        <button onclick="openWorldForm(${JSON.stringify(w).replace(/"/g,'&quot;')})" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;margin-right:6px;font-family:inherit">✏️ แก้ไข</button>
+        <button onclick="deleteWorld('${w.id}','${w.label_en}')" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #FECACA;border-radius:6px;background:#FFF5F5;color:#DC2626;cursor:pointer;font-family:inherit">🗑 ลบ</button>
+      </td>
+    </tr>`;
+  };
+
+  let rows = '';
+  parents.forEach(p => {
+    rows += row(p, false);
+    children.filter(c => c.parent_id === p.id).forEach(c => { rows += row(c, true); });
+  });
+  // orphan sub-worlds (parent not in list)
+  children.filter(c => !parents.find(p => p.id === c.parent_id)).forEach(c => { rows += row(c, true); });
+
+  el.innerHTML = `
+    <div style="overflow-x:auto;border:1px solid #E5E7EB;border-radius:10px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#F9FAFB;border-bottom:2px solid #E5E7EB">
+          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">World</th>
+          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ชื่อไทย</th>
+          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ID (slug)</th>
+          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">Color</th>
+          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ฉาก</th>
+          <th style="padding:10px 12px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function openWorldForm(w) {
+  const modal = document.getElementById('worldFormModal');
+  if (!modal) return;
+  // populate parent dropdown
+  const sel = document.getElementById('wf_parent_id');
+  sel.innerHTML = '<option value="">— ไม่มี (Top-level World) —</option>';
+  ADMIN_WORLDS.filter(x => !x.parent_id).forEach(x => {
+    const opt = document.createElement('option');
+    opt.value = x.id; opt.textContent = x.emoji + ' ' + x.label_en;
+    if (w && w.parent_id === x.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (w) {
+    document.getElementById('worldFormTitle').textContent = '✏️ แก้ไข World: ' + w.label_en;
+    document.getElementById('wf_original_id').value = w.id;
+    document.getElementById('wf_id').value = w.id;
+    document.getElementById('wf_id').readOnly = true;
+    document.getElementById('wf_emoji').value = w.emoji || '';
+    document.getElementById('wf_label_en').value = w.label_en || '';
+    document.getElementById('wf_label_short').value = w.label_short || '';
+    document.getElementById('wf_label_th').value = w.label_th || '';
+    document.getElementById('wf_color').value = w.color || '#E50914';
+    document.getElementById('wf_color_picker').value = w.color || '#E50914';
+    document.getElementById('wf_sort_order').value = w.sort_order || 0;
+  } else {
+    document.getElementById('worldFormTitle').textContent = '+ เพิ่ม World ใหม่';
+    document.getElementById('wf_original_id').value = '';
+    document.getElementById('wf_id').value = '';
+    document.getElementById('wf_id').readOnly = false;
+    document.getElementById('wf_emoji').value = '';
+    document.getElementById('wf_label_en').value = '';
+    document.getElementById('wf_label_short').value = '';
+    document.getElementById('wf_label_th').value = '';
+    document.getElementById('wf_color').value = '#E50914';
+    document.getElementById('wf_color_picker').value = '#E50914';
+    document.getElementById('wf_sort_order').value = (Math.max(0, ...ADMIN_WORLDS.map(x=>x.sort_order)) + 10);
+  }
+  // sync color picker ↔ text
+  document.getElementById('wf_color_picker').oninput = e => document.getElementById('wf_color').value = e.target.value;
+  document.getElementById('wf_color').oninput = e => { if(/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('wf_color_picker').value = e.target.value; };
+  modal.style.display = 'flex';
+}
+function closeWorldForm() { document.getElementById('worldFormModal').style.display = 'none'; }
+
+async function submitWorldForm() {
+  const id = document.getElementById('wf_id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
+  const label_en = document.getElementById('wf_label_en').value.trim();
+  if (!id || !label_en) { alert('กรุณากรอก ID และ Label EN'); return; }
+  const payload = {
+    id,
+    label_en,
+    label_short: document.getElementById('wf_label_short').value.trim() || label_en,
+    label_th:    document.getElementById('wf_label_th').value.trim(),
+    emoji:       document.getElementById('wf_emoji').value.trim(),
+    color:       document.getElementById('wf_color').value.trim() || '#E50914',
+    parent_id:   document.getElementById('wf_parent_id').value || null,
+    sort_order:  parseInt(document.getElementById('wf_sort_order').value) || 0,
+    active:      true,
+  };
+  const btn = document.getElementById('worldFormSubmit');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  const { error } = await window._supaClient.from('worlds').upsert(payload, { onConflict: 'id' });
+  btn.disabled = false; btn.textContent = 'บันทึก';
+  if (error) { alert('Error: ' + error.message); return; }
+  showToast('✅ บันทึก World "' + label_en + '" แล้ว', 'green');
+  closeWorldForm();
+  renderWorldsPanel();
+}
+
+async function deleteWorld(id, label) {
+  if (!confirm('ลบ World "' + label + '" (' + id + ')? \n\nฉากที่ใช้ world นี้อยู่จะมี world field เป็นค่าเดิม (ไม่ถูกลบ)')) return;
+  const { error } = await window._supaClient.from('worlds').delete().eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  showToast('🗑 ลบ World "' + label + '" แล้ว', 'red');
+  renderWorldsPanel();
 }
 
 </script>
