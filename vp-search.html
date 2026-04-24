@@ -81,7 +81,7 @@
   }
   [data-theme="dark"] {
     --dark:#DDE4F0; --bg:#07080E; --card:#0C0D15;
-    --border:rgba(255,255,255,0.09); --muted:#5A6B8A;
+    --border:rgba(255,255,255,0.09); --muted:#8A9BBF;
     --nav-bg:#09090F; --nav-border:rgba(255,255,255,0.06);
     --input-bg:#0C0D15; --tag-bg:#10111A;
     color-scheme: dark;
@@ -1039,8 +1039,8 @@
   color: rgba(220,230,255,0.85);
   font-size: 13px; font-weight: 600; letter-spacing: 0.01em; line-height: 1.45;
 }
-[data-theme="dark"] .scene-title-th,
-[data-theme="dim"] .scene-title-th { color: #2A3450; font-size: 11px; }
+[data-theme="dark"] .scene-title-th { color: var(--muted); font-size: 11px; }
+[data-theme="dim"] .scene-title-th { color: var(--muted); font-size: 11px; }
 
 /* Card tags */
 [data-theme="dark"] .stag,
@@ -1059,7 +1059,7 @@
 /* Meta pills */
 [data-theme="dark"] .meta-pill,
 [data-theme="dim"] .meta-pill {
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: #2A3450; border-radius: 3px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: var(--muted); border-radius: 3px;
 }
 [data-theme="dark"] .notes-box,
 [data-theme="dim"] .notes-box {
@@ -5121,8 +5121,4 @@ function resetFalseColor(ctx) {
   if (canvasEl) { canvasEl.classList.remove('active'); }
   if (btnEl)    { btnEl.classList.remove('active'); }
   if (iconEl)   { iconEl.textContent = '⬛'; }
-  if (legendEl) { legendEl.classList.remove('show'); }
-}
-</script>
-</body>
-</html>
+  if (legendEl) { legendEl.class
