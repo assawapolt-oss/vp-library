@@ -5591,19 +5591,20 @@ async function renderWorldsPanel() {
 }
 
 function openWorldForm(w) {
-  const modal = document.getElementById('worldFormModal');
-  if (!modal) return;
+  const overlay = document.getElementById('worldModalOverlay');
+  if (!overlay) return;
   // populate parent dropdown
   const sel = document.getElementById('wf_parent_id');
   sel.innerHTML = '<option value="">— ไม่มี (Top-level World) —</option>';
   ADMIN_WORLDS.filter(x => !x.parent_id).forEach(x => {
     const opt = document.createElement('option');
-    opt.value = x.id; opt.textContent = x.emoji + ' ' + x.label_en;
+    opt.value = x.id; opt.textContent = (x.emoji||'') + ' ' + x.label_en;
     if (w && w.parent_id === x.id) opt.selected = true;
     sel.appendChild(opt);
   });
+  const delBtn = document.getElementById('wf_delete_btn');
   if (w) {
-    document.getElementById('worldFormTitle').textContent = '✏️ แก้ไข World: ' + w.label_en;
+    document.getElementById('worldFormTitle').textContent = '✏️ แก้ไข: ' + w.label_en;
     document.getElementById('wf_original_id').value = w.id;
     document.getElementById('wf_id').value = w.id;
     document.getElementById('wf_id').readOnly = true;
@@ -5614,8 +5615,9 @@ function openWorldForm(w) {
     document.getElementById('wf_color').value = w.color || '#E50914';
     document.getElementById('wf_color_picker').value = w.color || '#E50914';
     document.getElementById('wf_sort_order').value = w.sort_order || 0;
+    if (delBtn) delBtn.style.display = 'inline-flex';
   } else {
-    document.getElementById('worldFormTitle').textContent = '+ เพิ่ม World ใหม่';
+    document.getElementById('worldFormTitle').textContent = '🌍 เพิ่ม World ใหม่';
     document.getElementById('wf_original_id').value = '';
     document.getElementById('wf_id').value = '';
     document.getElementById('wf_id').readOnly = false;
@@ -5625,14 +5627,22 @@ function openWorldForm(w) {
     document.getElementById('wf_label_th').value = '';
     document.getElementById('wf_color').value = '#E50914';
     document.getElementById('wf_color_picker').value = '#E50914';
-    document.getElementById('wf_sort_order').value = (Math.max(0, ...ADMIN_WORLDS.map(x=>x.sort_order)) + 10);
+    document.getElementById('wf_sort_order').value = (ADMIN_WORLDS.length ? Math.max(...ADMIN_WORLDS.map(x=>+x.sort_order||0)) + 10 : 10);
+    if (delBtn) delBtn.style.display = 'none';
   }
-  // sync color picker ↔ text
   document.getElementById('wf_color_picker').oninput = e => document.getElementById('wf_color').value = e.target.value;
   document.getElementById('wf_color').oninput = e => { if(/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('wf_color_picker').value = e.target.value; };
-  modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
+  overlay.classList.add('open');
 }
-function closeWorldForm() { document.getElementById('worldFormModal').style.display = 'none'; }
+function closeWorldForm() {
+  const overlay = document.getElementById('worldModalOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+function deleteWorldCurrent() {
+  const id = document.getElementById('wf_original_id').value;
+  const label = document.getElementById('wf_label_en').value;
+  if (id) deleteWorld(id, label);
+}
 
 async function submitWorldForm() {
   const id = document.getElementById('wf_id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
@@ -5669,58 +5679,59 @@ async function deleteWorld(id, label) {
 
 </script>
 
-<!-- ── World Form Modal (direct child of body, always in DOM) ── -->
-<div id="worldFormModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:14px;padding:28px;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.4)">
-    <div style="font-size:16px;font-weight:700;margin-bottom:20px" id="worldFormTitle">+ เพิ่ม World ใหม่</div>
+<!-- ── World Form Modal ── -->
+<div class="new-modal-overlay" id="worldModalOverlay" onclick="if(event.target===this)closeWorldForm()">
+  <div class="new-modal" style="max-width:540px;max-height:88vh;overflow-y:auto">
+    <div class="new-modal-title" id="worldFormTitle">🌍 เพิ่ม World ใหม่</div>
     <input type="hidden" id="wf_original_id">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">ID (slug) *</label>
-        <input id="wf_id" placeholder="เช่น industrial-factory" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:10px;margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">ID (slug) *</label>
+        <input class="form-input" id="wf_id" placeholder="เช่น industrial-factory">
         <div style="font-size:10px;color:#aaa;margin-top:3px">lowercase คั่นด้วย - เท่านั้น</div>
       </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Emoji</label>
-        <input id="wf_emoji" placeholder="🏭" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:18px;font-family:inherit;outline:none;box-sizing:border-box">
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <input class="form-input" id="wf_emoji" placeholder="🏭" style="font-size:18px;text-align:center">
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label EN *</label>
-        <input id="wf_label_en" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">Label EN *</label>
+        <input class="form-input" id="wf_label_en" placeholder="Industrial">
       </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label Short (tag)</label>
-        <input id="wf_label_short" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      <div class="form-group">
+        <label class="form-label">Label Short (ใช้ใน tag)</label>
+        <input class="form-input" id="wf_label_short" placeholder="Industrial">
       </div>
     </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label ไทย</label>
-      <input id="wf_label_th" placeholder="อุตสาหกรรม" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Label ไทย</label>
+      <input class="form-input" id="wf_label_th" placeholder="อุตสาหกรรม">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Accent Color</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">Accent Color</label>
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="wf_color_picker" value="#F59E0B" style="width:44px;height:36px;border:1.5px solid #E5E7EB;border-radius:8px;padding:2px;cursor:pointer;flex-shrink:0">
-          <input id="wf_color" value="#F59E0B" placeholder="#F59E0B" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+          <input type="color" id="wf_color_picker" value="#F59E0B" style="width:40px;height:36px;border:1.5px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;flex-shrink:0">
+          <input class="form-input" id="wf_color" value="#F59E0B" placeholder="#F59E0B">
         </div>
       </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Sort Order</label>
-        <input type="number" id="wf_sort_order" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      <div class="form-group">
+        <label class="form-label">Sort Order</label>
+        <input class="form-input" type="number" id="wf_sort_order" value="10">
       </div>
     </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Parent World (ถ้าเป็น Sub-world)</label>
-      <select id="wf_parent_id" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box">
+    <div class="form-group" style="margin-bottom:20px">
+      <label class="form-label">Parent World (ถ้าเป็น Sub-world)</label>
+      <select class="form-input" id="wf_parent_id" style="background:#fff">
         <option value="">— ไม่มี (Top-level World) —</option>
       </select>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button onclick="closeWorldForm()" style="padding:10px 20px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit">ยกเลิก</button>
-      <button onclick="submitWorldForm()" id="worldFormSubmit" style="padding:10px 20px;background:#CC2229;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">บันทึก</button>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+      <button id="wf_delete_btn" class="btn-delete" onclick="deleteWorldCurrent()" style="display:none;margin-right:auto">🗑 ลบ</button>
+      <button class="btn-secondary" onclick="closeWorldForm()">ยกเลิก</button>
+      <button class="btn-primary" id="worldFormSubmit" onclick="submitWorldForm()">บันทึก</button>
     </div>
   </div>
 </div>
