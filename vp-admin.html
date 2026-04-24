@@ -5596,25 +5596,33 @@ async function renderWorldsPanel() {
   if (countEl) countEl.textContent = ADMIN_WORLDS.length + ' worlds';
   if (!el) return;
   if (!ADMIN_WORLDS.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:#999;font-size:13px">ยังไม่มี worlds ใน database — กด Run SQL ใน worlds_migration.sql ก่อนครับ</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:#999;font-size:13px">ยังไม่มี worlds — รัน worlds_migration.sql ใน Supabase ก่อนครับ</div>';
     return;
   }
-  const parents = ADMIN_WORLDS.filter(w => !w.parent_id);
-  const children = ADMIN_WORLDS.filter(w => w.parent_id);
+  // Store worlds in a lookup map (avoid JSON in onclick)
+  window._WM = {};
+  ADMIN_WORLDS.forEach(w => { window._WM[w.id] = w; });
+
+  const parents  = ADMIN_WORLDS.filter(w => !w.parent_id);
+  const children = ADMIN_WORLDS.filter(w =>  w.parent_id);
 
   const row = (w, isChild) => {
-    const indent = isChild ? 'padding-left:28px;' : '';
-    const prefix = isChild ? '<span style="color:#ccc;margin-right:6px">└</span>' : '';
-    const sceneCount = (window.SCENES||[]).filter(s => s.world === w.id).length;
+    const esc = s => String(s||'').replace(/'/g,"&#39;").replace(/"/g,'&quot;');
+    const clr = w.color || '#ccc';
     return `<tr style="border-bottom:1px solid #f3f4f6;${isChild?'background:#fafafa':''}">
-      <td style="padding:10px 12px;${indent}font-size:13px;font-weight:600">${prefix}<span style="font-size:18px;margin-right:8px">${w.emoji||''}</span>${w.label_en}</td>
-      <td style="padding:10px 12px;font-size:12px;color:#666">${w.label_th||'—'}</td>
-      <td style="padding:10px 12px;font-size:11px;font-family:monospace;color:#888">${w.id}</td>
-      <td style="padding:10px 12px"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${w.color||'#ccc'};vertical-align:middle;margin-right:6px"></span><span style="font-size:11px;color:#888">${w.color||''}</span></td>
-      <td style="padding:10px 12px;font-size:12px;color:#888">${sceneCount} ฉาก</td>
-      <td style="padding:10px 12px;text-align:right">
-        <button onclick="openWorldForm(${JSON.stringify(w).replace(/"/g,'&quot;')})" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;margin-right:6px;font-family:inherit">✏️ แก้ไข</button>
-        <button onclick="deleteWorld('${w.id}','${w.label_en}')" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #FECACA;border-radius:6px;background:#FFF5F5;color:#DC2626;cursor:pointer;font-family:inherit">🗑 ลบ</button>
+      <td style="padding:10px 12px;${isChild?'padding-left:28px;':''}font-size:13px;font-weight:600">
+        ${isChild?'<span style="color:#ccc;margin-right:6px">└</span>':''}
+        <span style="font-size:16px;margin-right:6px">${esc(w.emoji)}</span>${esc(w.label_en)}
+      </td>
+      <td style="padding:10px 12px;font-size:12px;color:#666">${esc(w.label_th)||'—'}</td>
+      <td style="padding:10px 12px;font-size:11px;font-family:monospace;color:#888">${esc(w.id)}</td>
+      <td style="padding:10px 12px">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${clr};vertical-align:middle;margin-right:6px;border:1px solid #ddd"></span>
+        <span style="font-size:11px;color:#888">${clr}</span>
+      </td>
+      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+        <button onclick="openWorldForm(window._WM['${esc(w.id)}'])" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #E5E7EB;border-radius:6px;background:#fff;cursor:pointer;margin-right:6px;font-family:inherit">✏️ แก้ไข</button>
+        <button onclick="deleteWorld('${esc(w.id)}','${esc(w.label_en)}')" style="padding:5px 12px;font-size:11px;font-weight:700;border:1.5px solid #FECACA;border-radius:6px;background:#FFF5F5;color:#DC2626;cursor:pointer;font-family:inherit">🗑 ลบ</button>
       </td>
     </tr>`;
   };
@@ -5624,23 +5632,19 @@ async function renderWorldsPanel() {
     rows += row(p, false);
     children.filter(c => c.parent_id === p.id).forEach(c => { rows += row(c, true); });
   });
-  // orphan sub-worlds (parent not in list)
   children.filter(c => !parents.find(p => p.id === c.parent_id)).forEach(c => { rows += row(c, true); });
 
-  el.innerHTML = `
-    <div style="overflow-x:auto;border:1px solid #E5E7EB;border-radius:10px;">
-      <table style="width:100%;border-collapse:collapse;">
-        <thead><tr style="background:#F9FAFB;border-bottom:2px solid #E5E7EB">
-          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">World</th>
-          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ชื่อไทย</th>
-          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ID (slug)</th>
-          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">Color</th>
-          <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ฉาก</th>
-          <th style="padding:10px 12px"></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  el.innerHTML = `<div style="overflow-x:auto;border:1px solid #E5E7EB;border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#F9FAFB;border-bottom:2px solid #E5E7EB">
+        <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">World</th>
+        <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ชื่อไทย</th>
+        <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">ID (slug)</th>
+        <th style="padding:10px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.06em;color:#888">Color</th>
+        <th style="padding:10px 12px"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
 }
 
 function openWorldForm(w) {
