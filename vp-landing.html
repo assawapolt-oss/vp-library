@@ -265,23 +265,6 @@ nav.scrolled{
 @keyframes pulseLine{0%,100%{opacity:.4}50%{opacity:1}}
 .hero-counter{font-variant-numeric:tabular-nums}
 
-/* ─── MARQUEE ─────────────────────── */
-#marquee{
-  padding:30px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  overflow:hidden;background:var(--bg);
-}
-.mq-track{
-  display:flex;gap:48px;align-items:center;
-  animation:mq 120s linear infinite;width:max-content;
-}
-.mq-track:hover{animation-play-state:paused}
-@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.mq-item{
-  font-size:clamp(20px,2vw,30px);font-weight:500;letter-spacing:-.01em;color:var(--muted);
-  white-space:nowrap;display:flex;align-items:center;gap:48px;
-}
-.mq-item::after{content:'';width:6px;height:6px;background:var(--red);border-radius:50%}
-
 /* ─── SECTION ─────────────── */
 .section{padding:140px 28px;position:relative}
 .section-inner{max-width:1520px;margin:0 auto}
@@ -499,8 +482,6 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   .hero-foot{left:18px;right:18px;bottom:22px;font-size:10px}
   .btn{padding:13px 20px;font-size:12.5px}
 
-  #marquee{padding:22px 0}
-  .mq-item{font-size:17px;gap:32px}
 
   .section{padding:88px 18px}
   .sec-head{grid-template-columns:1fr;gap:18px;margin-bottom:36px}
@@ -620,10 +601,6 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   </div>
 </section>
 
-<!-- MARQUEE -->
-<section id="marquee">
-  <div class="mq-track" id="mq-track"></div>
-</section>
 
 <!-- STRIP -->
 <section id="strip-sec" class="section">
@@ -777,15 +754,6 @@ function buildHero(scenes){
   setTimeout(() => {
     document.querySelectorAll('.hero-title .rise,.hero-sub,.hero-actions').forEach((el,i) => setTimeout(()=>el.classList.add('in'), i*120));
   }, 450);
-}
-
-/* ─── MARQUEE ─────────────── */
-function buildMarquee(scenes){
-  const track = document.getElementById('mq-track');
-  const titles = scenes.map(s => s.title || s.id).filter(Boolean);
-  if (!titles.length) return;
-  const items = shuffle(titles).slice(0, 12);
-  track.innerHTML = [...items, ...items].map(t => `<div class="mq-item">${escapeHtml(t)}</div>`).join('');
 }
 
 /* ─── STRIP GRID ─────────────── */
@@ -971,7 +939,6 @@ async function init(){
   const showList  = showsRes.data  || [];
 
   buildHero(sceneList);
-  buildMarquee(sceneList);
   buildStrip(sceneList);
   setupNumbers(sceneList, showList);
   buildShows(sceneList, showList);
