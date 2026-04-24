@@ -729,63 +729,6 @@
       </div>
     </div>
 
-    <!-- World Form Modal -->
-    <div id="worldFormModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9100;display:none;align-items:center;justify-content:center;">
-      <div style="background:#fff;border-radius:14px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35)">
-        <div style="font-size:16px;font-weight:700;margin-bottom:20px" id="worldFormTitle">+ เพิ่ม World ใหม่</div>
-        <form id="worldForm" onsubmit="return false">
-          <input type="hidden" id="wf_original_id">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">ID (slug) *</label>
-              <input id="wf_id" placeholder="เช่น industrial-factory" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none" required>
-              <div style="font-size:10px;color:#888;margin-top:3px">lowercase, คั่นด้วย - เท่านั้น</div>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Emoji</label>
-              <input id="wf_emoji" placeholder="🏭" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:18px;font-family:inherit;outline:none">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label EN *</label>
-              <input id="wf_label_en" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none" required>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label Short (ใช้ใน tag)</label>
-              <input id="wf_label_short" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-            </div>
-          </div>
-          <div style="margin-bottom:12px">
-            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label ไทย</label>
-            <input id="wf_label_th" placeholder="อุตสาหกรรม" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Accent Color</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="color" id="wf_color_picker" value="#F59E0B" style="width:44px;height:36px;border:1.5px solid #E5E7EB;border-radius:8px;padding:2px;cursor:pointer">
-                <input id="wf_color" value="#F59E0B" placeholder="#F59E0B" style="flex:1;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-              </div>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Sort Order</label>
-              <input type="number" id="wf_sort_order" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-            </div>
-          </div>
-          <div style="margin-bottom:20px">
-            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Parent World (ถ้าเป็น Sub-world)</label>
-            <select id="wf_parent_id" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff">
-              <option value="">— ไม่มี (Top-level World) —</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button type="button" onclick="closeWorldForm()" style="padding:10px 20px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit">ยกเลิก</button>
-            <button type="button" onclick="submitWorldForm()" id="worldFormSubmit" style="padding:10px 20px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">บันทึก</button>
-          </div>
-        </form>
-      </div>
-    </div>
     <div id="equipmentPanel" class="editor-area hidden" style="background:var(--bg);overflow-y:auto;">
       <div style="padding:28px;max-width:900px;">
         <div style="font-size:18px;font-weight:700;margin-bottom:4px;">💡 จัดการอุปกรณ์ไฟ</div>
@@ -5687,7 +5630,7 @@ function openWorldForm(w) {
   // sync color picker ↔ text
   document.getElementById('wf_color_picker').oninput = e => document.getElementById('wf_color').value = e.target.value;
   document.getElementById('wf_color').oninput = e => { if(/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('wf_color_picker').value = e.target.value; };
-  modal.style.display = 'flex';
+  modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
 }
 function closeWorldForm() { document.getElementById('worldFormModal').style.display = 'none'; }
 
@@ -5725,5 +5668,61 @@ async function deleteWorld(id, label) {
 }
 
 </script>
+
+<!-- ── World Form Modal (direct child of body, always in DOM) ── -->
+<div id="worldFormModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:28px;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:20px" id="worldFormTitle">+ เพิ่ม World ใหม่</div>
+    <input type="hidden" id="wf_original_id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">ID (slug) *</label>
+        <input id="wf_id" placeholder="เช่น industrial-factory" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+        <div style="font-size:10px;color:#aaa;margin-top:3px">lowercase คั่นด้วย - เท่านั้น</div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Emoji</label>
+        <input id="wf_emoji" placeholder="🏭" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:18px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label EN *</label>
+        <input id="wf_label_en" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label Short (tag)</label>
+        <input id="wf_label_short" placeholder="Industrial" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Label ไทย</label>
+      <input id="wf_label_th" placeholder="อุตสาหกรรม" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Accent Color</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="color" id="wf_color_picker" value="#F59E0B" style="width:44px;height:36px;border:1.5px solid #E5E7EB;border-radius:8px;padding:2px;cursor:pointer;flex-shrink:0">
+          <input id="wf_color" value="#F59E0B" placeholder="#F59E0B" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Sort Order</label>
+        <input type="number" id="wf_sort_order" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:4px">Parent World (ถ้าเป็น Sub-world)</label>
+      <select id="wf_parent_id" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box">
+        <option value="">— ไม่มี (Top-level World) —</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeWorldForm()" style="padding:10px 20px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit">ยกเลิก</button>
+      <button onclick="submitWorldForm()" id="worldFormSubmit" style="padding:10px 20px;background:#CC2229;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">บันทึก</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
