@@ -158,13 +158,12 @@ nav.scrolled{
 .hero-frame.on{opacity:1}
 .hero-frame img{
   width:100%;height:100%;object-fit:cover;
-  transform:scale(1.04);
-  animation:heroDrift 26s ease-out forwards;
+  transform:scale(1.04) translate(0,0);
+  transition:transform 24s ease-out;
   will-change:transform;
 }
-@keyframes heroDrift{
-  0%  {transform:scale(1.04) translate(0,0)}
-  100%{transform:scale(1.11) translate(-1%,-.7%)}
+.hero-frame.on img{
+  transform:scale(1.11) translate(-1%,-.7%);
 }
 .hero-scrim{
   position:absolute;inset:0;pointer-events:none;
@@ -273,7 +272,7 @@ nav.scrolled{
 }
 .mq-track{
   display:flex;gap:48px;align-items:center;
-  animation:mq 56s linear infinite;width:max-content;
+  animation:mq 120s linear infinite;width:max-content;
 }
 .mq-track:hover{animation-play-state:paused}
 @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -769,17 +768,10 @@ function buildHero(scenes){
     const frames = stack.querySelectorAll('.hero-frame');
     frames[idx].classList.remove('on');
     idx = (idx + 1) % frames.length;
-    // Reset drift animation so each slide always starts from the beginning (no mid-zoom jump)
-    const newImg = frames[idx].querySelector('img');
-    if (newImg) {
-      newImg.style.animation = 'none';
-      newImg.offsetHeight; // force reflow
-      newImg.style.animation = '';
-    }
     frames[idx].classList.add('on');
     document.getElementById('hero-sid').textContent = frames[idx].dataset.id || '';
     document.getElementById('hero-idx').textContent = String(idx+1).padStart(2,'0');
-  }, 5000);
+  }, 6000);
 
   // Entrance — after loader
   setTimeout(() => {
@@ -817,9 +809,9 @@ function buildStrip(scenes){
   picks.forEach((s, i) => {
     const cls = STRIP_PATTERN[i % STRIP_PATTERN.length];
     const color = worldColor(s.world);
-    const cell = document.createElement('a');
+    const cell = document.createElement('div');
     cell.className = `cell img-reveal ${cls}`;
-    cell.href = 'vp-search.html';
+    cell.style.cursor = 'default';
     cell.style.setProperty('--accent', color);
     cell.style.setProperty('--accent-glow', hexToRgba(color, .35));
     cell.innerHTML = `
