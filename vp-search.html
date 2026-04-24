@@ -1322,7 +1322,7 @@
     <!-- Layer 1: WORLD -->
     <div class="filter-group">
       <div class="filter-label filter-layer-label"><span class="layer-badge">L1</span> WORLD — ฉากอยู่ที่ไหน</div>
-      <div class="filter-tags" id="worldFilterTags">
+      <div class="filter-tags">
         <button class="ftag active" data-dim="world" data-val="all" onclick="setFilter('world','all',this)">ทั้งหมด</button>
         <button class="ftag" data-dim="world" data-val="urban-city" onclick="setFilter('world','urban-city',this)">Urban &amp; City</button>
         <button class="ftag" data-dim="world" data-val="interior-office" onclick="setFilter('world','interior-office',this)">Interior &amp; Office</button>
@@ -2207,7 +2207,7 @@ function renderCards() {
   setTimeout(() => {
     grid.classList.toggle('thumb-mode', viewMode === 'thumb');
     let _shows = []; try { _shows = JSON.parse(localStorage.getItem('vp_shows_v1')||'[]'); } catch(e){}
-    const WORLD_LBL = window._WORLD_MAP || {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial','transportation':'🚉 Transport','luxury-premium':'💎 Luxury','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
+    const WORLD_LBL   = {'urban-city':'🌆 Urban','interior-office':'🏢 Interior','nature-outdoor':'🌿 Nature','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial','transportation':'🚉 Transport','luxury-premium':'💎 Luxury','scifi-future':'🚀 Sci-Fi','stylized-abstract':'🎭 Stylized','heritage-culture':'🏛 Heritage'};
     const POSTURE_LBL = {'sitting':'🪑','standing':'🧍','special':'✨'};
     const FORMAT_LBL  = {'solo-host':'🎤 Solo','news-desk':'📺 News Desk','interview':'🎙 Interview','round-table':'⭕ Round','vertical':'📱 Vertical'};
 
@@ -3020,7 +3020,7 @@ function openModal(id) {
   }).join('')
 
   // ── World / Energy / Context label maps ──
-  const WORLD_LABEL = window._WORLD_MAP_LONG || {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial & Retail','transportation':'🚉 Transportation','luxury-premium':'💎 Luxury & Premium','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
+  const WORLD_LABEL   = {'urban-city':'🌆 Urban & City','interior-office':'🏢 Interior & Office','nature-outdoor':'🌿 Nature & Outdoor','industrial':'🏭 Industrial','commercial-retail':'🛒 Commercial & Retail','transportation':'🚉 Transportation','luxury-premium':'💎 Luxury & Premium','scifi-future':'🚀 Sci-Fi & Future','stylized-abstract':'🎭 Stylized & Abstract','heritage-culture':'🏛 Heritage & Culture'}
   const POSTURE_LABEL = {'sitting':'🪑 นั่ง','standing':'🧍 ยืน','special':'✨ Special'}
   const FORMAT_LABEL  = {'solo-host':'🎤 พิธีกรเดี่ยว','news-desk':'📺 News Desk 1-2 คน','interview':'🎙 สัมภาษณ์ 1+1','round-table':'⭕ Round Table','vertical':'📱 Vertical Content'}
 
@@ -4607,7 +4607,6 @@ function exportUsedIn(id) {
 
 // ── Init ──
 // โหลด scenes จาก Supabase แล้วค่อย render ทุกอย่าง
-loadWorldsFromDB();
 _loadScenes().then(() => {
   document.getElementById('totalCount').textContent = `${SCENES.length} scenes`;
   const vbadge = document.getElementById('vp-version-badge');
@@ -4623,60 +4622,6 @@ _loadScenes().then(() => {
 const SUPABASE_URL = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
 const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-/* ── Dynamic World Loader from DB ─────────────────────── */
-async function loadWorldsFromDB() {
-  try {
-    const { data } = await _SB.from('worlds').select('id,label_en,label_short,emoji,color,parent_id,sort_order').eq('active', true).order('sort_order');
-    if (!data || !data.length) return;
-    window._WORLD_MAP      = {};
-    window._WORLD_MAP_LONG = {};
-    window._WORLD_COLOR    = {};
-    window._WORLDS_DATA    = data;
-    data.forEach(w => {
-      const short = (w.emoji ? w.emoji + ' ' : '') + (w.label_short || w.label_en);
-      const long  = (w.emoji ? w.emoji + ' ' : '') + w.label_en;
-      window._WORLD_MAP[w.id]      = short;
-      window._WORLD_MAP_LONG[w.id] = long;
-      window._WORLD_COLOR[w.id]    = w.color || '#E50914';
-    });
-    _rebuildWorldFilterTags(data);
-  } catch(e) { console.warn('[worlds] DB load failed, using defaults', e); }
-}
-function _rebuildWorldFilterTags(worlds) {
-  const container = document.getElementById('worldFilterTags');
-  if (!container) return;
-  const cur = container.querySelector('.ftag.active')?.dataset?.val || 'all';
-  const parents  = worlds.filter(w => !w.parent_id);
-  const children = worlds.filter(w =>  w.parent_id);
-  // Keep "ทั้งหมด" button, replace the rest
-  const allBtn = container.querySelector('[data-val="all"]');
-  container.innerHTML = '';
-  if (allBtn) container.appendChild(allBtn);
-  else {
-    const b = document.createElement('button');
-    b.className = 'ftag active'; b.dataset.dim = 'world'; b.dataset.val = 'all';
-    b.textContent = 'ทั้งหมด'; b.onclick = () => setFilter('world','all',b);
-    container.appendChild(b);
-  }
-  parents.forEach(p => {
-    const b = document.createElement('button');
-    b.className = 'ftag' + (cur === p.id ? ' active' : '');
-    b.dataset.dim = 'world'; b.dataset.val = p.id;
-    b.textContent = (p.emoji ? p.emoji + ' ' : '') + (p.label_short || p.label_en);
-    b.onclick = () => setFilter('world', p.id, b);
-    container.appendChild(b);
-    children.filter(c => c.parent_id === p.id).forEach(c => {
-      const s = document.createElement('button');
-      s.className = 'ftag' + (cur === c.id ? ' active' : '');
-      s.dataset.dim = 'world'; s.dataset.val = c.id;
-      s.style.cssText = 'margin-left:4px;font-size:10px;opacity:.85';
-      s.textContent = '↳ ' + (c.emoji ? c.emoji + ' ' : '') + (c.label_short || c.label_en);
-      s.onclick = () => setFilter('world', c.id, s);
-      container.appendChild(s);
-    });
-  });
-}
 
 const USER_KEY      = 'vp_user_id';
 const USER_ROLE_KEY = 'vp_user_role';
