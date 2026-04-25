@@ -437,17 +437,20 @@ nav.scrolled{
 .show-bottom{transform:translateY(8px);transition:transform .6s var(--e-out)}
 .show:hover .show-bottom{transform:translateY(0)}
 .show-logo-wrap{
-  /* fixed box — logo scales to fit entirely inside, never crops */
   margin-bottom:14px;
-  height:40px;width:100%;
-  display:flex;align-items:center;justify-content:flex-start;
+  height:36px;
+  width:100%;
+  position:relative;
   overflow:hidden;
 }
 .show-logo{
-  max-height:100%;max-width:60%;width:auto;height:auto;
-  object-fit:contain;object-position:left center;
+  position:absolute;
+  left:0;bottom:0;
+  width:auto;height:100%;
+  max-width:56%;
+  object-fit:contain;
+  object-position:left bottom;
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
-  display:block;flex-shrink:0;
 }
 .show-name{font-size:13px;font-weight:600;color:#fff;line-height:1.35;margin-bottom:4px}
 .show-cnt{
