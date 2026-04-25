@@ -447,7 +447,7 @@ nav.scrolled{
   height:auto;
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
 }
-.show-name{font-size:13px;font-weight:600;color:#fff;line-height:1.35;margin-bottom:4px}
+.show-name{font-size:16px;font-weight:600;color:#fff;line-height:1.3;margin-bottom:4px}
 .show-cnt{
   font-size:11px;font-weight:500;letter-spacing:.08em;color:rgba(255,255,255,.6);
   font-variant-numeric:tabular-nums;
@@ -908,7 +908,6 @@ function buildShows(scenes, shows){
           <div class="show-idx">${String(i+1).padStart(2,'0')}</div>
         </div>
         <div class="show-bottom">
-          ${show.logo_url ? `<div class="show-logo-wrap"><img class="show-logo" src="${escapeHtml(show.logo_url)}" alt="${escapeHtml(show.name||'')}" loading="lazy"></div>` : ''}
           <div class="show-name">${escapeHtml(show.name||'—')}</div>
           <div class="show-cnt">${count[show.id]||0} scenes</div>
         </div>
