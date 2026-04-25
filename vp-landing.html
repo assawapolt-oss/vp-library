@@ -158,12 +158,13 @@ nav.scrolled{
 .hero-frame.on{opacity:1}
 .hero-frame img{
   width:100%;height:100%;object-fit:cover;
-  transform:scale(1.04) translate(0,0);
-  transition:transform 24s ease-out;
+  transform:scale(1.04);
+  animation:heroDrift 16s linear infinite alternate;
   will-change:transform;
 }
-.hero-frame.on img{
-  transform:scale(1.11) translate(-1%,-.7%);
+@keyframes heroDrift{
+  0%  {transform:scale(1.04) translate(0,0)}
+  100%{transform:scale(1.14) translate(-1.5%,-1%)}
 }
 .hero-scrim{
   position:absolute;inset:0;pointer-events:none;
@@ -264,6 +265,23 @@ nav.scrolled{
 }
 @keyframes pulseLine{0%,100%{opacity:.4}50%{opacity:1}}
 .hero-counter{font-variant-numeric:tabular-nums}
+
+/* ─── MARQUEE ─────────────────────── */
+#marquee{
+  padding:30px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  overflow:hidden;background:var(--bg);
+}
+.mq-track{
+  display:flex;gap:48px;align-items:center;
+  animation:mq 56s linear infinite;width:max-content;
+}
+.mq-track:hover{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.mq-item{
+  font-size:clamp(20px,2vw,30px);font-weight:500;letter-spacing:-.01em;color:var(--muted);
+  white-space:nowrap;display:flex;align-items:center;gap:48px;
+}
+.mq-item::after{content:'';width:6px;height:6px;background:var(--red);border-radius:50%}
 
 /* ─── SECTION ─────────────── */
 .section{padding:140px 28px;position:relative}
@@ -421,15 +439,15 @@ nav.scrolled{
 .show-logo-wrap{
   /* fixed box — logo scales to fit entirely inside, never crops */
   margin-bottom:14px;
-  height:42px;width:100%;
-  display:flex;align-items:flex-end;justify-content:flex-start;
-  overflow:visible;
+  height:40px;width:100%;
+  display:flex;align-items:center;justify-content:flex-start;
+  overflow:hidden;
 }
 .show-logo{
-  max-height:100%;max-width:55%;width:auto;height:auto;
-  object-fit:contain;object-position:left bottom;
+  max-height:100%;max-width:60%;width:auto;height:auto;
+  object-fit:contain;object-position:left center;
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
-  display:block;
+  display:block;flex-shrink:0;
 }
 .show-name{font-size:13px;font-weight:600;color:#fff;line-height:1.35;margin-bottom:4px}
 .show-cnt{
@@ -482,6 +500,8 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   .hero-foot{left:18px;right:18px;bottom:22px;font-size:10px}
   .btn{padding:13px 20px;font-size:12.5px}
 
+  #marquee{padding:22px 0}
+  .mq-item{font-size:17px;gap:32px}
 
   .section{padding:88px 18px}
   .sec-head{grid-template-columns:1fr;gap:18px;margin-bottom:36px}
@@ -601,6 +621,10 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   </div>
 </section>
 
+<!-- MARQUEE -->
+<section id="marquee">
+  <div class="mq-track" id="mq-track"></div>
+</section>
 
 <!-- STRIP -->
 <section id="strip-sec" class="section">
@@ -748,12 +772,21 @@ function buildHero(scenes){
     frames[idx].classList.add('on');
     document.getElementById('hero-sid').textContent = frames[idx].dataset.id || '';
     document.getElementById('hero-idx').textContent = String(idx+1).padStart(2,'0');
-  }, 6000);
+  }, 4400);
 
   // Entrance — after loader
   setTimeout(() => {
     document.querySelectorAll('.hero-title .rise,.hero-sub,.hero-actions').forEach((el,i) => setTimeout(()=>el.classList.add('in'), i*120));
   }, 450);
+}
+
+/* ─── MARQUEE ─────────────── */
+function buildMarquee(scenes){
+  const track = document.getElementById('mq-track');
+  const titles = scenes.map(s => s.title || s.id).filter(Boolean);
+  if (!titles.length) return;
+  const items = shuffle(titles).slice(0, 12);
+  track.innerHTML = [...items, ...items].map(t => `<div class="mq-item">${escapeHtml(t)}</div>`).join('');
 }
 
 /* ─── STRIP GRID ─────────────── */
@@ -777,9 +810,9 @@ function buildStrip(scenes){
   picks.forEach((s, i) => {
     const cls = STRIP_PATTERN[i % STRIP_PATTERN.length];
     const color = worldColor(s.world);
-    const cell = document.createElement('div');
+    const cell = document.createElement('a');
     cell.className = `cell img-reveal ${cls}`;
-    cell.style.cursor = 'default';
+    cell.href = 'vp-search.html';
     cell.style.setProperty('--accent', color);
     cell.style.setProperty('--accent-glow', hexToRgba(color, .35));
     cell.innerHTML = `
@@ -939,6 +972,7 @@ async function init(){
   const showList  = showsRes.data  || [];
 
   buildHero(sceneList);
+  buildMarquee(sceneList);
   buildStrip(sceneList);
   setupNumbers(sceneList, showList);
   buildShows(sceneList, showList);
