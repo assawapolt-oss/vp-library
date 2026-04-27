@@ -2168,12 +2168,13 @@ function renderCards() {
 
   let filtered = baseList.filter(matchesFilters);
 
-  // Default sort: presenter scenes (posture set) first, then no-presenter — only when not shuffling
+  // Default sort: presenter scenes first (by presenter_image_url), newest-first within each group
   if (!_shuffleActive) {
     filtered = filtered.slice().sort((a, b) => {
-      const aHas = a.posture ? 1 : 0;
-      const bHas = b.posture ? 1 : 0;
-      return bHas - aHas; // presenter first; stable within group (preserves original order)
+      const aHas = a.presenter_image_url ? 1 : 0;
+      const bHas = b.presenter_image_url ? 1 : 0;
+      if (bHas !== aHas) return bHas - aHas; // presenter group before non-presenter
+      return SCENES.indexOf(a) - SCENES.indexOf(b); // within same group: preserve newest-first (DB order)
     });
   }
 
