@@ -1826,6 +1826,7 @@ async function _loadScenes() {
                       : r.show_id ? [r.show_id] : (def.show_ids||[]),
             video_url: r.video_url||def.video_url||'',
             presenter_image_url: r.presenter_image_url||def.presenter_image_url||'',
+            motion_bg_url: r.motion_bg_url||'',
             notes: r.description||def.notes||'',
             posture: r.posture||'standing',
             prod_format: r.prod_format||'solo-host',
