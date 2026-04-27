@@ -619,10 +619,6 @@ footer img{height:16px;filter:brightness(0) invert(1);opacity:.7}
   </div>
 </section>
 
-<!-- MARQUEE -->
-<section id="marquee">
-  <div class="mq-track" id="mq-track"></div>
-</section>
 
 <!-- STRIP -->
 <section id="strip-sec" class="section">
@@ -808,9 +804,8 @@ function buildStrip(scenes){
   picks.forEach((s, i) => {
     const cls = STRIP_PATTERN[i % STRIP_PATTERN.length];
     const color = worldColor(s.world);
-    const cell = document.createElement('a');
+    const cell = document.createElement('div');
     cell.className = `cell img-reveal ${cls}`;
-    cell.href = 'vp-search.html';
     cell.style.setProperty('--accent', color);
     cell.style.setProperty('--accent-glow', hexToRgba(color, .35));
     cell.innerHTML = `
