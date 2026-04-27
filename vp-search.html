@@ -2976,6 +2976,54 @@ function initVideoHoverCards() {
   });
 }
 
+/* ── Motion BG File (Admin) ── */
+function motionBgEdit(id) {
+  document.getElementById(`motionBgView-${id}`).style.display = 'none';
+  document.getElementById(`motionBgEdit-${id}`).style.display = 'flex';
+  document.getElementById(`motionBgInput-${id}`)?.focus();
+}
+function motionBgCancel(id, original) {
+  document.getElementById(`motionBgEdit-${id}`).style.display = 'none';
+  document.getElementById(`motionBgView-${id}`).style.display = 'flex';
+}
+async function saveMotionBg(id) {
+  const input = document.getElementById(`motionBgInput-${id}`);
+  if (!input) return;
+  const url = input.value.trim();
+  const btn = input.nextElementSibling;
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+
+  // Update Supabase
+  if (window._supaClient) {
+    const { error } = await window._supaClient.from('scenes').update({ motion_bg_url: url || null }).eq('id', id);
+    if (error) { console.warn('[saveMotionBg]', error.message); if (btn) { btn.textContent = 'บันทึก'; btn.disabled = false; } return; }
+  }
+
+  // Update local SCENES array
+  const scene = SCENES.find(s => s.id === id);
+  if (scene) scene.motion_bg_url = url || '';
+
+  // Update UI
+  const viewEl = document.getElementById(`motionBgView-${id}`);
+  const editEl = document.getElementById(`motionBgEdit-${id}`);
+  const linkEl = document.getElementById(`motionBgLink-${id}`);
+  const section = document.getElementById(`motionBgSection-${id}`);
+  if (url) {
+    if (linkEl) { linkEl.href = url; linkEl.textContent = url; }
+    if (viewEl) viewEl.style.display = 'flex';
+    if (editEl) editEl.style.display = 'none';
+    // update badge
+    const badge = section?.querySelector('span[style*="background"]');
+    if (badge) { badge.textContent = 'มีไฟล์'; badge.style.background='#D1FAE5'; badge.style.color='#065F46'; }
+  } else {
+    if (viewEl) viewEl.style.display = 'none';
+    if (editEl) editEl.style.display = 'flex';
+    const badge = section?.querySelector('span[style*="background"]');
+    if (badge) { badge.textContent = 'ยังไม่มี'; badge.style.background='#FEF3C7'; badge.style.color='#92400E'; }
+  }
+  if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'บันทึก'; btn.disabled = false; }, 1500); }
+}
+
 function toggleVideoCollapse(id) {
   const body = document.getElementById(`vid-body-${id}`);
   const chev = document.getElementById(`vid-chev-${id}`);
@@ -3053,6 +3101,30 @@ function openModal(id) {
       </div>
     </div>
 
+
+    <!-- ── Motion BG File (Admin only) ── -->
+    ${isAdmin() ? `
+    <div class="modal-section" id="motionBgSection-${id}" style="background:var(--nav-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${s.motion_bg_url?'8':'6'}px">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em">📁 MOTION VIRTUAL BG FILE</span>
+        ${s.motion_bg_url ? `<span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:4px;font-weight:700">มีไฟล์</span>` : `<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px;font-weight:700">ยังไม่มี</span>`}
+      </div>
+      <div id="motionBgView-${id}" style="display:${s.motion_bg_url?'flex':'none'};align-items:center;gap:6px">
+        <a id="motionBgLink-${id}" href="${s.motion_bg_url||'#'}" target="_blank" rel="noopener"
+          style="flex:1;font-size:11px;color:#3B82F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline"
+        >${s.motion_bg_url||''}</a>
+        <button onclick="motionBgEdit('${id}')" style="flex-shrink:0;padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer">✏️</button>
+      </div>
+      <div id="motionBgEdit-${id}" style="display:${s.motion_bg_url?'none':'flex'};gap:6px;align-items:center">
+        <input id="motionBgInput-${id}" type="text" value="${s.motion_bg_url||''}" placeholder="วาง Google Drive / Dropbox link…"
+          style="flex:1;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--dark);font-family:inherit;outline:none"
+          onkeydown="if(event.key==='Enter')saveMotionBg('${id}')"
+          onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="saveMotionBg('${id}')" style="flex-shrink:0;padding:5px 10px;font-size:12px;font-weight:700;background:#3B82F6;color:#fff;border:none;border-radius:7px;cursor:pointer">บันทึก</button>
+        ${s.motion_bg_url?`<button onclick="motionBgCancel('${id}','${s.motion_bg_url}')" style="flex-shrink:0;padding:5px 8px;font-size:11px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--muted);cursor:pointer">ยกเลิก</button>`:''}
+      </div>
+    </div>
+    ` : ''}
 
     <!-- ── Video Preview ── -->
     <div class="modal-section">
