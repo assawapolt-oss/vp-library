@@ -1,0 +1,93 @@
+{
+  "taxonomy_version": "2.0",
+  "updated": "2026-03-22",
+  "description": "Hierarchical 3-layer scene taxonomy for THE STANDARD VP Library — ใช้เป็น reference เมื่อ tag scene ใหม่",
+
+  "L1_world": {
+    "description": "สภาพแวดล้อมหลักของฉาก — เลือก 1 ค่า",
+    "values": [
+      { "id": "urban-city",        "label": "🌆 Urban & City",         "definition": "เมือง ถนน ตึก skyline กลางแจ้ง" },
+      { "id": "interior-office",   "label": "🏢 Interior & Office",    "definition": "ห้องทำงาน studio ห้องประชุม ในร่ม" },
+      { "id": "nature-outdoor",    "label": "🌿 Nature & Outdoor",     "definition": "ธรรมชาติ ป่า ภูเขา แม่น้ำ เหมือง" },
+      { "id": "industrial",        "label": "🏭 Industrial",           "definition": "โรงงาน คลังสินค้า อุโมงค์ อุตสาหกรรม" },
+      { "id": "scifi-future",      "label": "🚀 Sci-Fi & Future",      "definition": "ห้องแล็บ หุ่นยนต์ เทคโนโลยี futuristic" },
+      { "id": "stylized-abstract", "label": "🎭 Stylized & Abstract",  "definition": "กราฟิก data viz abstract ไม่ใช่สถานที่จริง" },
+      { "id": "heritage-culture",  "label": "🏛 Heritage & Culture",   "definition": "วัด อนุสาวรีย์ ประวัติศาสตร์ วัฒนธรรม" }
+    ]
+  },
+
+  "L2_energy": {
+    "description": "ระดับพลังงาน/อารมณ์โดยรวมของฉาก — เลือก 1 ค่า",
+    "values": [
+      { "id": "intense",  "label": "⚡ Intense",  "definition": "Dramatic, high-contrast, เข้มข้น, เร้าใจ, ตื่นเต้น" },
+      { "id": "balanced", "label": "🌤 Balanced", "definition": "Professional, สมดุล, neutral, สม่ำเสมอ, ไม่สุดขีด" },
+      { "id": "open",     "label": "✨ Open",     "definition": "Calm, minimal, เปิดโล่ง, อบอุ่น, friendly, เข้าถึงง่าย" }
+    ]
+  },
+
+  "L3_context_tags": {
+    "description": "รูปแบบการใช้งาน broadcast — เลือกได้ 1–3 ค่า",
+    "values": [
+      { "id": "news-report",   "label": "📰 News & Report",   "definition": "รายงานข่าว anchor stand-up ข่าวหลัก" },
+      { "id": "talk-interview","label": "🎙 Talk & Interview", "definition": "สัมภาษณ์ พูดคุย พอดแคสต์ talk show" },
+      { "id": "analysis-data", "label": "📊 Analysis & Data", "definition": "วิเคราะห์ ชี้แจง กราฟ ข้อมูล explainer" },
+      { "id": "field-onsite",  "label": "🌍 Field & On-site", "definition": "รายงาน on location สนาม สถานที่จริง" },
+      { "id": "opener-drama",  "label": "🎬 Opener & Drama",  "definition": "เปิดรายการ intro bumper dramatic reveal" },
+      { "id": "social-short",  "label": "📱 Social & Short",  "definition": "คลิปสั้น social media 9:16 reels TikTok" },
+      { "id": "event-special", "label": "🏆 Event & Special", "definition": "งานพิเศษ live event กีฬา เลือกตั้ง ฯลฯ" }
+    ]
+  },
+
+  "notes": {
+    "description": "How to tag — แนวทางการ tag",
+    "rules": [
+      "L1 world — เลือก 1 ค่าที่ตรงกับ dominant environment มากที่สุด",
+      "L2 energy — เลือก 1 ค่า ดูจาก visual contrast, lighting, mood โดยรวม",
+      "L3 context_tags — เลือก 1–3 ค่า ดูจากว่าฉากนี้เหมาะกับรูปแบบรายการแบบไหน",
+      "show_ids — ระบุ ID ของรายการที่ใช้ฉากนี้เป็นประจำ (optional)"
+    ]
+  },
+
+  "legacy_fields": {
+    "description": "Fields เดิมที่ยังเก็บไว้ใน scenes.json เพื่อ backward compatibility และ AI search",
+    "still_used_in_export": [
+      "mood", "color_temp", "dominant_colors", "brightness",
+      "topics", "editorial_fit", "time_of_day", "lighting_style",
+      "has_sfx_light", "sfx_light_types", "motion_type", "style",
+      "has_particles", "particle_types", "depth_of_field",
+      "usage_type", "subject_placement", "background_complexity",
+      "platform_fit", "resolution", "file_format", "is_loopable",
+      "engine", "status", "used_in"
+    ],
+    "mood": {
+      "values": ["dramatic","tense","mysterious","futuristic","serious","authoritative","documentary","warm","hopeful","approachable","authentic","neutral","minimal","fresh","cheerful","romantic","calming","peaceful"]
+    },
+    "editorial_fit": {
+      "values": ["News","Business","Politics","Tech","Lifestyle","Entertainment","Climate","Society","Health"]
+    },
+    "lighting_style": {
+      "values": ["natural-soft","studio-flat","dramatic-hard","neon-colored","backlit","practicals-only","natural-window"]
+    },
+    "motion_type": {
+      "values": ["static","subtle-ambient","animated-loop","high-energy","camera-move"]
+    },
+    "style": {
+      "values": ["cinematic","realistic","stylized","abstract","minimal-clean","documentary"]
+    },
+    "usage_type": {
+      "values": ["standup-report","interview-single","interview-dual","news-anchor","explainer","podcast-video","documentary","social-short","bumper","intro-slate"]
+    },
+    "subject_placement": {
+      "values": ["center","left","right","flexible","wide-2-person"]
+    },
+    "background_complexity": {
+      "values": ["clean-minimal","medium","complex-detailed"]
+    },
+    "engine": {
+      "values": ["Unreal Engine 5","Blender","After Effects","AI-Generated","Graphic Design","Cinema 4D"]
+    },
+    "status": {
+      "values": ["active","draft","archived"]
+    }
+  }
+}

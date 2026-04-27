@@ -1,0 +1,1028 @@
+{
+  "library": "THE STANDARD VP Library",
+  "version": "2.1",
+  "schema_version": "2.1",
+  "schema_updated": "2026-03-22",
+  "exported_at": "2026-03-22T16:27:52.075857+00:00",
+  "shows": [
+    {
+      "id": "SH-MN0OWNG3",
+      "name": "Key Messages",
+      "color": "#DC2626",
+      "logo_url": ""
+    },
+    {
+      "id": "SH-MN1XLN7A",
+      "name": "THE SECRET SAUCE",
+      "color": "#FDC029",
+      "logo_url": ""
+    }
+  ],
+  "note": "AUTO-GENERATED — export จาก vp-admin.html (Export DB button). แก้ไขผ่าน Admin Panel เท่านั้น อย่าแก้ไฟล์นี้ตรงๆ",
+  "total_scenes": 13,
+  "changelog": {
+    "2.1": "เพิ่ม canvas & lighting setup fields: key_light_dir, key_light_type, fill_light, back_light, lighting_ratio, presenter_zone, camera_setup, canvas_notes",
+    "2.0": "เพิ่ม L1/L2/L3 taxonomy (world, energy, context_tags), show_ids, video_url",
+    "1.0": "schema เดิม"
+  },
+  "scenes": [
+    {
+      "id": "VP-001",
+      "title": "Sci-Fi Lab Portal — Robot & Steam",
+      "title_th": "ห้องแล็บไซไฟ พอร์ทัลหุ่นยนต์ มีควัน",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/sci-fi/VP-001-scifi-lab-portal-warm-dramatic-v1.webp",
+      "thumb": "_thumbnails/VP-001_thumb.avif",
+      "video_url": "",
+      "world": "scifi-future",
+      "energy": "intense",
+      "context_tags": [
+        "opener-drama",
+        "social-short"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "sci-fi-lab",
+      "location_country": "fictional",
+      "time_of_day": "timeless",
+      "color_temp": "warm",
+      "dominant_colors": [
+        "#8B5E3C",
+        "#F5A623",
+        "#1A1A2E",
+        "#C0835A"
+      ],
+      "brightness": "dark",
+      "lighting_style": "dramatic-hard",
+      "has_sfx_light": true,
+      "sfx_light_types": [
+        "portal-glow",
+        "light-rays",
+        "volumetric"
+      ],
+      "motion_type": "subtle-ambient",
+      "style": "cinematic",
+      "has_particles": true,
+      "particle_types": [
+        "smoke",
+        "steam"
+      ],
+      "depth_of_field": "deep",
+      "mood": [
+        "dramatic",
+        "mysterious",
+        "futuristic"
+      ],
+      "topics": [
+        "AI",
+        "robot",
+        "technology",
+        "innovation",
+        "sci-fi"
+      ],
+      "editorial_fit": [
+        "Tech",
+        "Entertainment",
+        "Business"
+      ],
+      "usage_type": [
+        "standup-report",
+        "explainer",
+        "podcast-video"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "complex-detailed",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front-left",
+      "key_light_type": "LED panel",
+      "fill_light": "soft fill",
+      "back_light": "rim light",
+      "lighting_ratio": "6:1+ high contrast",
+      "presenter_zone": "center",
+      "camera_setup": "35mm, medium shot, static",
+      "canvas_notes": "ลำแสงพอร์ทัลสว่างจากซ้าย — key light presenter ต้องมาฝั่งซ้ายด้วย (front-left) เพื่อ match กับ background light direction. ใช้ gel CTO บน key เพื่อ match warm tone ของฉาก. ระวัง portal glow อาจทำ flare ถ้า presenter เดินเข้าใกล้",
+      "notes": "ลำแสงพอร์ทัลสว่างมาก — ต้องเพิ่ม key light ฝั่งซ้ายของ presenter เพื่อ match กับ background light direction"
+    },
+    {
+      "id": "VP-002",
+      "title": "Sci-Fi Robot Display Room — Blue Tone",
+      "title_th": "ห้องแสดงหุ่นยนต์ไซไฟ โทนสีน้ำเงิน",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/sci-fi/VP-002-scifi-robot-display-cool-serious-v1.webp",
+      "thumb": "_thumbnails/VP-002_thumb.avif",
+      "video_url": "",
+      "world": "scifi-future",
+      "energy": "balanced",
+      "context_tags": [
+        "news-report",
+        "analysis-data",
+        "talk-interview"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "sci-fi-lab",
+      "location_country": "fictional",
+      "time_of_day": "timeless",
+      "color_temp": "cool",
+      "dominant_colors": [
+        "#1A2A3E",
+        "#2C4A7C",
+        "#4A6FA5",
+        "#0D1B2A"
+      ],
+      "brightness": "dark",
+      "lighting_style": "dramatic-hard",
+      "has_sfx_light": true,
+      "sfx_light_types": [
+        "display-screens",
+        "neon-glow"
+      ],
+      "motion_type": "subtle-ambient",
+      "style": "cinematic",
+      "has_particles": false,
+      "particle_types": [],
+      "depth_of_field": "medium",
+      "mood": [
+        "serious",
+        "authoritative",
+        "futuristic",
+        "mysterious"
+      ],
+      "topics": [
+        "AI",
+        "robot",
+        "technology",
+        "humanoid",
+        "future"
+      ],
+      "editorial_fit": [
+        "Tech",
+        "Business",
+        "News"
+      ],
+      "usage_type": [
+        "standup-report",
+        "news-anchor",
+        "explainer"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "complex-detailed",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "negative fill (flag)",
+      "back_light": "edge light",
+      "lighting_ratio": "4:1 medium contrast",
+      "presenter_zone": "center",
+      "camera_setup": "50mm, medium shot, static",
+      "canvas_notes": "Screen glow จากฉากให้แสง ambient สีน้ำเงิน — ใช้ gel CTB บน fill light เพื่อ match. Key ต้องมาตรงหน้าเพื่อหลีกเลี่ยงการ compete กับ screen light ด้านหลัง. Background นิ่งมากเหมาะ news anchor นั่งโต๊ะ",
+      "notes": "Background นิ่งมาก เหมาะกับรายการข่าวที่ต้องการ tone จริงจัง ไม่ distract ผู้ชม"
+    },
+    {
+      "id": "VP-003",
+      "title": "Industrial Robot Arms — Dark Studio",
+      "title_th": "แขนกลอุตสาหกรรม สตูดิโอมืด",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/industrial/VP-003-industrial-robot-arms-dark-tense-v1.webp",
+      "thumb": "_thumbnails/VP-003_thumb.avif",
+      "video_url": "",
+      "world": "industrial",
+      "energy": "intense",
+      "context_tags": [
+        "news-report",
+        "analysis-data",
+        "opener-drama"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "industrial-factory",
+      "location_country": "fictional",
+      "time_of_day": "timeless",
+      "color_temp": "cool",
+      "dominant_colors": [
+        "#1C1C2E",
+        "#2E3A4A",
+        "#4A5568",
+        "#8B9BB4"
+      ],
+      "brightness": "dark",
+      "lighting_style": "dramatic-hard",
+      "has_sfx_light": true,
+      "sfx_light_types": [
+        "backlit-haze",
+        "neon-glow"
+      ],
+      "motion_type": "subtle-ambient",
+      "style": "cinematic",
+      "has_particles": true,
+      "particle_types": [
+        "dust",
+        "sparks"
+      ],
+      "depth_of_field": "deep",
+      "mood": [
+        "tense",
+        "dramatic",
+        "mysterious",
+        "serious"
+      ],
+      "topics": [
+        "automation",
+        "manufacturing",
+        "technology",
+        "industry",
+        "robot"
+      ],
+      "editorial_fit": [
+        "Tech",
+        "Business",
+        "News"
+      ],
+      "usage_type": [
+        "standup-report",
+        "explainer",
+        "news-anchor"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "complex-detailed",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "none",
+      "back_light": "rim light",
+      "lighting_ratio": "6:1+ high contrast",
+      "presenter_zone": "center",
+      "camera_setup": "35mm, medium shot, static, presenter ยืนกลาง symmetry",
+      "canvas_notes": "แขนกลทั้งสองข้างสร้าง symmetry ที่แข็งแกร่ง — presenter ต้องยืนกลางเฟรมตลอด ไม่เดินซ้ายขวา. ฉากมืดมาก ต้องใช้ key light สว่างกว่าปกติ. Backlit haze ด้านหลังให้ depth — ไม่ต้องเพิ่ม fog machine จริงๆ",
+      "notes": "แขนกลทั้งสองข้างสร้าง symmetry ดี — presenter ต้องยืนตรงกลาง ไม่ควรเดินซ้ายขวา"
+    },
+    {
+      "id": "VP-004",
+      "title": "Warehouse Behind-the-Scenes — Warm",
+      "title_th": "คลังสินค้า / สตูดิโอหลังฉาก โทนอบอุ่น",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/industrial/VP-004-warehouse-bts-warm-neutral-v1.webp",
+      "thumb": "_thumbnails/VP-004_thumb.avif",
+      "video_url": "",
+      "world": "industrial",
+      "energy": "open",
+      "context_tags": [
+        "talk-interview",
+        "social-short",
+        "event-special"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "warehouse",
+      "location_country": "fictional",
+      "time_of_day": "interior-lit",
+      "color_temp": "warm",
+      "dominant_colors": [
+        "#8B6914",
+        "#C49A3C",
+        "#3D2B1F",
+        "#D4A853"
+      ],
+      "brightness": "medium",
+      "lighting_style": "practicals-only",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "subtle-ambient",
+      "style": "documentary",
+      "has_particles": true,
+      "particle_types": [
+        "dust"
+      ],
+      "depth_of_field": "medium",
+      "mood": [
+        "warm",
+        "neutral",
+        "approachable",
+        "authentic"
+      ],
+      "topics": [
+        "filmmaking",
+        "production",
+        "behind-the-scenes",
+        "creative",
+        "studio"
+      ],
+      "editorial_fit": [
+        "Entertainment",
+        "Lifestyle",
+        "Tech"
+      ],
+      "usage_type": [
+        "interview-single",
+        "podcast-video",
+        "social-short"
+      ],
+      "subject_placement": "left",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front-right",
+      "key_light_type": "LED softbox",
+      "fill_light": "reflector",
+      "back_light": "hair light",
+      "lighting_ratio": "3:1 standard",
+      "presenter_zone": "left-third",
+      "camera_setup": "50mm, medium shot, static หรือ slight push in",
+      "canvas_notes": "หุ่นยนต์นั่งอยู่ทางขวา — presenter ยืนซ้ายหรือกลาง ห้ามทางขวา. แสง warm tungsten ของฉาก ใช้ gel CTO 1/2 บน key เพื่อ match. ฉากให้ความรู้สึก authentic สูง เหมาะ interview ที่ไม่เป็นทางการ",
+      "notes": "มีหุ่นยนต์นั่งอยู่ทางขวา — presenter ควรยืนซ้ายหรือกลาง ฉากให้ความรู้สึก authentic สูง"
+    },
+    {
+      "id": "VP-005",
+      "title": "Underground Tunnel — Dark Dramatic",
+      "title_th": "อุโมงค์ใต้ดิน บรรยากาศมืด เข้มข้น",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/tunnel-cave/VP-005-tunnel-underground-dark-dramatic-v1.webp",
+      "thumb": "_thumbnails/VP-005_thumb.avif",
+      "video_url": "",
+      "world": "industrial",
+      "energy": "intense",
+      "context_tags": [
+        "news-report",
+        "field-onsite",
+        "opener-drama"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "tunnel-cave",
+      "location_country": "generic",
+      "time_of_day": "timeless",
+      "color_temp": "neutral",
+      "dominant_colors": [
+        "#1A1A1A",
+        "#2C2C2C",
+        "#8B6914",
+        "#F5A623"
+      ],
+      "brightness": "dark",
+      "lighting_style": "dramatic-hard",
+      "has_sfx_light": true,
+      "sfx_light_types": [
+        "backlit-haze",
+        "volumetric"
+      ],
+      "motion_type": "subtle-ambient",
+      "style": "documentary",
+      "has_particles": true,
+      "particle_types": [
+        "dust",
+        "fog-mist"
+      ],
+      "depth_of_field": "deep",
+      "mood": [
+        "dramatic",
+        "tense",
+        "serious",
+        "mysterious"
+      ],
+      "topics": [
+        "conflict",
+        "war",
+        "investigation",
+        "underground",
+        "crisis"
+      ],
+      "editorial_fit": [
+        "News",
+        "Politics"
+      ],
+      "usage_type": [
+        "standup-report",
+        "field-onsite",
+        "opener-drama"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "none",
+      "back_light": "kick light",
+      "lighting_ratio": "6:1+ high contrast",
+      "presenter_zone": "center",
+      "camera_setup": "35mm wide, medium-wide shot, static",
+      "canvas_notes": "⚠ ฉากมืดที่สุดในคลัง — key light presenter ต้องสว่างกว่าปกติอย่างน้อย 2 stop. ต้องเช็ค skin tone ทุกครั้งก่อน record. Volumetric fog ด้านหลังให้ depth — ไม่ต้องเพิ่ม fog จริงในกอง. Backlight/kick จำเป็นมากเพื่อให้ presenter แยกจาก background มืด",
+      "notes": "⚠️ ฉากมืดมากที่สุดในคลัง — ต้อง key light presenter แรงกว่าปกติ 2 stop ขึ้นไป และเช็ค skin tone"
+    },
+    {
+      "id": "VP-006",
+      "title": "Open-Pit Mine / Quarry — Outdoor Day",
+      "title_th": "เหมืองเปิด / เหมืองหิน กลางวัน",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "outdoor/nature-mine/VP-006-outdoor-mine-quarry-day-neutral-v1.webp",
+      "thumb": "_thumbnails/VP-006_thumb.avif",
+      "video_url": "",
+      "world": "nature-outdoor",
+      "energy": "balanced",
+      "context_tags": [
+        "news-report",
+        "field-onsite",
+        "analysis-data"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "outdoor",
+      "location_type": "nature-mine",
+      "location_country": "generic",
+      "time_of_day": "day",
+      "color_temp": "neutral",
+      "dominant_colors": [
+        "#8B7355",
+        "#A0896C",
+        "#6B5B47",
+        "#D4C4A0"
+      ],
+      "brightness": "medium",
+      "lighting_style": "natural-soft",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "static",
+      "style": "documentary",
+      "has_particles": true,
+      "particle_types": [
+        "dust"
+      ],
+      "depth_of_field": "deep",
+      "mood": [
+        "serious",
+        "documentary",
+        "authentic",
+        "tense"
+      ],
+      "topics": [
+        "mining",
+        "industry",
+        "environment",
+        "climate",
+        "resources",
+        "economics"
+      ],
+      "editorial_fit": [
+        "News",
+        "Business",
+        "Climate"
+      ],
+      "usage_type": [
+        "standup-report",
+        "field-onsite",
+        "documentary"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "complex-detailed",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "bounce board",
+      "back_light": "none",
+      "lighting_ratio": "2:1 low",
+      "presenter_zone": "center",
+      "camera_setup": "35mm, medium shot, static หรือ slight crane up",
+      "canvas_notes": "ฉากกลางวันเดียวใน library — แสง natural overcast สม่ำเสมอมาก. ระวัง presenter ถูก overexpose ถ้า key แรงเกิน. ใช้ bounce board เป็น fill ดีกว่า LED fill เพื่อให้ natural look คงอยู่. ถ้าถ่าย presenter ตรงกลางจะได้ depth เนื่องจาก perspective ของ quarry ลึกมาก",
+      "notes": "ฉากกลางวันเดียวใน library — แสง natural hazy ต้องระวัง presenter ถูก overexpose"
+    },
+    {
+      "id": "VP-007",
+      "title": "Robot Factory Floor — White Arms",
+      "title_th": "โรงงานหุ่นยนต์ แขนกลสีขาว อุตสาหกรรม",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/industrial/VP-007-industrial-robot-factory-cool-authoritative-v1.webp",
+      "thumb": "_thumbnails/VP-007_thumb.avif",
+      "video_url": "",
+      "world": "industrial",
+      "energy": "balanced",
+      "context_tags": [
+        "news-report",
+        "analysis-data",
+        "talk-interview"
+      ],
+      "show_ids": [
+        "SH-MN0OWNG3"
+      ],
+      "environment": "indoor",
+      "location_type": "industrial-factory",
+      "location_country": "generic",
+      "time_of_day": "timeless",
+      "color_temp": "cool",
+      "dominant_colors": [
+        "#F5F5F5",
+        "#E8E8E8",
+        "#2C3E50",
+        "#B8C4CE"
+      ],
+      "brightness": "medium",
+      "lighting_style": "studio-flat",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "subtle-ambient",
+      "style": "documentary",
+      "has_particles": false,
+      "particle_types": [],
+      "depth_of_field": "medium",
+      "mood": [
+        "authoritative",
+        "serious",
+        "futuristic",
+        "documentary"
+      ],
+      "topics": [
+        "manufacturing",
+        "automation",
+        "robot",
+        "industry",
+        "technology",
+        "economy"
+      ],
+      "editorial_fit": [
+        "Business",
+        "Tech",
+        "News"
+      ],
+      "usage_type": [
+        "standup-report",
+        "news-anchor",
+        "explainer"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "soft fill",
+      "back_light": "hair light",
+      "lighting_ratio": "3:1 standard",
+      "presenter_zone": "center",
+      "camera_setup": "50mm, medium shot, static",
+      "canvas_notes": "ฉากสว่างและ flat ที่สุดใน library — match lighting presenter ได้ง่ายที่สุด. ใช้ gel CTB เล็กน้อยบน key เพื่อ match cool tone ของฉาก. เหมาะ news anchor นั่งโต๊ะหรือ presenter ยืน. White arms จะ wrap presenter ดีถ้าใช้ back light เพิ่ม separation",
+      "notes": "แสงในฉากสม่ำเสมอมาก — เป็นหนึ่งในฉากที่ match lighting presenter ได้ง่ายที่สุด เหมาะรายงานเศรษฐกิจ/อุตสาหกรรม"
+    },
+    {
+      "id": "VP-008",
+      "title": "Retro Music Studio — Vintage Gear & Greenery",
+      "title_th": "สตูดิโอดนตรีวินเทจ เครื่องดนตรีคลาสสิก หน้าต่างมีต้นไม้",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/studio-retro/VP-008-retro-music-studio-warm-nostalgic-v1.webp",
+      "thumb": "_thumbnails/VP-008_thumb.avif",
+      "video_url": "",
+      "world": "heritage-culture",
+      "energy": "open",
+      "context_tags": [
+        "talk-interview",
+        "social-short",
+        "event-special"
+      ],
+      "show_ids": [],
+      "environment": "indoor",
+      "location_type": "studio-retro",
+      "location_country": "generic",
+      "time_of_day": "interior-lit",
+      "color_temp": "warm",
+      "dominant_colors": [
+        "#8B6914",
+        "#C49A3C",
+        "#2C1810",
+        "#D4956A"
+      ],
+      "brightness": "medium",
+      "lighting_style": "practicals-only",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "static",
+      "style": "realistic",
+      "has_particles": false,
+      "particle_types": [],
+      "depth_of_field": "shallow",
+      "mood": [
+        "warm",
+        "nostalgic",
+        "approachable",
+        "authentic"
+      ],
+      "topics": [
+        "music",
+        "culture",
+        "entertainment",
+        "lifestyle",
+        "arts",
+        "creativity"
+      ],
+      "editorial_fit": [
+        "Entertainment",
+        "Lifestyle",
+        "Culture"
+      ],
+      "usage_type": [
+        "interview-single",
+        "podcast-video",
+        "social-short"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front-right",
+      "key_light_type": "LED softbox",
+      "fill_light": "reflector",
+      "back_light": "practical behind",
+      "lighting_ratio": "3:1 standard",
+      "presenter_zone": "center",
+      "camera_setup": "50mm, medium shot, slight depth of field",
+      "canvas_notes": "Window ด้านหลังขวาให้ backlight natural — ระวัง presenter ถูก silhouette ถ้า key ไม่แรงพอ. ใช้ gel CTO full บน key เพื่อ match warm tungsten ของฉาก. Shallow DOF ของฉาก match ดีกับการถ่าย interview. ห้ามใช้ฉากนี้กับเนื้อหาจริงจัง — tone nostalgic เกินไป",
+      "notes": "โทนอบอุ่นมาก เหมาะสำหรับเนื้อหา lifestyle/entertainment — window ด้านหลังให้ความรู้สึก natural แต่ต้องระวัง backlight ทำให้ presenter ถูก silhouette"
+    },
+    {
+      "id": "VP-009",
+      "title": "Library Study Room — Academic & Medical",
+      "title_th": "ห้องสมุด/ห้องทำงาน บรรยากาศวิชาการ",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "indoor/library-study/VP-009-library-study-warm-academic-v1.webp",
+      "thumb": "_thumbnails/VP-009_thumb.avif",
+      "video_url": "",
+      "world": "interior-office",
+      "energy": "balanced",
+      "context_tags": [
+        "talk-interview",
+        "analysis-data",
+        "news-report"
+      ],
+      "show_ids": [],
+      "environment": "indoor",
+      "location_type": "library-study",
+      "location_country": "generic",
+      "time_of_day": "interior-lit",
+      "color_temp": "warm",
+      "dominant_colors": [
+        "#6B4C2A",
+        "#8B6914",
+        "#2C1810",
+        "#D4C4A0"
+      ],
+      "brightness": "medium",
+      "lighting_style": "natural-window",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "static",
+      "style": "realistic",
+      "has_particles": false,
+      "particle_types": [],
+      "depth_of_field": "medium",
+      "mood": [
+        "serious",
+        "authoritative",
+        "warm",
+        "professional"
+      ],
+      "topics": [
+        "education",
+        "health",
+        "analysis",
+        "opinion",
+        "research",
+        "medicine",
+        "lifestyle"
+      ],
+      "editorial_fit": [
+        "Lifestyle",
+        "News",
+        "Business",
+        "Health"
+      ],
+      "usage_type": [
+        "interview-single",
+        "news-anchor",
+        "explainer",
+        "podcast-video"
+      ],
+      "subject_placement": "center",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front-left",
+      "key_light_type": "LED softbox",
+      "fill_light": "soft fill",
+      "back_light": "hair light",
+      "lighting_ratio": "3:1 standard",
+      "presenter_zone": "center",
+      "camera_setup": "50-85mm, medium shot, static ใช้ tripod",
+      "canvas_notes": "Window แสง ambient จากทางขวาฉาก — key ควรมาจากซ้ายเพื่อ match. ใช้ gel CTO 1/2 บน key. โปสเตอร์กายวิภาคผนังขวาเหมาะสำหรับเนื้อหาสุขภาพ/การแพทย์อย่างมาก. Presenter ควรนั่งโต๊ะเพื่อให้ภาพดูเป็น authority สูง. Bookshelf ด้านหลัง blur พอดีที่ f/2.8-4",
+      "notes": "โปสเตอร์กายวิภาคบนผนังเหมาะสำหรับเนื้อหาสุขภาพ/การแพทย์ — แสง window ด้านหลังสม่ำเสมอดี เหมาะกับ interview หรือ explainer"
+    },
+    {
+      "id": "VP-010",
+      "title": "City Skyline — News Desk Outdoor Day",
+      "title_th": "สกายไลน์เมือง กลางวัน ฉากโต๊ะข่าว outdoor",
+      "added_date": "2026-03-17",
+      "status": "active",
+      "filepath": "outdoor/city-skyline/VP-010-city-skyline-day-neutral-v1.webp",
+      "thumb": "_thumbnails/VP-010_thumb.avif",
+      "video_url": "",
+      "world": "urban-city",
+      "energy": "balanced",
+      "context_tags": [
+        "news-report",
+        "analysis-data",
+        "talk-interview",
+        "event-special"
+      ],
+      "show_ids": [
+        "SH-MN1XLN7A"
+      ],
+      "environment": "outdoor",
+      "location_type": "city-skyline",
+      "location_country": "generic",
+      "time_of_day": "day",
+      "color_temp": "cool",
+      "dominant_colors": [
+        "#87CEEB",
+        "#4A90D9",
+        "#2C3E50",
+        "#F0F4F8"
+      ],
+      "brightness": "medium",
+      "lighting_style": "natural-soft",
+      "has_sfx_light": false,
+      "sfx_light_types": [],
+      "motion_type": "subtle-ambient",
+      "style": "realistic",
+      "has_particles": false,
+      "particle_types": [],
+      "depth_of_field": "deep",
+      "mood": [
+        "serious",
+        "authoritative",
+        "neutral",
+        "professional"
+      ],
+      "topics": [
+        "news",
+        "politics",
+        "business",
+        "economy",
+        "city",
+        "development",
+        "real-estate"
+      ],
+      "editorial_fit": [
+        "News",
+        "Business",
+        "Politics"
+      ],
+      "usage_type": [
+        "news-anchor",
+        "standup-report",
+        "interview-dual"
+      ],
+      "subject_placement": "flexible",
+      "background_complexity": "medium",
+      "platform_fit": [
+        "16:9",
+        "9:16"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": [],
+      "key_light_dir": "front",
+      "key_light_type": "LED panel",
+      "fill_light": "soft fill",
+      "back_light": "none",
+      "lighting_ratio": "2:1 low",
+      "presenter_zone": "center",
+      "camera_setup": "35-50mm, medium shot, static หรือ slight push in",
+      "canvas_notes": "แสง overcast กลางวันสม่ำเสมอมาก — เป็นหนึ่งในฉากที่ match ง่ายที่สุด. ใช้ gel CTB เล็กน้อยบน key เพื่อ match cool daylight. สามารถนั่งโต๊ะข่าวหรือยืนก็ได้ ฉาก flexible มาก. presenter สามารถอยู่ซ้าย กลาง หรือขวาก็ได้เนื่องจาก skyline ไม่มี focal point เดียว",
+      "notes": "ฉากข่าวกลางวัน outdoor ที่สะอาดที่สุดในคลัง — แสง overcast สม่ำเสมอดี presenter นั่งที่โต๊ะ เหมาะกับรายงานเศรษฐกิจ/การเมือง"
+    },
+    {
+      "id": "VP-011",
+      "title": "Luxury Marble Gold Wall",
+      "title_th": "ผนังหินอ่อนทองหรูหรา",
+      "filepath": "indoor/misc/INT_WALL_LUX-MINIMAL_MARBLE-GOLD_01.webp",
+      "thumb": "_thumbnails/VP-011_thumb.webp",
+      "added_date": "2026-03-22",
+      "environment": "indoor",
+      "location_type": "",
+      "location_country": "",
+      "time_of_day": "timeless",
+      "video_url": "",
+      "notes": "ฉากในร่ม — ผนังหินอ่อนสีครีม/ทอง ตัดด้วยแผงไม้สีดำแนวตั้ง โคมไฟ wall sconce ให้แสงอุ่น Luxury Minimal สไตล์ high-end hotel. เหมาะสำหรับ talk-interview รายการพรีเมียม หรือ opener-drama ที่ต้องการความสง่างาม",
+      "status": "active",
+      "world": "interior-office",
+      "energy": "intense",
+      "show_ids": [],
+      "context_tags": [
+        "talk-interview",
+        "opener-drama"
+      ],
+      "key_light_dir": "",
+      "key_light_type": "",
+      "fill_light": "",
+      "back_light": "",
+      "lighting_ratio": "",
+      "presenter_zone": "",
+      "camera_setup": "",
+      "canvas_notes": "",
+      "color_temp": "warm",
+      "brightness": "low",
+      "has_particles": false,
+      "lighting_style": "",
+      "motion_type": "static",
+      "mood": [],
+      "topics": [],
+      "editorial_fit": [],
+      "platform_fit": [
+        "16:9"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": []
+    },
+    {
+      "id": "VP-012",
+      "title": "Modern Loft Lobby Interior",
+      "title_th": "ล็อบบี้ล็อฟท์สมัยใหม่",
+      "filepath": "indoor/misc/INT_NDUSTRIAL_LOFT_WOOD.webp",
+      "thumb": "_thumbnails/VP-012_thumb.webp",
+      "added_date": "2026-03-22",
+      "environment": "indoor",
+      "location_type": "",
+      "location_country": "",
+      "time_of_day": "timeless",
+      "video_url": "",
+      "notes": "ฉากในร่ม — โถงล็อบบี้ทรงสูง มีบันได ต้นไม้ขนาดใหญ่ และโต๊ะเก้าอี้ แสงธรรมชาติจากกระจกบานใหญ่ โทนเขียว-เทา cool neutral บรรยากาศโล่งสบาย เหมาะสำหรับ talk-interview, รายงานข่าว หรือ social-short",
+      "status": "active",
+      "world": "interior-office",
+      "energy": "balanced",
+      "show_ids": [],
+      "context_tags": [
+        "talk-interview",
+        "news-report",
+        "social-short"
+      ],
+      "key_light_dir": "",
+      "key_light_type": "",
+      "fill_light": "",
+      "back_light": "",
+      "lighting_ratio": "",
+      "presenter_zone": "",
+      "camera_setup": "",
+      "canvas_notes": "",
+      "lighting_style": "",
+      "motion_type": "static",
+      "color_temp": "cool",
+      "brightness": "medium",
+      "has_particles": false,
+      "mood": [],
+      "topics": [],
+      "editorial_fit": [],
+      "platform_fit": [
+        "16:9"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": []
+    },
+    {
+      "id": "VP-013",
+      "title": "Classic Wood Library",
+      "title_th": "ห้องสมุดไม้คลาสสิก",
+      "filepath": "indoor/misc/INT_LIBRARY_CLASSIC_WOOD_BOOKS.webp",
+      "thumb": "_thumbnails/VP-013_thumb.webp",
+      "added_date": "2026-03-22",
+      "environment": "indoor",
+      "location_type": "",
+      "location_country": "",
+      "time_of_day": "timeless",
+      "video_url": "",
+      "notes": "ฉากในร่ม — ห้องสมุดคลาสสิก ชั้นหนังสือไม้เข้ม โต๊ะหนัง เก้าอี้สง่างาม บรรยากาศ academic/heritage สูง เหมาะสำหรับ analysis-data, talk-interview, หรือรายการ heritage",
+      "status": "active",
+      "world": "heritage-culture",
+      "energy": "open",
+      "show_ids": [],
+      "context_tags": [
+        "talk-interview",
+        "analysis-data",
+        "news-report"
+      ],
+      "key_light_dir": "",
+      "key_light_type": "",
+      "fill_light": "",
+      "back_light": "",
+      "lighting_ratio": "",
+      "presenter_zone": "",
+      "camera_setup": "",
+      "canvas_notes": "",
+      "lighting_style": "",
+      "motion_type": "static",
+      "color_temp": "warm",
+      "brightness": "medium",
+      "has_particles": false,
+      "mood": [],
+      "topics": [],
+      "editorial_fit": [],
+      "platform_fit": [
+        "16:9"
+      ],
+      "resolution": "HD",
+      "file_format": "webp",
+      "is_loopable": false,
+      "engine": "AI-Generated",
+      "used_in": []
+    }
+  ]
+}
