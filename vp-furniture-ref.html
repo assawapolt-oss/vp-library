@@ -161,7 +161,33 @@ input[type=file]{display:none}
 .progress-bar-wrap{width:120px;height:4px;background:var(--line);border-radius:2px}
 .progress-bar{height:4px;background:var(--gold);border-radius:2px;transition:width .3s}
 
-@media(max-width:480px){.grid-wrap{columns:2 160px}.quick-add{flex-direction:column}.url-row{width:100%}}
+/* ── Tablet ── */
+@media(max-width:768px){
+  .grid-wrap{columns:3 180px}
+  .modal{grid-template-columns:1fr}
+  .modal-img-side{border-radius:16px 16px 0 0;min-height:220px;max-height:45vh}
+  .nav-bm-btn{display:none}
+}
+/* ── Mobile ── */
+@media(max-width:480px){
+  .nav{padding:0 12px;height:46px}
+  .nav-logo{font-size:13px}
+  .nav-link{padding:4px 8px;font-size:11px}
+  .quick-add{flex-direction:column;padding:10px 12px;gap:8px}
+  .drop-zone{padding:10px 14px}
+  .url-row{width:100%}
+  .filter-bar{padding:8px 12px;gap:8px}
+  .cat-tab{padding:4px 9px;font-size:10px}
+  .toolbar{padding:8px 12px;gap:8px}
+  .search-input{width:130px;font-size:11px}
+  .grid-wrap{columns:2 140px;padding:12px;gap:8px}
+  .grid-wrap{column-gap:8px}
+  .card-body{padding:6px 8px}
+  .modal{max-height:98vh}
+  .modal-img-side{min-height:180px}
+  .modal-info-side{padding:14px}
+  .bm-setup-box{padding:18px;border-radius:16px 16px 0 0}
+}
 </style>
 </head>
 <body>
