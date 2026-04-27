@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Furniture Ref — THE STANDARD VP Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0A0A0C;
+  --surface:  #111114;
+  --card:     #131316;
+  --bone:     #F0ECE4;
+  --bone-dim: #A09C94;
+  --bone-faint:#5A5A62;
+  --gold:     #C4A266;
+  --gold-dim: #6B5633;
+  --line:     #222226;
+  --line-hi:  #2E2E34;
+  --muted:    #7A7A84;
+  --danger:   #8B2020;
+  --font-sans:'Instrument Sans', system-ui, sans-serif;
+  --font-disp:'Bricolage Grotesque', system-ui, sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-height:100vh;font-size:14px}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:200;background:rgba(10,10,12,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:0 20px;display:flex;align-items:center;gap:16px;height:52px}
+.nav-logo{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--bone);text-decoration:none;white-space:nowrap}
+.nav-sep{color:var(--bone-faint);font-size:13px}
+.nav-cur{font-size:13px;color:var(--gold);font-weight:600}
+.nav-links{margin-left:auto;display:flex;gap:8px}
+.nav-link{padding:5px 12px;border:1px solid var(--line-hi);border-radius:6px;font-size:12px;color:var(--muted);text-decoration:none;transition:all .12s}
+.nav-link:hover{border-color:var(--gold-dim);color:var(--gold)}
+.nav-bm-btn{padding:5px 12px;border:1px solid var(--gold-dim);border-radius:6px;font-size:12px;color:var(--gold);background:none;cursor:pointer;font-family:inherit;transition:all .12s}
+.nav-bm-btn:hover{background:var(--gold-dim)}
+
+/* QUICK ADD */
+.quick-add{background:var(--surface);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.drop-zone{border:1.5px dashed var(--line-hi);border-radius:10px;padding:12px 20px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;flex:1;min-width:200px}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:rgba(196,162,102,.06)}
+.drop-zone-icon{font-size:20px}
+.drop-zone-text{font-size:12px;color:var(--muted)}
+.drop-zone-text strong{color:var(--bone-dim);display:block}
+.url-row{display:flex;gap:6px;flex:1;min-width:260px}
+.url-input{flex:1;background:var(--card);border:1px solid var(--line-hi);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--bone);font-family:inherit;outline:none;transition:border-color .12s}
+.url-input:focus{border-color:var(--gold-dim)}
+.url-input::placeholder{color:var(--bone-faint)}
+.add-btn{padding:8px 16px;background:var(--gold);color:#0A0A0C;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .12s;white-space:nowrap}
+.add-btn:hover{opacity:.85}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
+input[type=file]{display:none}
+
+/* FILTER BAR */
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:12px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.cat-tab{padding:5px 12px;border-radius:16px;border:1px solid transparent;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:transparent;color:var(--muted);font-family:inherit;transition:all .12s;display:flex;align-items:center;gap:5px}
+.cat-tab:hover{color:var(--bone-dim)}
+.cat-tab.active{background:var(--line-hi);color:var(--bone);border-color:var(--line-hi)}
+.cat-tab .cnt{font-size:10px;background:var(--line);padding:1px 5px;border-radius:8px;color:var(--muted)}
+.filter-sep{width:1px;height:16px;background:var(--line-hi);flex-shrink:0}
+.style-pill{padding:4px 10px;border-radius:12px;border:1px solid var(--line);font-size:11px;cursor:pointer;background:transparent;color:var(--bone-faint);font-family:inherit;transition:all .12s;white-space:nowrap}
+.style-pill.active{border-color:var(--gold-dim);color:var(--gold);background:rgba(196,162,102,.08)}
+
+/* TOOLBAR */
+.toolbar{padding:10px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.count-label{font-size:11px;color:var(--muted)}
+.search-input{background:var(--card);border:1px solid var(--line-hi);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--bone);font-family:inherit;outline:none;width:180px;transition:border-color .12s}
+.search-input:focus{border-color:var(--gold-dim)}
+.search-input::placeholder{color:var(--bone-faint)}
+.sort-sel{background:var(--card);border:1px solid var(--line-hi);border-radius:7px;padding:5px 8px;font-size:11px;color:var(--muted);font-family:inherit;outline:none;cursor:pointer;margin-left:auto}
+
+/* GRID */
+.grid-wrap{padding:20px;columns:4 220px;gap:12px}
+.grid-card{break-inside:avoid;margin-bottom:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .15s;position:relative}
+.grid-card:hover{border-color:var(--gold-dim);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.grid-card img{width:100%;display:block;object-fit:cover}
+.card-body{padding:8px 10px}
+.card-cat{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-bottom:5px;letter-spacing:.03em}
+.card-notes{font-size:11px;color:var(--bone-dim);line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-source{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.card-source img{width:12px;height:12px;border-radius:2px}
+.card-hover-btns{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.grid-card:hover .card-hover-btns{opacity:1}
+.card-hover-btn{width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,12,.8);color:var(--bone-dim);transition:all .12s}
+.card-hover-btn:hover{background:var(--surface);color:var(--bone)}
+.card-hover-btn.del:hover{background:#8B2020;color:#fff}
+.grid-empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:13px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--line-hi);border-radius:10px;padding:10px 18px;font-size:12px;color:var(--bone);z-index:9999;transition:transform .3s ease;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--gold-dim);color:var(--gold)}
+.toast.err{border-color:#8B2020;color:#ff6b6b}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line-hi);border-radius:16px;width:100%;max-width:760px;max-height:90vh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:580px){.modal{grid-template-columns:1fr;max-height:95vh}}
+.modal-img-side{background:#000;border-radius:16px 0 0 16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px;position:relative}
+.modal-img-side img{width:100%;height:100%;object-fit:contain;display:block}
+@media(max-width:580px){.modal-img-side{border-radius:16px 16px 0 0;min-height:200px}}
+.modal-info-side{padding:20px;display:flex;flex-direction:column;gap:12px}
+.modal-close{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:6px;border:none;background:rgba(0,0,0,.6);color:var(--bone-dim);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10}
+.modal-field label{display:block;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:4px;text-transform:uppercase}
+.modal-input{width:100%;background:var(--card);border:1px solid var(--line-hi);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--bone);font-family:inherit;outline:none}
+.modal-input:focus{border-color:var(--gold-dim)}
+.modal-input[readonly]{color:var(--muted);cursor:default}
+.modal-textarea{width:100%;background:var(--card);border:1px solid var(--line-hi);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--bone);font-family:inherit;outline:none;resize:vertical;min-height:60px}
+.modal-textarea:focus{border-color:var(--gold-dim)}
+.modal-cat-grid{display:flex;flex-wrap:wrap;gap:5px}
+.modal-cat-opt{padding:4px 9px;border:1px solid var(--line);border-radius:12px;font-size:11px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .1s}
+.modal-cat-opt.active{border-color:var(--gold-dim);color:var(--gold);background:rgba(196,162,102,.1)}
+.modal-style-grid{display:flex;flex-wrap:wrap;gap:5px}
+.modal-style-opt{padding:3px 8px;border:1px solid var(--line);border-radius:10px;font-size:10px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .1s}
+.modal-style-opt.active{border-color:var(--line-hi);color:var(--bone-dim);background:var(--line)}
+.modal-save-btn{padding:8px 16px;background:var(--gold);color:#0A0A0C;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .12s}
+.modal-save-btn:hover{opacity:.85}
+.modal-save-btn:disabled{opacity:.4}
+.modal-del-btn{padding:8px 14px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .12s}
+.modal-del-btn:hover{background:var(--danger);color:#fff}
+.modal-src-link{font-size:11px;color:var(--gold);text-decoration:underline;word-break:break-all}
+.modal-src-link:hover{opacity:.8}
+
+/* BOOKMARKLET OVERLAY */
+.bm-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;flex-direction:column}
+.bm-overlay.open{display:flex}
+.bm-header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.bm-title{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--bone)}
+.bm-imgs{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;overflow-y:auto;flex:1}
+.bm-img-opt{width:calc(50% - 4px);aspect-ratio:4/3;border:2px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .12s;position:relative}
+.bm-img-opt img{width:100%;height:100%;object-fit:cover}
+.bm-img-opt:hover,.bm-img-opt.selected{border-color:var(--gold)}
+.bm-img-opt.selected::after{content:'✓';position:absolute;top:4px;right:4px;background:var(--gold);color:#000;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.bm-form{padding:12px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.bm-cat-row{display:flex;flex-wrap:wrap;gap:5px}
+.bm-cat-btn{padding:4px 10px;border:1px solid var(--line);border-radius:12px;font-size:11px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .1s}
+.bm-cat-btn.active{border-color:var(--gold-dim);color:var(--gold);background:rgba(196,162,102,.1)}
+.bm-save-btn{padding:9px;background:var(--gold);color:#0A0A0C;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.bm-save-btn:disabled{opacity:.4}
+
+/* BOOKMARKLET SETUP */
+.bm-setup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.bm-setup-overlay.open{display:flex}
+.bm-setup-box{background:var(--surface);border:1px solid var(--line-hi);border-radius:16px;padding:24px;max-width:480px;width:100%}
+.bm-setup-title{font-family:var(--font-disp);font-size:18px;font-weight:700;color:var(--bone);margin-bottom:6px}
+.bm-setup-sub{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.bm-setup-link{display:inline-block;padding:10px 16px;background:var(--gold);color:#0A0A0C;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;cursor:grab;margin-bottom:16px}
+.bm-setup-steps{font-size:12px;color:var(--muted);line-height:1.8}
+.bm-setup-close{padding:7px 14px;border:1px solid var(--line-hi);border-radius:7px;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;margin-top:14px}
+
+/* UPLOAD PROGRESS */
+.upload-progress{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line-hi);border-radius:10px;padding:10px 16px;display:none;align-items:center;gap:10px;z-index:9000;font-size:12px;color:var(--bone-dim);box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.upload-progress.show{display:flex}
+.progress-bar-wrap{width:120px;height:4px;background:var(--line);border-radius:2px}
+.progress-bar{height:4px;background:var(--gold);border-radius:2px;transition:width .3s}
+
+@media(max-width:480px){.grid-wrap{columns:2 160px}.quick-add{flex-direction:column}.url-row{width:100%}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="vp-search.html">THE STANDARD VP</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-cur">🪑 Furniture Ref</span>
+  <div class="nav-links">
+    <a class="nav-link" href="vp-grab-ref.html">Grab REF</a>
+    <button class="nav-bm-btn" onclick="openBmSetup()">🔖 Bookmarklet</button>
+  </div>
+</nav>
+
+<!-- QUICK ADD -->
+<div class="quick-add">
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="drop-zone-icon">📁</div>
+    <div class="drop-zone-text">
+      <strong>อัปโหลดภาพ</strong>
+      ลากไฟล์มาวาง หรือคลิกเลือก
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" multiple>
+  <div class="url-row">
+    <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
+      onkeydown="if(event.key==='Enter')addFromUrl()">
+    <button class="add-btn" onclick="addFromUrl()">+ เพิ่ม</button>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar" id="filterBar">
+  <button class="cat-tab active" data-cat="all" onclick="setCat('all')">ทั้งหมด <span class="cnt" id="cnt-all">0</span></button>
+  <button class="cat-tab" data-cat="chair"    onclick="setCat('chair')">🪑 เก้าอี้ <span class="cnt" id="cnt-chair">0</span></button>
+  <button class="cat-tab" data-cat="table"    onclick="setCat('table')">🪵 โต๊ะ <span class="cnt" id="cnt-table">0</span></button>
+  <button class="cat-tab" data-cat="sofa"     onclick="setCat('sofa')">🛋️ โซฟา <span class="cnt" id="cnt-sofa">0</span></button>
+  <button class="cat-tab" data-cat="cabinet"  onclick="setCat('cabinet')">🗄️ ตู้/ชั้น <span class="cnt" id="cnt-cabinet">0</span></button>
+  <button class="cat-tab" data-cat="lamp"     onclick="setCat('lamp')">💡 โคมไฟ <span class="cnt" id="cnt-lamp">0</span></button>
+  <button class="cat-tab" data-cat="plant"    onclick="setCat('plant')">🌿 ต้นไม้/กระถาง <span class="cnt" id="cnt-plant">0</span></button>
+  <button class="cat-tab" data-cat="wall"     onclick="setCat('wall')">🖼️ ของแต่งผนัง <span class="cnt" id="cnt-wall">0</span></button>
+  <button class="cat-tab" data-cat="deco"     onclick="setCat('deco')">🏺 ของตกแต่ง <span class="cnt" id="cnt-deco">0</span></button>
+  <button class="cat-tab" data-cat="screen"   onclick="setCat('screen')">📺 จอ/อุปกรณ์ <span class="cnt" id="cnt-screen">0</span></button>
+  <button class="cat-tab" data-cat="mirror"   onclick="setCat('mirror')">🪞 กระจก <span class="cnt" id="cnt-mirror">0</span></button>
+  <button class="cat-tab" data-cat="material" onclick="setCat('material')">🧱 พื้น/ผนัง <span class="cnt" id="cnt-material">0</span></button>
+  <button class="cat-tab" data-cat="other"    onclick="setCat('other')">📦 อื่นๆ <span class="cnt" id="cnt-other">0</span></button>
+  <div class="filter-sep"></div>
+  <button class="style-pill" data-style="minimal"    onclick="toggleStyle('minimal')">Minimal</button>
+  <button class="style-pill" data-style="industrial" onclick="toggleStyle('industrial')">Industrial</button>
+  <button class="style-pill" data-style="luxury"     onclick="toggleStyle('luxury')">Luxury</button>
+  <button class="style-pill" data-style="vintage"    onclick="toggleStyle('vintage')">Vintage</button>
+  <button class="style-pill" data-style="modern"     onclick="toggleStyle('modern')">Modern</button>
+  <button class="style-pill" data-style="scandinavian" onclick="toggleStyle('scandinavian')">Scandinavian</button>
+  <button class="style-pill" data-style="thai"       onclick="toggleStyle('thai')">Thai/Asian</button>
+  <button class="style-pill" data-style="dark"       onclick="toggleStyle('dark')">Dark/Moody</button>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <span class="count-label" id="countLabel">กำลังโหลด…</span>
+  <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา…" oninput="renderGrid()">
+  <select class="sort-sel" onchange="renderGrid()">
+    <option value="newest">ล่าสุดก่อน</option>
+    <option value="oldest">เก่าสุดก่อน</option>
+  </select>
+</div>
+
+<!-- GRID -->
+<div class="grid-wrap" id="gridWrap"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- UPLOAD PROGRESS -->
+<div class="upload-progress" id="uploadProgress">
+  <span id="uploadProgressText">กำลังอัปโหลด…</span>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-img-side" id="modalImgSide">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <img id="modalImg" src="" alt="">
+    </div>
+    <div class="modal-info-side">
+      <div class="modal-field">
+        <label>หมวดหมู่</label>
+        <div class="modal-cat-grid" id="modalCatGrid"></div>
+      </div>
+      <div class="modal-field">
+        <label>Style Tags</label>
+        <div class="modal-style-grid" id="modalStyleGrid"></div>
+      </div>
+      <div class="modal-field">
+        <label>Notes</label>
+        <textarea class="modal-textarea" id="modalNotes" placeholder="ใส่ note อิสระ…" rows="3"></textarea>
+      </div>
+      <div class="modal-field" id="modalSrcField" style="display:none">
+        <label>Source</label>
+        <a class="modal-src-link" id="modalSrcLink" href="#" target="_blank" rel="noopener"></a>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:auto;flex-wrap:wrap">
+        <button class="modal-save-btn" id="modalSaveBtn" onclick="saveModal()">💾 บันทึก</button>
+        <button class="modal-del-btn" id="modalDelBtn" onclick="deleteCurrentItem()">🗑 ลบ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKMARKLET SETUP -->
+<div class="bm-setup-overlay" id="bmSetupOverlay" onclick="if(event.target===this)closeBmSetup()">
+  <div class="bm-setup-box">
+    <div class="bm-setup-title">🔖 ติดตั้ง Bookmarklet</div>
+    <div class="bm-setup-sub">ลากปุ่มด้านล่างไปวางบน bookmark bar แล้วคลิกได้เลยทุกครั้งที่เจอภาพน่าสนใจ</div>
+    <a class="bm-setup-link" id="bmBookmarkletLink" href="#">📁 Save to Furniture Ref</a>
+    <div class="bm-setup-steps">
+      1. แสดง bookmark bar (Ctrl+Shift+B / Cmd+Shift+B)<br>
+      2. ลากปุ่มสีทองขึ้นไปวางบน bookmark bar<br>
+      3. เวลาเจอภาพที่อยากบันทึก → คลิกปุ่มนั้น<br>
+      4. เลือกภาพ, หมวด, กด Save ได้เลย
+    </div>
+    <button class="bm-setup-close" onclick="closeBmSetup()">ปิด</button>
+  </div>
+</div>
+
+<!-- BOOKMARKLET QUICK-SAVE OVERLAY (popup mode) -->
+<div class="bm-overlay" id="bmOverlay">
+  <div class="bm-header">
+    <div class="bm-title">📁 บันทึกลง Furniture Ref</div>
+    <button style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px" onclick="window.close()">✕</button>
+  </div>
+  <div class="bm-imgs" id="bmImgs"></div>
+  <div class="bm-form">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:2px">เลือกหมวด</div>
+    <div class="bm-cat-row" id="bmCatRow"></div>
+    <input class="url-input" id="bmNotes" placeholder="Note (optional)…" style="margin-top:4px">
+    <button class="bm-save-btn" id="bmSaveBtn" onclick="bmSave()">💾 บันทึก</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
+const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const FURN_TABLE  = 'furniture_refs';
+const FURN_BUCKET = 'furniture-refs';
+
+const CATEGORIES = [
+  {id:'chair',    label:'🪑 เก้าอี้',        color:'#f59e0b',bg:'rgba(245,158,11,.15)'},
+  {id:'table',    label:'🪵 โต๊ะ',            color:'#10b981',bg:'rgba(16,185,129,.15)'},
+  {id:'sofa',     label:'🛋️ โซฟา',           color:'#3b82f6',bg:'rgba(59,130,246,.15)'},
+  {id:'cabinet',  label:'🗄️ ตู้/ชั้น',        color:'#8b5cf6',bg:'rgba(139,92,246,.15)'},
+  {id:'lamp',     label:'💡 โคมไฟ',           color:'#fcd34d',bg:'rgba(252,211,77,.15)'},
+  {id:'plant',    label:'🌿 ต้นไม้/กระถาง',   color:'#22d3ee',bg:'rgba(34,211,238,.15)'},
+  {id:'wall',     label:'🖼️ ของแต่งผนัง',     color:'#f97316',bg:'rgba(249,115,22,.15)'},
+  {id:'deco',     label:'🏺 ของตกแต่ง',       color:'#a3e635',bg:'rgba(163,230,53,.15)'},
+  {id:'screen',   label:'📺 จอ/อุปกรณ์',      color:'#e11d48',bg:'rgba(225,29,72,.15)'},
+  {id:'mirror',   label:'🪞 กระจก',           color:'#cbd5e1',bg:'rgba(203,213,225,.12)'},
+  {id:'material', label:'🧱 พื้น/ผนัง',       color:'#ca8a04',bg:'rgba(202,138,4,.15)'},
+  {id:'other',    label:'📦 อื่นๆ',           color:'#64748b',bg:'rgba(100,116,139,.15)'},
+];
+const STYLES = ['minimal','industrial','luxury','vintage','modern','scandinavian','thai','dark'];
+
+let ALL_ITEMS = [];
+let _curCat = 'all';
+let _curStyles = [];
+let _editId = null;
+
+// ── helpers ──────────────────────────────────────────────────
+function isAdmin() { return (localStorage.getItem('vp_user_role')||'') === 'admin'; }
+function catInfo(id) { return CATEGORIES.find(c=>c.id===id) || CATEGORIES.at(-1); }
+
+function toast(msg, type='ok', dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+type;
+  void t.offsetHeight; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+function setProgress(pct, text) {
+  const el = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  const txt = document.getElementById('uploadProgressText');
+  if (pct >= 100) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  bar.style.width = pct+'%';
+  if (text) txt.textContent = text;
+}
+
+// ── image compression ────────────────────────────────────────
+async function compressImage(file, maxW=1600, maxH=1200, quality=0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let {naturalWidth:w, naturalHeight:h} = img;
+      const ratio = Math.min(maxW/w, maxH/h, 1);
+      w = Math.round(w*ratio); h = Math.round(h*ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      canvas.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob||file); }, 'image/webp', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+// ── upload file ──────────────────────────────────────────────
+async function uploadFile(file) {
+  setProgress(10, 'กำลัง compress…');
+  const blob = await compressImage(file);
+  const ext = 'webp';
+  const ts = Date.now();
+  const path = `uploads/${ts}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+  setProgress(35, 'กำลัง upload…');
+  const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, blob, { contentType:'image/webp', upsert:false });
+  if (se) { setProgress(100); throw new Error('Storage: '+se.message); }
+  const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
+  const image_url = pd.publicUrl;
+  setProgress(70, 'กำลังบันทึก…');
+  const row = { image_url, thumb_url: image_url, storage_path: path, category: 'other', added_by: localStorage.getItem('vp_display_name')||'' };
+  const { data, error: de } = await _SB.from(FURN_TABLE).insert(row).select().single();
+  if (de) { setProgress(100); throw new Error('DB: '+de.message); }
+  setProgress(100);
+  ALL_ITEMS.unshift(data);
+  updateCounts();
+  renderGrid();
+  return data;
+}
+
+// ── add from URL ──────────────────────────────────────────────
+async function addFromUrl() {
+  const input = document.getElementById('urlInput');
+  const raw = input.value.trim();
+  if (!raw) return;
+  const btn = document.querySelector('.add-btn');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    // Try to figure out if it's an image URL or a page URL
+    const isImg = /\.(jpg|jpeg|png|webp|gif|avif|svg)(\?|$)/i.test(raw);
+    const image_url = isImg ? raw : raw; // For page URLs, store as source_url
+    const row = {
+      image_url: isImg ? raw : '',
+      source_url: isImg ? '' : raw,
+      source_title: '',
+      category: 'other',
+      added_by: localStorage.getItem('vp_display_name')||''
+    };
+    if (!isImg) { toast('วาง URL ภาพ (ไม่ใช่ link หน้าเว็บ) เพื่อแสดงภาพได้เลย', 'ok'); row.image_url = raw; }
+    const { data, error } = await _SB.from(FURN_TABLE).insert(row).select().single();
+    if (error) throw error;
+    ALL_ITEMS.unshift(data);
+    updateCounts(); renderGrid();
+    input.value = '';
+    toast('เพิ่มแล้ว ✓ — คลิกการ์ดเพื่อแก้หมวด');
+    // auto-open modal to set category
+    setTimeout(() => openModal(data.id), 300);
+  } catch(e) {
+    toast('Error: '+e.message, 'err');
+  }
+  btn.disabled = false; btn.textContent = '+ เพิ่ม';
+}
+
+// ── file drop/select ─────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', async function() {
+  const files = [...this.files];
+  if (!files.length) return;
+  let done = 0;
+  for (const f of files) {
+    try {
+      setProgress(Math.round((done/files.length)*100), `อัปโหลด ${done+1}/${files.length}…`);
+      const item = await uploadFile(f);
+      done++;
+      if (done === 1) setTimeout(() => openModal(item.id), 300); // auto-open first
+    } catch(e) { toast('Upload failed: '+e.message, 'err'); }
+  }
+  this.value = '';
+  setProgress(100);
+  if (files.length > 1) toast(`อัปโหลดแล้ว ${done} ไฟล์ ✓`);
+});
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  document.getElementById('fileInput').files; // hack for ref
+  // trigger upload directly
+  files.forEach(async f => {
+    try { const item = await uploadFile(f); setTimeout(() => openModal(item.id), 300); }
+    catch(e) { toast('Drop upload failed: '+e.message, 'err'); }
+  });
+});
+
+// Paste image from clipboard
+document.addEventListener('paste', async e => {
+  const items = [...(e.clipboardData?.items||[])];
+  const imgItem = items.find(i => i.type.startsWith('image/'));
+  if (!imgItem) return;
+  const file = imgItem.getAsFile();
+  if (!file) return;
+  try {
+    const item = await uploadFile(file);
+    toast('วางภาพแล้ว ✓'); setTimeout(() => openModal(item.id), 300);
+  } catch(err) { toast('Paste upload failed: '+err.message, 'err'); }
+});
+
+// ── LOAD ──────────────────────────────────────────────────────
+async function loadItems() {
+  const { data, error } = await _SB.from(FURN_TABLE).select('*').order('created_at', { ascending: false });
+  if (error) { toast('โหลดไม่ได้: '+error.message, 'err'); return; }
+  ALL_ITEMS = data || [];
+  updateCounts();
+  renderGrid();
+}
+
+// ── COUNTS ────────────────────────────────────────────────────
+function updateCounts() {
+  const counts = {};
+  ALL_ITEMS.forEach(i => { counts[i.category] = (counts[i.category]||0)+1; });
+  document.getElementById('cnt-all').textContent = ALL_ITEMS.length;
+  CATEGORIES.forEach(c => {
+    const el = document.getElementById('cnt-'+c.id);
+    if (el) el.textContent = counts[c.id]||0;
+  });
+}
+
+// ── FILTER + RENDER ───────────────────────────────────────────
+function setCat(cat) {
+  _curCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.toggle('active', b.dataset.cat===cat));
+  renderGrid();
+}
+function toggleStyle(style) {
+  const idx = _curStyles.indexOf(style);
+  if (idx >= 0) _curStyles.splice(idx,1); else _curStyles.push(style);
+  document.querySelectorAll('.style-pill').forEach(b => b.classList.toggle('active', _curStyles.includes(b.dataset.style)));
+  renderGrid();
+}
+
+function renderGrid() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sort = document.querySelector('.sort-sel').value;
+  let items = ALL_ITEMS.slice();
+  if (_curCat !== 'all') items = items.filter(i => i.category === _curCat);
+  if (_curStyles.length) items = items.filter(i => _curStyles.every(s => (i.style_tags||[]).includes(s)));
+  if (q) items = items.filter(i =>
+    (i.notes||'').toLowerCase().includes(q) ||
+    (i.source_title||'').toLowerCase().includes(q) ||
+    (i.category||'').includes(q)
+  );
+  if (sort === 'oldest') items.reverse();
+
+  document.getElementById('countLabel').textContent = `แสดง ${items.length} จาก ${ALL_ITEMS.length} รายการ`;
+  const wrap = document.getElementById('gridWrap');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="grid-empty">ยังไม่มีรูปในหมวดนี้<br><span style="font-size:11px;color:var(--bone-faint)">ลากไฟล์หรือวาง URL เพื่อเพิ่ม</span></div>';
+    return;
+  }
+  const admin = isAdmin();
+  wrap.innerHTML = items.map(item => {
+    const cat = catInfo(item.category);
+    const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.',''); } catch(e) { return ''; } })() : '';
+    return `<div class="grid-card" onclick="openModal('${item.id}')">
+      <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="card-hover-btns">
+        <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
+        ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
+      </div>
+      <div class="card-body">
+        <span class="card-cat" style="color:${cat.color};background:${cat.bg}">${cat.label}</span>
+        ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
+        ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
+        ${(item.style_tags||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s=>`<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px;border-radius:4px">${s}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(id) {
+  const item = ALL_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  _editId = id;
+  document.getElementById('modalImg').src = item.image_url;
+  // cat grid
+  document.getElementById('modalCatGrid').innerHTML = CATEGORIES.map(c =>
+    `<button class="modal-cat-opt ${item.category===c.id?'active':''}" data-cid="${c.id}" onclick="modalSetCat('${c.id}')">${c.label}</button>`
+  ).join('');
+  // style grid
+  const curStyles = item.style_tags||[];
+  document.getElementById('modalStyleGrid').innerHTML = STYLES.map(s =>
+    `<button class="modal-style-opt ${curStyles.includes(s)?'active':''}" data-s="${s}" onclick="modalToggleStyle('${s}')">${s}</button>`
+  ).join('');
+  document.getElementById('modalNotes').value = item.notes||'';
+  const srcLink = document.getElementById('modalSrcLink');
+  const srcField = document.getElementById('modalSrcField');
+  if (item.source_url) {
+    srcLink.href = item.source_url;
+    srcLink.textContent = item.source_url;
+    srcField.style.display = 'block';
+  } else { srcField.style.display = 'none'; }
+  const admin = isAdmin();
+  document.getElementById('modalSaveBtn').style.display = admin ? 'block' : 'none';
+  document.getElementById('modalDelBtn').style.display = admin ? 'block' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  _editId = null;
+}
+function modalSetCat(cid) {
+  document.querySelectorAll('.modal-cat-opt').forEach(b => b.classList.toggle('active', b.dataset.cid===cid));
+}
+function modalToggleStyle(s) {
+  const btn = document.querySelector(`.modal-style-opt[data-s="${s}"]`);
+  if (btn) btn.classList.toggle('active');
+}
+async function saveModal() {
+  if (!_editId) return;
+  const cat = document.querySelector('.modal-cat-opt.active')?.dataset.cid || 'other';
+  const styles = [...document.querySelectorAll('.modal-style-opt.active')].map(b=>b.dataset.s);
+  const notes = document.getElementById('modalNotes').value.trim();
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = '…';
+  const upd = { category: cat, style_tags: styles, notes };
+  const { error } = await _SB.from(FURN_TABLE).update(upd).eq('id', _editId);
+  if (error) { toast('บันทึกไม่ได้: '+error.message,'err'); btn.disabled=false; btn.textContent='💾 บันทึก'; return; }
+  const idx = ALL_ITEMS.findIndex(i=>i.id===_editId);
+  if (idx>=0) ALL_ITEMS[idx] = {...ALL_ITEMS[idx], ...upd};
+  updateCounts(); renderGrid();
+  btn.disabled=false; btn.textContent='💾 บันทึก';
+  toast('บันทึกแล้ว ✓'); closeModal();
+}
+async function deleteCurrentItem() {
+  if (!_editId || !confirm('ลบรูปนี้?')) return;
+  confirmDelete(_editId);
+  closeModal();
+}
+async function confirmDelete(id) {
+  if (!confirm('ลบรูปนี้?')) return;
+  const item = ALL_ITEMS.find(i=>i.id===id);
+  const { error } = await _SB.from(FURN_TABLE).delete().eq('id', id);
+  if (error) { toast('ลบไม่ได้: '+error.message,'err'); return; }
+  // also delete from storage if has path
+  if (item?.storage_path) _SB.storage.from(FURN_BUCKET).remove([item.storage_path]).catch(()=>{});
+  ALL_ITEMS = ALL_ITEMS.filter(i=>i.id!==id);
+  updateCounts(); renderGrid();
+  toast('ลบแล้ว');
+}
+
+// ── BOOKMARKLET ───────────────────────────────────────────────
+const BM_SCRIPT = `javascript:(function(){
+  var imgs=[...document.querySelectorAll('img')]
+    .filter(i=>i.naturalWidth>=200&&i.naturalHeight>=200)
+    .sort((a,b)=>(b.naturalWidth*b.naturalHeight)-(a.naturalWidth*a.naturalHeight))
+    .slice(0,6).map(i=>i.src);
+  var p=encodeURIComponent;
+  var base='${location.origin}${location.pathname}';
+  var qs='?bm=1&src='+p(imgs.join('|'))+'&url='+p(location.href)+'&title='+p(document.title);
+  window.open(base+qs,'vpfurn','width=440,height=640,top=80,left=80');
+})();`;
+
+function openBmSetup() {
+  document.getElementById('bmBookmarkletLink').href = BM_SCRIPT;
+  document.getElementById('bmSetupOverlay').classList.add('open');
+}
+function closeBmSetup() { document.getElementById('bmSetupOverlay').classList.remove('open'); }
+
+// ── BOOKMARKLET MODE ──────────────────────────────────────────
+function initBookmarkletMode() {
+  const p = new URLSearchParams(location.search);
+  if (!p.get('bm')) return;
+  document.getElementById('bmOverlay').classList.add('open');
+  // inject categories
+  document.getElementById('bmCatRow').innerHTML = CATEGORIES.map(c=>
+    `<button class="bm-cat-btn" data-cid="${c.id}" onclick="bmSetCat('${c.id}')">${c.label}</button>`
+  ).join('');
+  // load images
+  const imgs = (p.get('src')||'').split('|').filter(Boolean);
+  const sourceUrl = p.get('url')||'';
+  const imgWrap = document.getElementById('bmImgs');
+  if (imgs.length) {
+    imgWrap.innerHTML = imgs.map((src,i)=>`
+      <div class="bm-img-opt ${i===0?'selected':''}" data-src="${src}" onclick="bmSelectImg(this)">
+        <img src="${src}" alt="" onerror="this.parentNode.style.display='none'">
+      </div>`).join('');
+    window._bmSelectedSrc = imgs[0];
+  } else {
+    imgWrap.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--muted)">ไม่พบภาพอัตโนมัติ — วาง URL ด้านล่าง</div>
+      <input class="url-input" id="bmManualUrl" placeholder="วาง URL ภาพ…" style="margin:0 0 0 16px;width:calc(100% - 32px)">`;
+    window._bmSelectedSrc = '';
+  }
+  window._bmSourceUrl = sourceUrl;
+  window._bmSourceTitle = p.get('title')||'';
+  window._bmCat = 'other';
+}
+function bmSetCat(cid) {
+  window._bmCat = cid;
+  document.querySelectorAll('.bm-cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cid===cid));
+}
+function bmSelectImg(el) {
+  document.querySelectorAll('.bm-img-opt').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  window._bmSelectedSrc = el.dataset.src;
+}
+async function bmSave() {
+  const src = window._bmSelectedSrc || document.getElementById('bmManualUrl')?.value.trim() || '';
+  if (!src) { toast('เลือกภาพก่อน','err'); return; }
+  const btn = document.getElementById('bmSaveBtn');
+  btn.disabled=true; btn.textContent='กำลังบันทึก…';
+  const row = {
+    image_url: src, thumb_url: src,
+    source_url: window._bmSourceUrl||'', source_title: window._bmSourceTitle||'',
+    category: window._bmCat||'other',
+    notes: document.getElementById('bmNotes').value.trim(),
+    added_by: localStorage.getItem('vp_display_name')||''
+  };
+  const { error } = await _SB.from(FURN_TABLE).insert(row);
+  if (error) { toast('Error: '+error.message,'err'); btn.disabled=false; btn.textContent='💾 บันทึก'; return; }
+  btn.textContent='✓ บันทึกแล้ว!';
+  setTimeout(()=>window.close(), 1200);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+initBookmarkletMode();
+if (!new URLSearchParams(location.search).get('bm')) {
+  loadItems();
+}
+
+// keyboard: Escape closes modal
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>
