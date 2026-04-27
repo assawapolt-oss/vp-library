@@ -68,7 +68,7 @@ input[type=file]{display:none}
 .style-pill.active{border-color:var(--gold-dim);color:var(--gold);background:rgba(196,162,102,.08)}
 
 /* TOOLBAR */
-.toolbar{padding:10px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.toolbar{padding:10px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .count-label{font-size:11px;color:var(--muted)}
 .search-input{background:var(--card);border:1px solid var(--line-hi);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--bone);font-family:inherit;outline:none;width:180px;transition:border-color .12s}
 .search-input:focus{border-color:var(--gold-dim)}
@@ -285,7 +285,7 @@ body.select-mode .card-hover-btns{display:none}
 <!-- TOOLBAR -->
 <div class="toolbar">
   <span class="count-label" id="countLabel">กำลังโหลด…</span>
-  <button class="select-btn" id="selectModeBtn" onclick="toggleSelectMode()">✦ เลือกเพื่อสร้าง Prompt</button>
+  <button class="select-btn" id="selectModeBtn" onclick="toggleSelectMode()">✦ สร้าง Prompt</button>
   <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา…" oninput="renderGrid()">
   <select class="sort-sel" onchange="renderGrid()">
     <option value="newest">ล่าสุดก่อน</option>
@@ -621,7 +621,7 @@ function toggleSelectMode() {
   document.body.classList.toggle('select-mode', _selectMode);
   const btn = document.getElementById('selectModeBtn');
   btn.classList.toggle('active', _selectMode);
-  btn.textContent = _selectMode ? '✕ ออกจากโหมดเลือก' : '✦ เลือกเพื่อสร้าง Prompt';
+  btn.textContent = _selectMode ? '✕ เลิกเลือก' : '✦ สร้าง Prompt';
   if (!_selectMode) clearSelection();
 }
 
