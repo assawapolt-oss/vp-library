@@ -51,7 +51,8 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .drop-zone{border:1.5px dashed var(--line-hi);border-radius:0;padding:12px 20px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;flex:1;min-width:200px}
 .drop-zone:hover,.drop-zone.drag-over{border-color:var(--yellow);background:rgba(240,180,0,.06)}
 .drop-zone-icon{font-size:20px}
-.upload-pick-btn{margin-top:8px;padding:8px 18px;background:var(--red);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase}
+.upload-pick-btn{padding:8px 18px;background:var(--red);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase}
+#fileInput{display:none}
 .drop-zone-text{font-size:12px;color:var(--muted)}
 .drop-zone-text strong{color:var(--bone-dim);display:block}
 .url-row{display:flex;gap:6px;flex:1;min-width:260px}
@@ -242,18 +243,20 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 
 <!-- QUICK ADD -->
 <div class="quick-add">
-  <div class="drop-zone" id="dropZone">
+  <div class="drop-zone" id="dropZone"
+    ondragover="event.preventDefault();this.classList.add('drag-over')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="this.classList.remove('drag-over');handleFileDrop(event)"
+    onclick="document.getElementById('fileInput').click()">
     <div class="drop-zone-icon">📁</div>
     <div class="drop-zone-text">
-      <strong>ลากภาพมาวาง</strong>
-      หรือกดปุ่มเลือกรูป
+      <strong>อัปโหลดภาพ</strong>
+      ลากไฟล์มาวาง หรือคลิกเลือก
     </div>
-    <button class="upload-pick-btn" onclick="document.getElementById('fileInput').click()">
-      📷 เลือกรูป / ถ่ายภาพ
-    </button>
-    <input type="file" id="fileInput" accept="image/*" multiple
-      onchange="handleFileChange(event)"
-      style="display:none">
+    <div onclick="event.stopPropagation()" style="margin-top:8px">
+      <button class="upload-pick-btn" onclick="document.getElementById('fileInput').click()">📷 เลือกรูป</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileChange(event)">
   </div>
   <div class="url-row">
     <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
@@ -527,20 +530,15 @@ async function handleFileChange(e) {
   if (files.length > 1) toast(`อัปโหลดแล้ว ${done} ไฟล์ ✓`);
 }
 
-const dz = document.getElementById('dropZone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('drag-over');
+async function handleFileDrop(e) {
+  e.preventDefault();
   const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
-  document.getElementById('fileInput').files; // hack for ref
-  // trigger upload directly
-  files.forEach(async f => {
+  for (const f of files) {
     try { const item = await uploadFile(f); setTimeout(() => openModal(item.id), 300); }
-    catch(e) { toast('Drop upload failed: '+e.message, 'err'); }
-  });
-});
+    catch(err) { toast('Drop failed: '+err.message, 'err'); }
+  }
+}
 
 // Paste image from clipboard
 document.addEventListener('paste', async e => {
