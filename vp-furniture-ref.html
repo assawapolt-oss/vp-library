@@ -244,9 +244,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- QUICK ADD -->
 <div class="quick-add">
   <div class="drop-zone" id="dropZone"
-    ondragover="event.preventDefault();this.classList.add('drag-over')"
-    ondragleave="this.classList.remove('drag-over')"
-    ondrop="this.classList.remove('drag-over');handleFileDrop(event)"
+    ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
     onclick="document.getElementById('fileInput').click()">
     <div class="drop-zone-icon">📁</div>
     <div class="drop-zone-text">
@@ -256,7 +254,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
     <div onclick="event.stopPropagation()" style="margin-top:8px">
       <button class="upload-pick-btn" onclick="document.getElementById('fileInput').click()">📷 เลือกรูป</button>
     </div>
-    <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileChange(event)">
+    <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
   </div>
   <div class="url-row">
     <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
@@ -540,17 +538,12 @@ async function handleFileDrop(e) {
   }
 }
 
-// Paste image from clipboard
-document.addEventListener('paste', async e => {
-  const items = [...(e.clipboardData?.items||[])];
-  const imgItem = items.find(i => i.type.startsWith('image/'));
-  if (!imgItem) return;
-  const file = imgItem.getAsFile();
-  if (!file) return;
-  try {
-    const item = await uploadFile(file);
-    toast('วางภาพแล้ว ✓'); setTimeout(() => openModal(item.id), 300);
-  } catch(err) { toast('Paste upload failed: '+err.message, 'err'); }
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items || [];
+  const imageItems = Array.from(items).filter(i => i.kind === 'file' && i.type.startsWith('image/'));
+  if (!imageItems.length) return;
+  e.preventDefault();
+  queueUpload(imageItems.map(i => i.getAsFile()).filter(Boolean));
 });
 
 
