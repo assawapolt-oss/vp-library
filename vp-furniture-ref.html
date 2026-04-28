@@ -237,13 +237,13 @@ input[type=file]{display:none}
 
 <!-- QUICK ADD -->
 <div class="quick-add">
-  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+  <label class="drop-zone" id="dropZone" for="fileInput">
     <div class="drop-zone-icon">📁</div>
     <div class="drop-zone-text">
       <strong>อัปโหลดภาพ</strong>
       ลากไฟล์มาวาง หรือคลิกเลือก
     </div>
-  </div>
+  </label>
   <input type="file" id="fileInput" accept="image/*" multiple>
   <div class="url-row">
     <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
@@ -452,7 +452,7 @@ async function uploadFile(file) {
   const path = `uploads/${ts}_${Math.random().toString(36).slice(2,7)}.${ext}`;
   setProgress(35, 'กำลัง upload…');
   const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, blob, { contentType:'image/webp', upsert:false });
-  if (se) { setProgress(100); throw new Error('Storage: '+se.message); }
+  if (se) { setProgress(100); const msg = se.message.includes('bucket') ? 'Storage bucket ไม่มี — สร้าง bucket ชื่อ furniture-refs ใน Supabase ก่อน' : 'Storage: '+se.message; throw new Error(msg); }
   const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
   const image_url = pd.publicUrl;
   setProgress(70, 'กำลังบันทึก…');
@@ -545,96 +545,389 @@ document.addEventListener('paste', async e => {
   } catch(err) { toast('Paste upload failed: '+err.message, 'err'); }
 });
 
-// ── SELECT MODE & PROMPT GENERATOR ───────────────────────────
-let _selected = new Set();
-let _selectMode = false;
 
-function toggleSelectMode() {
-  _selectMode = !_selectMode;
-  document.body.classList.toggle('select-mode', _selectMode);
-  const btn = document.getElementById('selectModeBtn');
-  btn.classList.toggle('active', _selectMode);
-  btn.textContent = _selectMode ? '✕ เลิกเลือก' : '🖼 Moodboard';
-  if (!_selectMode) clearSelection();
+// ── MOODBOARD ─────────────────────────────────────────────────
+let _mbMode = false;
+let _mbSelected = new Set();
+
+function toggleMbMode() {
+  _mbMode = !_mbMode;
+  document.body.classList.toggle('select-mode', _mbMode);
+  const btn = document.getElementById('mbModeBtn');
+  btn.classList.toggle('active', _mbMode);
+  btn.textContent = _mbMode ? '✕ เลิกเลือก' : '🖼 Moodboard';
+  if (!_mbMode) clearMbSelection();
 }
-
-function toggleCardSelect(id) {
-  if (_selected.has(id)) _selected.delete(id); else _selected.add(id);
-  // update card UI
-  const cards = document.querySelectorAll('.grid-card');
-  cards.forEach(c => {
-    if (c.dataset.id === id) c.classList.toggle('selected', _selected.has(id));
+function toggleMbCard(id) {
+  if (_mbSelected.has(id)) _mbSelected.delete(id); else _mbSelected.add(id);
+  document.querySelectorAll('.grid-card').forEach(c => {
+    if (c.dataset.id === id) c.classList.toggle('selected', _mbSelected.has(id));
   });
-  updateFAB();
+  updateMbFAB();
 }
-
-function clearSelection() {
-  _selected.clear();
+function clearMbSelection() {
+  _mbSelected.clear();
   document.querySelectorAll('.grid-card.selected').forEach(c => c.classList.remove('selected'));
-  updateFAB();
+  updateMbFAB();
 }
-
-function updateFAB() {
-  const fab = document.getElementById('fab');
-  const n = _selected.size;
+function updateMbFAB() {
+  const n = _mbSelected.size;
   document.getElementById('fabCount').textContent = n;
-  fab.classList.toggle('show', n > 0);
+  document.getElementById('fab').classList.toggle('show', n > 0);
 }
-
-// ── PROMPT GENERATOR ─────────────────────────────────────────
-const LIGHTING_MAP = {
-  dramatic:   'dramatic side lighting, deep shadows, high contrast',
-  minimal:    'soft diffused lighting, even exposure, clean white light',
-  warm:       'warm golden key light, soft fill, cozy atmosphere',
-  'dark moody': 'low key lighting, deep shadows, moody ambiance, subtle rim light',
-  'bright airy': 'bright ambient light, airy feel, natural daylight tone',
-  cinematic:  'cinematic lighting, motivated light sources, film-quality shadows',
-};
-const SUFFIX_MAP = {
-  midjourney: (ar) => ` --ar ${ar.replace(':','/')} --q 2 --style raw --v 6`,
-  dalle:      () => '. No people. Photorealistic.',
-  sd:         (ar) => `, aspect ratio ${ar}, masterpiece, best quality, no humans`,
-  general:    () => '. No people, no text, photorealistic.',
-};
-const SCENE_INTRO = [
-  'A cinematic virtual background scene',
-  'A photorealistic virtual studio set',
-  'An architectural interior render',
-  'A high-end virtual production background',
-];
-
-function openPromptModal() {
-  if (_selected.size === 0) { toast('เลือก ref อย่างน้อย 1 ชิ้นก่อน','err'); return; }
-  // thumbnails
-  const items = ALL_ITEMS.filter(i => _selected.has(i.id));
-  document.getElementById('promptThumbs').innerHTML = items.map(i =>
-    `<img class="prompt-thumb" src="${i.image_url}" alt="" title="${catInfo(i.category).label}">`
-  ).join('');
-  document.getElementById('promptOverlay').classList.add('open');
-  buildPrompt();
+function openMoodboard() {
+  if (_mbSelected.size === 0) { toast('เลือก ref ก่อนนะ', 'err'); return; }
+  document.getElementById('mbOverlayModal').classList.add('open');
+  renderMoodboardCanvas();
 }
-function closePromptModal() { document.getElementById('promptOverlay').classList.remove('open'); }
-
-function getOptVal(groupId) {
-  return document.querySelector(`#${groupId} .opt-pill.active`)?.dataset.v || '';
+function closeMoodboard() {
+  document.getElementById('mbOverlayModal').classList.remove('open');
 }
-function setOptPill(groupId, val) {
-  document.querySelectorAll(`#${groupId} .opt-pill`).forEach(b => {
-    b.classList.toggle('active', b.dataset.v === val);
-  });
-}
-// make pills single-select per group
-['optMood','optTool','optAR','optShot'].forEach(gid => {
-  document.getElementById(gid)?.addEventListener('click', e => {
-    const pill = e.target.closest('.opt-pill');
-    if (!pill) return;
-    setOptPill(gid, pill.dataset.v);
-    buildPrompt();
-  });
-});
-
-function buildPrompt() {
-  const items = ALL_ITEMS.filter(i => _selected.has(i.id));
+async function renderMoodboardCanvas() {
+  const items = ALL_ITEMS.filter(i => _mbSelected.has(i.id));
   if (!items.length) return;
+  const title = document.getElementById('mbTitleInput').value.trim() || 'Furniture Moodboard';
+  const wrap = document.getElementById('mbCanvasWrap');
+  wrap.innerHTML = '<div style="padding:20px;color:#475569;font-size:12px">กำลังโหลดภาพ…</div>';
 
-  co
+  const n = items.length;
+  const COLS = n <= 2 ? n : n <= 4 ? 2 : n <= 6 ? 3 : 4;
+  const ROWS = Math.ceil(n / COLS);
+  const CW = 360, CH = 240, GAP = 8, PAD = 16, HEADER = 64, FOOTER = 44;
+  const cw = COLS * CW + (COLS - 1) * GAP + PAD * 2;
+  const ch = HEADER + ROWS * CH + (ROWS - 1) * GAP + PAD * 2 + FOOTER;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = cw; canvas.height = ch;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0A0A0C';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // header
+  ctx.fillStyle = '#C4A266';
+  ctx.font = 'bold 10px Arial, sans-serif';
+  ctx.fillText('THE STANDARD VP LIBRARY', PAD, 20);
+  ctx.fillStyle = '#F0ECE4';
+  ctx.font = 'bold 20px Arial, sans-serif';
+  ctx.fillText(title, PAD, 50);
+  const d = new Date().toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'});
+  ctx.fillStyle = '#5A5A62';
+  ctx.font = '10px Arial, sans-serif';
+  const dw = ctx.measureText(d).width;
+  ctx.fillText(d, cw - PAD - dw, 20);
+
+  // load images
+  const loadImg = url => new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  });
+  const imgs = await Promise.all(items.map(i => loadImg(i.image_url)));
+
+  imgs.forEach((img, idx) => {
+    const col = idx % COLS, row = Math.floor(idx / COLS);
+    const x = PAD + col * (CW + GAP);
+    const y = HEADER + PAD + row * (CH + GAP);
+
+    ctx.fillStyle = '#131316';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, CW, CH, 6);
+    else ctx.rect(x, y, CW, CH);
+    ctx.fill();
+
+    if (img) {
+      const ir = img.width / img.height, cr = CW / CH;
+      let sx, sy, sw, sh;
+      if (ir > cr) { sh = img.height; sw = sh * cr; sx = (img.width - sw) / 2; sy = 0; }
+      else { sw = img.width; sh = sw / cr; sx = 0; sy = (img.height - sh) / 2; }
+      ctx.save();
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, y, CW, CH, 6); else ctx.rect(x, y, CW, CH);
+      ctx.clip();
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, CW, CH);
+      ctx.restore();
+    }
+
+    // gradient overlay
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, CW, CH, 6); else ctx.rect(x, y, CW, CH);
+    ctx.clip();
+    const g = ctx.createLinearGradient(x, y + CH - 50, x, y + CH);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.7)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y + CH - 50, CW, 50);
+    ctx.restore();
+
+    const item = items[idx];
+    const cat = catInfo(item.category);
+    ctx.fillStyle = cat.color;
+    ctx.font = 'bold 10px Arial, sans-serif';
+    ctx.fillText(cat.label, x + 8, y + CH - 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '10px Arial, sans-serif';
+    const idw = ctx.measureText(item.id || '').width;
+    ctx.fillText(item.id || '', x + CW - idw - 8, y + CH - 8);
+
+    // palette dots
+    (item.color_palette || []).slice(0, 5).forEach((hex, pi) => {
+      ctx.beginPath();
+      ctx.arc(x + 10 + pi * 15, y + 10, 5, 0, Math.PI * 2);
+      ctx.fillStyle = hex;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  });
+
+  // footer palette
+  const allColors = [...new Set(items.flatMap(i => i.color_palette || []))].slice(0, 18);
+  const fy = ch - FOOTER + 12;
+  ctx.fillStyle = '#5A5A62';
+  ctx.font = 'bold 9px Arial, sans-serif';
+  ctx.fillText('PALETTE', PAD, fy + 8);
+  allColors.forEach((hex, pi) => {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(PAD + 56 + pi * 20, fy, 14, 14, 3);
+    else ctx.rect(PAD + 56 + pi * 20, fy, 14, 14);
+    ctx.fillStyle = hex;
+    ctx.fill();
+  });
+  ctx.fillStyle = '#2E2E34';
+  ctx.font = '10px Arial, sans-serif';
+  const cntStr = n + ' items';
+  ctx.fillText(cntStr, cw - PAD - ctx.measureText(cntStr).width, fy + 10);
+
+  wrap.innerHTML = '';
+  wrap.appendChild(canvas);
+}
+function exportMoodboard() {
+  const canvas = document.querySelector('#mbCanvasWrap canvas');
+  if (!canvas) return;
+  const title = document.getElementById('mbTitleInput').value.trim() || 'moodboard';
+  const a = document.createElement('a');
+  a.download = title.replace(/[^a-z0-9]/gi, '_') + '_' + Date.now() + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('Export สำเร็จ ✓');
+}
+
+// ── BOOKMARKLET ───────────────────────────────────────────────
+const BM_SCRIPT = `javascript:(function(){
+  var imgs=[...document.querySelectorAll('img')]
+    .filter(i=>i.naturalWidth>=200&&i.naturalHeight>=200)
+    .sort((a,b)=>(b.naturalWidth*b.naturalHeight)-(a.naturalWidth*a.naturalHeight))
+    .slice(0,6).map(i=>i.src);
+  var p=encodeURIComponent;
+  var base='${location.origin}${location.pathname}';
+  var qs='?bm=1&src='+p(imgs.join('|'))+'&url='+p(location.href)+'&title='+p(document.title);
+  window.open(base+qs,'vpfurn','width=440,height=640,top=80,left=80');
+})();`;
+
+function openBmSetup() {
+  document.getElementById('bmBookmarkletLink').href = BM_SCRIPT;
+  document.getElementById('bmSetupOverlay').classList.add('open');
+}
+function closeBmSetup() { document.getElementById('bmSetupOverlay').classList.remove('open'); }
+
+// ── BOOKMARKLET MODE ──────────────────────────────────────────
+function initBookmarkletMode() {
+  const p = new URLSearchParams(location.search);
+  if (!p.get('bm')) return;
+  document.getElementById('bmOverlay').classList.add('open');
+  document.getElementById('bmCatRow').innerHTML = CATEGORIES.map(c =>
+    `<button class="bm-cat-btn" data-cid="${c.id}" onclick="bmSetCat('${c.id}')">${c.label}</button>`
+  ).join('');
+  const imgs = (p.get('src') || '').split('|').filter(Boolean);
+  const sourceUrl = p.get('url') || '';
+  const imgWrap = document.getElementById('bmImgs');
+  if (imgs.length) {
+    imgWrap.innerHTML = imgs.map((src, i) => `
+      <div class="bm-img-opt ${i === 0 ? 'selected' : ''}" data-src="${src}" onclick="bmSelectImg(this)">
+        <img src="${src}" alt="" onerror="this.parentNode.style.display='none'">
+      </div>`).join('');
+    window._bmSelectedSrc = imgs[0];
+  } else {
+    imgWrap.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--muted)">ไม่พบภาพอัตโนมัติ — วาง URL ด้านล่าง</div>
+      <input class="url-input" id="bmManualUrl" placeholder="วาง URL ภาพ…" style="margin:0 0 0 16px;width:calc(100% - 32px)">`;
+    window._bmSelectedSrc = '';
+  }
+  window._bmSourceUrl = sourceUrl;
+  window._bmSourceTitle = p.get('title') || '';
+  window._bmCat = 'other';
+}
+function bmSetCat(cid) {
+  window._bmCat = cid;
+  document.querySelectorAll('.bm-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cid === cid));
+}
+function bmSelectImg(el) {
+  document.querySelectorAll('.bm-img-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  window._bmSelectedSrc = el.dataset.src;
+}
+async function bmSave() {
+  const src = window._bmSelectedSrc || document.getElementById('bmManualUrl')?.value.trim() || '';
+  if (!src) { toast('เลือกภาพก่อน', 'err'); return; }
+  const btn = document.getElementById('bmSaveBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  const row = {
+    image_url: src, thumb_url: src,
+    source_url: window._bmSourceUrl || '', source_title: window._bmSourceTitle || '',
+    category: window._bmCat || 'other',
+    notes: document.getElementById('bmNotes').value.trim(),
+    added_by: localStorage.getItem('vp_display_name') || ''
+  };
+  const { error } = await _SB.from(FURN_TABLE).insert(row);
+  if (error) { toast('Error: ' + error.message, 'err'); btn.disabled = false; btn.textContent = '💾 บันทึก'; return; }
+  btn.textContent = '✓ บันทึกแล้ว!';
+  setTimeout(() => window.close(), 1200);
+}
+
+// ── LOAD ──────────────────────────────────────────────────────
+async function loadItems() {
+  const { data, error } = await _SB.from(FURN_TABLE).select('*').order('created_at', { ascending: false });
+  if (error) {
+    const msg = error.message.includes('does not exist')
+      ? 'ยังไม่มี table furniture_refs — รัน SQL migration ใน Supabase ก่อน'
+      : 'โหลดไม่ได้: ' + error.message;
+    toast(msg, 'err', 6000);
+    document.getElementById('gridWrap').innerHTML = `<div class="grid-empty">⚠️ ${msg}</div>`;
+    return;
+  }
+  ALL_ITEMS = data || [];
+  updateCounts();
+  renderGrid();
+}
+
+// ── COUNTS ────────────────────────────────────────────────────
+function updateCounts() {
+  const counts = {};
+  ALL_ITEMS.forEach(i => { counts[i.category] = (counts[i.category] || 0) + 1; });
+  document.getElementById('cnt-all').textContent = ALL_ITEMS.length;
+  CATEGORIES.forEach(c => {
+    const el = document.getElementById('cnt-' + c.id);
+    if (el) el.textContent = counts[c.id] || 0;
+  });
+}
+
+// ── FILTER + RENDER ───────────────────────────────────────────
+function setCat(cat) {
+  _curCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  renderGrid();
+}
+function toggleStyle(style) {
+  const idx = _curStyles.indexOf(style);
+  if (idx >= 0) _curStyles.splice(idx, 1); else _curStyles.push(style);
+  document.querySelectorAll('.style-pill').forEach(b => b.classList.toggle('active', _curStyles.includes(b.dataset.style)));
+  renderGrid();
+}
+function renderGrid() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sort = document.querySelector('.sort-sel').value;
+  let items = ALL_ITEMS.slice();
+  if (_curCat !== 'all') items = items.filter(i => i.category === _curCat);
+  if (_curStyles.length) items = items.filter(i => _curStyles.every(s => (i.style_tags || []).includes(s)));
+  if (q) items = items.filter(i =>
+    (i.notes || '').toLowerCase().includes(q) ||
+    (i.source_title || '').toLowerCase().includes(q) ||
+    (i.category || '').includes(q)
+  );
+  if (sort === 'oldest') items.reverse();
+
+  document.getElementById('countLabel').textContent = `แสดง ${items.length} จาก ${ALL_ITEMS.length} รายการ`;
+  const wrap = document.getElementById('gridWrap');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="grid-empty">ยังไม่มีรูปในหมวดนี้<br><span style="font-size:11px;color:var(--bone-faint)">ลากไฟล์หรือวาง URL เพื่อเพิ่ม</span></div>';
+    return;
+  }
+  const admin = isAdmin();
+  wrap.innerHTML = items.map(item => {
+    const cat = catInfo(item.category);
+    const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch (e) { return ''; } })() : '';
+    const isSel = _mbSelected.has(item.id);
+    return `<div class="grid-card${isSel ? ' selected' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
+      <div class="sel-check">✓</div>
+      <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="card-hover-btns">
+        <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
+        ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
+      </div>
+      <div class="card-body">
+        <span class="card-cat" style="color:${cat.color};background:${cat.bg}">${cat.label}</span>
+        ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
+        ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
+        ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px;border-radius:4px">${s}</span>`).join('')}</div>` : ''}
+        ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(id) {
+  const item = ALL_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  _editId = id;
+  document.getElementById('modalImg').src = item.image_url;
+  document.getElementById('modalCatGrid').innerHTML = CATEGORIES.map(c =>
+    `<button class="modal-cat-opt ${item.category === c.id ? 'active' : ''}" data-cid="${c.id}" onclick="modalSetCat('${c.id}')">${c.label}</button>`
+  ).join('');
+  const curStyles = item.style_tags || [];
+  document.getElementById('modalStyleGrid').innerHTML = STYLES.map(s =>
+    `<button class="modal-style-opt ${curStyles.includes(s) ? 'active' : ''}" data-s="${s}" onclick="modalToggleStyle('${s}')">${s}</button>`
+  ).join('');
+  document.getElementById('modalNotes').value = item.notes || '';
+  const srcLink = document.getElementById('modalSrcLink');
+  const srcField = document.getElementById('modalSrcField');
+  if (item.source_url) {
+    srcLink.href = item.source_url;
+    srcLink.textContent = item.source_url;
+    srcField.style.display = 'block';
+  } else { srcField.style.display = 'none'; }
+  document.getElementById('modalSaveBtn').style.display = isAdmin() ? 'block' : 'none';
+  document.getElementById('modalDelBtn').style.display = isAdmin() ? 'block' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); _editId = null; }
+function modalSetCat(cid) { document.querySelectorAll('.modal-cat-opt').forEach(b => b.classList.toggle('active', b.dataset.cid === cid)); }
+function modalToggleStyle(s) { document.querySelector(`.modal-style-opt[data-s="${s}"]`)?.classList.toggle('active'); }
+async function saveModal() {
+  if (!_editId) return;
+  const cat = document.querySelector('.modal-cat-opt.active')?.dataset.cid || 'other';
+  const styles = [...document.querySelectorAll('.modal-style-opt.active')].map(b => b.dataset.s);
+  const notes = document.getElementById('modalNotes').value.trim();
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = '…';
+  const { error } = await _SB.from(FURN_TABLE).update({ category: cat, style_tags: styles, notes }).eq('id', _editId);
+  if (error) { toast('บันทึกไม่ได้: ' + error.message, 'err'); btn.disabled = false; btn.textContent = '💾 บันทึก'; return; }
+  const idx = ALL_ITEMS.findIndex(i => i.id === _editId);
+  if (idx >= 0) Object.assign(ALL_ITEMS[idx], { category: cat, style_tags: styles, notes });
+  updateCounts(); renderGrid();
+  btn.disabled = false; btn.textContent = '💾 บันทึก';
+  toast('บันทึกแล้ว ✓'); closeModal();
+}
+async function deleteCurrentItem() { if (!_editId || !confirm('ลบรูปนี้?')) return; confirmDelete(_editId); closeModal(); }
+async function confirmDelete(id) {
+  if (!confirm('ลบรูปนี้?')) return;
+  const item = ALL_ITEMS.find(i => i.id === id);
+  const { error } = await _SB.from(FURN_TABLE).delete().eq('id', id);
+  if (error) { toast('ลบไม่ได้: ' + error.message, 'err'); return; }
+  if (item?.storage_path) _SB.storage.from(FURN_BUCKET).remove([item.storage_path]).catch(() => {});
+  ALL_ITEMS = ALL_ITEMS.filter(i => i.id !== id);
+  updateCounts(); renderGrid();
+  toast('ลบแล้ว');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+initBookmarkletMode();
+if (!new URLSearchParams(location.search).get('bm')) loadItems();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); } });
+</script>
+</body>
+</html>
