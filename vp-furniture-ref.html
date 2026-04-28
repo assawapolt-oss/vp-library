@@ -934,4 +934,8 @@ async function confirmDelete(id) {
 
 // ── INIT ──────────────────────────────────────────────────────
 initBookmarkletMode();
-i
+if (!new URLSearchParams(location.search).get('bm')) loadItems();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); } });
+</script>
+</body>
+</html>
