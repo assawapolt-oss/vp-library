@@ -60,7 +60,6 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .add-btn{padding:8px 16px;background:var(--gold);color:#0A0A0C;border:none;border-radius:0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .12s;white-space:nowrap}
 .add-btn:hover{opacity:.85}
 .add-btn:disabled{opacity:.4;cursor:not-allowed}
-input[type=file]{opacity:0;position:absolute;width:1px;height:1px;overflow:hidden;pointer-events:none}
 
 /* FILTER BAR */
 .filter-bar{background:var(--surface);border-bottom:2px solid var(--line-hi);padding:10px 20px;display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap}
@@ -242,14 +241,16 @@ input[type=file]{opacity:0;position:absolute;width:1px;height:1px;overflow:hidde
 
 <!-- QUICK ADD -->
 <div class="quick-add">
-  <label class="drop-zone" id="dropZone" for="fileInput">
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
     <div class="drop-zone-icon">📁</div>
     <div class="drop-zone-text">
       <strong>อัปโหลดภาพ</strong>
       ลากไฟล์มาวาง หรือคลิกเลือก
     </div>
-  </label>
-  <input type="file" id="fileInput" accept="image/*" multiple>
+    <input type="file" id="fileInput" accept="image/*" multiple
+      onchange="handleFileChange(event)"
+      style="display:none">
+  </div>
   <div class="url-row">
     <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
       onkeydown="if(event.key==='Enter')addFromUrl()">
@@ -505,8 +506,8 @@ async function addFromUrl() {
 }
 
 // ── file drop/select ─────────────────────────────────────────
-document.getElementById('fileInput').addEventListener('change', async function() {
-  const files = [...this.files];
+async function handleFileChange(e) {
+  const files = [...e.target.files];
   if (!files.length) return;
   let done = 0;
   for (const f of files) {
@@ -514,13 +515,13 @@ document.getElementById('fileInput').addEventListener('change', async function()
       setProgress(Math.round((done/files.length)*100), `อัปโหลด ${done+1}/${files.length}…`);
       const item = await uploadFile(f);
       done++;
-      if (done === 1) setTimeout(() => openModal(item.id), 300); // auto-open first
-    } catch(e) { toast('Upload failed: '+e.message, 'err'); }
+      if (done === 1) setTimeout(() => openModal(item.id), 300);
+    } catch(err) { toast('Upload failed: '+err.message, 'err'); }
   }
-  this.value = '';
+  e.target.value = '';
   setProgress(100);
   if (files.length > 1) toast(`อัปโหลดแล้ว ${done} ไฟล์ ✓`);
-});
+}
 
 const dz = document.getElementById('dropZone');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
