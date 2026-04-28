@@ -447,7 +447,8 @@ async function uploadFile(file) {
   const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
   const image_url = pd.publicUrl;
   setProgress(70, 'กำลังบันทึก…');
-  const row = { image_url, thumb_url: image_url, storage_path: path, category: 'other', color_palette: palette, added_by: localStorage.getItem('vp_display_name')||'' };
+  // color_palette skipped — column not yet in schema. Run ALTER TABLE if needed.
+  const row = { image_url, thumb_url: image_url, storage_path: path, category: 'other', added_by: localStorage.getItem('vp_display_name')||'' };
   const { data, error: de } = await _SB.from(FURN_TABLE).insert(row).select().single();
   if (de) { setProgress(100); throw new Error('DB: '+de.message); }
   setProgress(100);
