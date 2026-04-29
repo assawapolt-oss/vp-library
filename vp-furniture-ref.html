@@ -69,10 +69,18 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .nav{position:sticky;top:0;z-index:200;background:var(--bg);border-bottom:3px solid var(--red);padding:0 20px;display:flex;align-items:center;gap:16px;height:52px}
 .nav-logo{font-family:var(--font-disp);font-size:16px;font-weight:700;color:var(--bone);text-decoration:none;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase}
 .nav-sep{color:var(--bone-faint);font-size:13px}
-.nav-cur{font-size:13px;color:var(--yellow);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.nav-cur{font-size:13px;color:var(--yellow);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
 .nav-links{margin-left:auto;display:flex;gap:8px}
-.nav-link{padding:5px 12px;border:1px solid var(--line-hi);border-radius:0;font-size:12px;color:var(--muted);text-decoration:none;transition:all .12s}
+.nav-link{padding:5px 12px;border:1px solid var(--line-hi);border-radius:0;font-size:12px;color:var(--muted);text-decoration:none;transition:all .12s;display:inline-flex;align-items:center;gap:6px}
 .nav-link:hover{border-color:var(--yellow);color:var(--yellow)}
+.nav-cur .nav-icon,.nav-link .nav-icon{width:14px;height:14px;flex-shrink:0;stroke:currentColor}
+
+/* ─── Inline SVG icons (Lucide-style) ─── */
+.icn{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;vertical-align:-2px}
+.icn-sm{width:12px;height:12px}
+.icn-md{width:16px;height:16px;vertical-align:-3px}
+.cat-tab,.bm-cat-btn,.modal-cat-opt,.card-cat,.mb-btn,.fab-mb-btn,.mb-export-btn,.modal-save-btn,.modal-del-btn,.upload-pick-btn,.add-btn,.bm-save-btn,.nav-bm-btn,.card-toggle-all-btn{display:inline-flex;align-items:center;gap:5px}
+.card-cat{gap:4px}
 .nav-bm-btn{padding:5px 12px;border:1px solid var(--gold-dim);border-radius:0;font-size:12px;color:var(--gold);background:none;cursor:pointer;font-family:inherit;transition:all .12s}
 .nav-bm-btn:hover{background:var(--gold-dim)}
 
@@ -118,6 +126,9 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .grid-card img{width:100%;display:block;object-fit:cover}
 .card-body{padding:8px 10px}
 .card-cat{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:0;margin-bottom:5px;letter-spacing:.03em}
+/* Compact category overlay on image (top-right) */
+.card-cat-overlay{position:absolute;top:6px;right:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,12,.78);color:#fff;z-index:3;pointer-events:none;border-radius:0}
+.card-cat-overlay .icn{width:13px;height:13px;stroke-width:1.8}
 .card-notes{font-size:11px;color:var(--bone-dim);line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card-source{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
 .card-hover-btns{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
@@ -260,13 +271,21 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 /* sim badge on grid card */
 .card-sim-badge{position:absolute;top:6px;left:6px;font-family:monospace;font-size:9px;letter-spacing:.04em;background:rgba(240,180,0,.92);color:#0A0A0C;padding:2px 6px;pointer-events:none;font-weight:700;z-index:4}
 
-/* ─── EXPAND/COLLAPSE CARD ─── */
-.card-toggle-btn{position:absolute;bottom:6px;right:6px;width:24px;height:24px;border:none;background:rgba(10,10,12,.85);color:var(--bone-dim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:0;z-index:5;transition:all .12s;line-height:1}
-.card-toggle-btn:hover{background:var(--surface);color:var(--gold)}
-.grid-card.collapsed .card-body{display:none}
-.grid-card.collapsed .card-toggle-btn{background:rgba(10,10,12,.65)}
-.card-toggle-all-btn{padding:5px 10px;border:1px solid var(--line-hi);font-size:10px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;letter-spacing:.04em;white-space:nowrap}
-.card-toggle-all-btn:hover{color:var(--bone-dim);border-color:var(--bone-faint)}
+/* ─── ZOOM CONTROL (replaces per-card collapse) ─── */
+.zoom-ctrl{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line-hi);padding:2px 4px;height:26px}
+.zoom-btn{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;padding:0;transition:color .12s}
+.zoom-btn:hover{color:var(--gold)}
+.zoom-btn:disabled{opacity:.3;cursor:not-allowed}
+.zoom-btn .icn{width:13px;height:13px}
+.zoom-label{font-family:monospace;font-size:10px;color:var(--bone-dim);min-width:14px;text-align:center;letter-spacing:.04em}
+/* Zoom sizes — overrides .grid-wrap columns */
+.grid-wrap.zoom-xs{columns:7 110px}
+.grid-wrap.zoom-s{columns:6 140px}
+.grid-wrap.zoom-m{columns:4 220px}
+.grid-wrap.zoom-l{columns:3 320px}
+.grid-wrap.zoom-xl{columns:2 480px}
+@media(max-width:768px){.grid-wrap.zoom-xs{columns:5 90px}.grid-wrap.zoom-s{columns:4 120px}.grid-wrap.zoom-m{columns:3 180px}.grid-wrap.zoom-l{columns:2 240px}.grid-wrap.zoom-xl{columns:1 360px}}
+@media(max-width:480px){.grid-wrap.zoom-xs{columns:3 80px}.grid-wrap.zoom-s{columns:3 100px}.grid-wrap.zoom-m{columns:2 140px}.grid-wrap.zoom-l{columns:2 180px}.grid-wrap.zoom-xl{columns:1 280px}}
 
 /* ─── CROP OVERLAY ─── */
 .crop-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:850;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
@@ -317,10 +336,16 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <nav class="nav">
   <a class="nav-logo" href="vp-search.html">THE STANDARD VP</a>
   <span class="nav-sep">/</span>
-  <span class="nav-cur">🪑 Furniture REF</span>
+  <span class="nav-cur">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19v2"/><path d="M18 19v2"/><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 18h18"/><path d="M5 18v-2a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2"/></svg>
+    Furniture REF
+  </span>
   <div class="nav-links">
-    <a class="nav-link" href="vp-grab-ref.html">Grab REF</a>
-    <button class="nav-bm-btn" onclick="openBmSetup()">🔖 Bookmarklet</button>
+    <a class="nav-link" href="vp-grab-ref.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+      Grab REF
+    </a>
+    <button class="nav-bm-btn" onclick="openBmSetup()" id="navBmBtn">Bookmarklet</button>
   </div>
 </nav>
 
@@ -329,39 +354,27 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   <div class="drop-zone" id="dropZone"
     ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
     onclick="document.getElementById('fileInput').click()">
-    <div class="drop-zone-icon">📁</div>
+    <div class="drop-zone-icon" id="dzIcon"></div>
     <div class="drop-zone-text">
       <strong>อัปโหลดภาพ</strong>
       ลากไฟล์มาวาง · คลิกเลือก · หรือ <strong>Ctrl+V</strong> วางภาพ
     </div>
     <div onclick="event.stopPropagation()" style="margin-top:8px">
-      <button class="upload-pick-btn" onclick="document.getElementById('fileInput').click()">📷 เลือกรูป</button>
+      <button class="upload-pick-btn" id="uploadPickBtn" onclick="document.getElementById('fileInput').click()">เลือกรูป</button>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileInput(event)">
   </div>
   <div class="url-row">
     <input class="url-input" id="urlInput" type="text" placeholder="วาง URL ภาพ หรือ link หน้าเว็บ…"
       onkeydown="if(event.key==='Enter')addFromUrl()">
-    <button class="add-btn" onclick="addFromUrl()">+ เพิ่ม</button>
+    <button class="add-btn" id="addBtn" onclick="addFromUrl()">เพิ่ม</button>
   </div>
 </div>
 
 <!-- FILTER BAR -->
 <div class="filter-bar" id="filterBar">
   <button class="cat-tab active" data-cat="all" onclick="setCat('all')">ทั้งหมด <span class="cnt" id="cnt-all">0</span></button>
-  <button class="cat-tab" data-cat="chair"    onclick="setCat('chair')">🪑 เก้าอี้ <span class="cnt" id="cnt-chair">0</span></button>
-  <button class="cat-tab" data-cat="table"    onclick="setCat('table')">🪵 โต๊ะ <span class="cnt" id="cnt-table">0</span></button>
-  <button class="cat-tab" data-cat="sofa"     onclick="setCat('sofa')">🛋️ โซฟา <span class="cnt" id="cnt-sofa">0</span></button>
-  <button class="cat-tab" data-cat="cabinet"  onclick="setCat('cabinet')">🗄️ ตู้/ชั้น <span class="cnt" id="cnt-cabinet">0</span></button>
-  <button class="cat-tab" data-cat="lamp"     onclick="setCat('lamp')">💡 โคมไฟ <span class="cnt" id="cnt-lamp">0</span></button>
-  <button class="cat-tab" data-cat="plant"    onclick="setCat('plant')">🌿 ต้นไม้/กระถาง <span class="cnt" id="cnt-plant">0</span></button>
-  <button class="cat-tab" data-cat="wall"     onclick="setCat('wall')">🖼️ ของแต่งผนัง <span class="cnt" id="cnt-wall">0</span></button>
-  <button class="cat-tab" data-cat="deco"     onclick="setCat('deco')">🏺 ของตกแต่ง <span class="cnt" id="cnt-deco">0</span></button>
-  <button class="cat-tab" data-cat="screen"   onclick="setCat('screen')">📺 จอ/อุปกรณ์ <span class="cnt" id="cnt-screen">0</span></button>
-  <button class="cat-tab" data-cat="mirror"   onclick="setCat('mirror')">🪞 กระจก <span class="cnt" id="cnt-mirror">0</span></button>
-  <button class="cat-tab" data-cat="material" onclick="setCat('material')">🧱 พื้น/ผนัง <span class="cnt" id="cnt-material">0</span></button>
-  <button class="cat-tab" data-cat="other"    onclick="setCat('other')">📦 อื่นๆ <span class="cnt" id="cnt-other">0</span></button>
-  <button class="cat-tab" data-cat="whole_set" onclick="setCat('whole_set')">🏠 Whole Set <span class="cnt" id="cnt-whole_set">0</span></button>
+  <!-- category buttons rendered by JS at init (uses ICN library + CATEGORIES array) -->
   <div class="filter-sep"></div>
   <button class="style-pill" data-style="minimal"      onclick="toggleStyle('minimal')">Minimal</button>
   <button class="style-pill" data-style="industrial"   onclick="toggleStyle('industrial')">Industrial</button>
@@ -377,10 +390,10 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <div class="ai-search-wrap">
   <div class="ai-search-row">
     <input class="ai-search-input" id="aiSearchInput" type="text"
-      placeholder="🔍 AI Search — ลอง 'minimal wood chair', 'โซฟาสีเทา', 'industrial lamp'…"
+      placeholder="AI Search — ลอง 'minimal wood chair', 'โซฟาสีเทา', 'industrial lamp'…"
       onkeydown="if(event.key==='Enter')doAiSearch()">
     <button class="ai-search-btn" id="aiSearchBtn" onclick="doAiSearch()">Search</button>
-    <button class="ai-search-clear" id="aiSearchClear" onclick="clearAiSearch()" style="display:none">✕ Clear</button>
+    <button class="ai-search-clear" id="aiSearchClear" onclick="clearAiSearch()" style="display:none">Clear</button>
     <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed CLIP vectors for items missing mclip_vector">⚡ Batch Embed</button>
   </div>
   <div class="ai-status" id="aiStatus">
@@ -393,14 +406,19 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- TOOLBAR -->
 <div class="toolbar">
   <span class="count-label" id="countLabel">กำลังโหลด…</span>
-  <button class="mb-btn" id="mbModeBtn" onclick="toggleMbMode()">🖼 Moodboard</button>
-  <button class="mb-btn" id="shuffleBtn" onclick="shuffleGrid()" title="สุ่มลำดับใหม่">🔀 Shuffle</button>
-  <button class="card-toggle-all-btn" id="toggleAllBtn" onclick="toggleAllCards()" title="ขยาย/ย่อทุก card">⊟ ย่อทั้งหมด</button>
+  <button class="mb-btn" id="mbModeBtn" onclick="toggleMbMode()">Moodboard</button>
+  <button class="mb-btn" id="shuffleBtn" onclick="shuffleGrid()" title="สุ่มลำดับใหม่">Shuffle</button>
+  <!-- Zoom controls (replaces collapse-all) -->
+  <div class="zoom-ctrl" title="ปรับขนาด card">
+    <button class="zoom-btn" id="zoomOutBtn" onclick="adjustZoom(-1)" title="card เล็กลง (เห็นเยอะขึ้น)" aria-label="zoom out"></button>
+    <span class="zoom-label" id="zoomLabel">M</span>
+    <button class="zoom-btn" id="zoomInBtn" onclick="adjustZoom(+1)" title="card ใหญ่ขึ้น" aria-label="zoom in"></button>
+  </div>
   <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา (keyword)…" oninput="renderGrid()">
   <select class="sort-sel" id="sortSel" onchange="onSortChange()">
     <option value="newest">ล่าสุดก่อน</option>
     <option value="oldest">เก่าสุดก่อน</option>
-    <option value="shuffle">🔀 สุ่มลำดับ</option>
+    <option value="shuffle">สุ่มลำดับ</option>
   </select>
 </div>
 
@@ -411,18 +429,18 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <div class="fab" id="fab">
   <div class="fab-count">เลือกแล้ว <span id="fabCount">0</span> ชิ้น</div>
   <button class="fab-clear" onclick="clearMbSelection()">ล้าง</button>
-  <button class="fab-mb-btn" onclick="openMoodboard()">🖼 สร้าง Moodboard</button>
+  <button class="fab-mb-btn" onclick="openMoodboard()" id="fabMbBtn">สร้าง Moodboard</button>
 </div>
 
 <!-- MOODBOARD MODAL -->
 <div class="mb-overlay" id="mbOverlayModal" onclick="if(event.target===this)closeMoodboard()">
   <div class="mb-box">
-    <div class="mb-box-title">🖼 Moodboard Preview <button class="mb-close" onclick="closeMoodboard()">✕</button></div>
+    <div class="mb-box-title" id="mbBoxTitle">Moodboard Preview <button class="mb-close" onclick="closeMoodboard()">✕</button></div>
     <input class="mb-title-input" id="mbTitleInput" placeholder="ชื่อ Moodboard (optional)…" oninput="renderMoodboardCanvas()">
     <div class="mb-canvas-wrap" id="mbCanvasWrap"></div>
     <div class="mb-actions">
-      <button class="mb-export-btn" id="mbExportBtn" onclick="exportMoodboard()">⬇ Export PNG</button>
-      <button class="mb-regen-btn" onclick="renderMoodboardCanvas()">↺ Re-layout</button>
+      <button class="mb-export-btn" id="mbExportBtn" onclick="exportMoodboard()">Export PNG</button>
+      <button class="mb-regen-btn" id="mbRegenBtn" onclick="renderMoodboardCanvas()">Re-layout</button>
     </div>
   </div>
 </div>
@@ -430,9 +448,9 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- BOOKMARKLET SETUP -->
 <div class="bm-setup-overlay" id="bmSetupOverlay" onclick="if(event.target===this)closeBmSetup()">
   <div class="bm-setup-box">
-    <div class="bm-setup-title">🔖 ติดตั้ง Bookmarklet</div>
+    <div class="bm-setup-title" id="bmSetupTitle">ติดตั้ง Bookmarklet</div>
     <div class="bm-setup-sub">ลากปุ่มด้านล่างไปวางบน bookmark bar แล้วคลิกได้เลยทุกครั้งที่เจอภาพน่าสนใจ</div>
-    <a class="bm-setup-link" id="bmBookmarkletLink" href="#">📁 Save to Furniture REF</a>
+    <a class="bm-setup-link" id="bmBookmarkletLink" href="#">Save to Furniture REF</a>
     <div class="bm-setup-steps">
       1. แสดง bookmark bar (Ctrl+Shift+B / Cmd+Shift+B)<br>
       2. ลากปุ่มสีทองขึ้นไปวางบน bookmark bar<br>
@@ -446,7 +464,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- BOOKMARKLET QUICK-SAVE OVERLAY -->
 <div class="bm-overlay" id="bmOverlay">
   <div class="bm-header">
-    <div class="bm-title">📁 บันทึกลง Furniture REF</div>
+    <div class="bm-title" id="bmTitleLabel">บันทึกลง Furniture REF</div>
     <button style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px" onclick="window.close()" title="ปิด">✕</button>
   </div>
   <div class="bm-step-label">
@@ -461,7 +479,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
     </div>
     <div class="bm-cat-row" id="bmCatRow"></div>
     <input class="url-input" id="bmNotes" placeholder="Note (optional)…" style="margin-top:4px">
-    <button class="bm-save-btn" id="bmSaveBtn" onclick="bmSave()">💾 บันทึก (Step 3)</button>
+    <button class="bm-save-btn" id="bmSaveBtn" onclick="bmSave()">บันทึก (Step 3)</button>
     <div class="bm-shortcut-hint">กด <strong>Enter</strong> เพื่อบันทึก · <strong>Esc</strong> เพื่อปิด</div>
   </div>
 </div>
@@ -469,7 +487,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- CROP OVERLAY -->
 <div class="crop-overlay" id="cropOverlay" onclick="if(event.target===this)closeCrop()">
   <div class="crop-box">
-    <div class="crop-title">✂ Crop Image <button class="crop-close" onclick="closeCrop()">✕</button></div>
+    <div class="crop-title" id="cropTitle">Crop Image <button class="crop-close" onclick="closeCrop()">✕</button></div>
     <div class="crop-stage" id="cropStage">
       <img id="cropImg" src="" alt="" crossorigin="anonymous">
       <div class="crop-rect" id="cropRect">
@@ -480,8 +498,8 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
       </div>
     </div>
     <div class="crop-actions">
-      <button class="crop-btn crop-btn-primary" id="cropApplyBtn" onclick="applyCrop()">💾 บันทึก Crop</button>
-      <button class="crop-btn crop-btn-ghost" onclick="resetCropRect()">↺ Reset</button>
+      <button class="crop-btn crop-btn-primary" id="cropApplyBtn" onclick="applyCrop()">บันทึก Crop</button>
+      <button class="crop-btn crop-btn-ghost" onclick="resetCropRect()" id="cropResetBtn">Reset</button>
       <button class="crop-btn crop-btn-ghost" onclick="closeCrop()">ยกเลิก</button>
     </div>
   </div>
@@ -520,7 +538,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
     <div class="modal-img-side">
       <button class="modal-close" onclick="closeModal()" title="ปิด">✕</button>
       <img id="modalImg" src="" alt="">
-      <button class="crop-edit-btn" id="modalCropBtn" onclick="openCropFromModal()" style="position:absolute;bottom:10px;right:10px;display:none">✂ CROP</button>
+      <button class="crop-edit-btn" id="modalCropBtn" onclick="openCropFromModal()" style="position:absolute;bottom:10px;right:10px;display:none">CROP</button>
     </div>
     <div class="modal-info-side">
       <div class="modal-field"><label>หมวด</label><div class="modal-cat-grid" id="modalCatGrid"></div></div>
@@ -528,8 +546,8 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
       <div class="modal-field"><label>Note</label><textarea class="modal-textarea" id="modalNotes" placeholder="โน้ต..."></textarea></div>
       <div class="modal-field" id="modalSrcField" style="display:none"><label>Source</label><a class="modal-src-link" id="modalSrcLink" href="#" target="_blank" rel="noopener"></a></div>
       <div class="modal-action-row">
-        <button class="modal-save-btn" id="modalSaveBtn" onclick="saveModal()" style="display:none">💾 บันทึก</button>
-        <button class="modal-del-btn" id="modalDelBtn" onclick="deleteCurrentItem()" style="display:none;margin-left:auto">🗑 ลบ</button>
+        <button class="modal-save-btn" id="modalSaveBtn" onclick="saveModal()" style="display:none">บันทึก</button>
+        <button class="modal-del-btn" id="modalDelBtn" onclick="deleteCurrentItem()" style="display:none;margin-left:auto">ลบ</button>
       </div>
     </div>
   </div>
@@ -544,21 +562,61 @@ const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const FURN_TABLE  = 'furniture_refs';
 const FURN_BUCKET = 'furniture-refs';
 
+// ─── Lucide-style inline SVG icon library ─────────────────────
+// All paths are 24x24 viewBox; stroke + sizing controlled by .icn CSS class
+const _ICONS = {
+  chair:     '<path d="M6 19v2"/><path d="M18 19v2"/><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 18h18"/><path d="M5 18v-2a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2"/>',
+  table:     '<path d="M3 9h18"/><path d="M3 9v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/><path d="M5 14v6"/><path d="M19 14v6"/><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/>',
+  sofa:      '<path d="M20 9V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0Z"/><path d="M4 18v2"/><path d="M20 18v2"/>',
+  cabinet:   '<rect x="4" y="3" width="16" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="9.5" cy="12" r="0.5"/><circle cx="14.5" cy="12" r="0.5"/>',
+  lamp:      '<path d="M9 2h6l3 7H6l3-7Z"/><path d="M12 9v8"/><path d="M8 17h8l-1 4H9l-1-4Z"/>',
+  plant:     '<path d="M7 20h10"/><path d="M10 20c0-3 0-7 2-7s2 4 2 7"/><path d="M12 13c-2-1-3-3-3-6 2 0 3 1 3 3"/><path d="M12 13c2-1 3-3 3-6-2 0-3 1-3 3"/>',
+  wall:      '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  deco:      '<path d="M12 3v3"/><path d="M9 6h6l-1 4a3 3 0 0 1-1 2v6h-2v-6a3 3 0 0 1-1-2L9 6Z"/><path d="M10 18h4"/>',
+  screen:    '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+  mirror:    '<rect x="6" y="3" width="12" height="18" rx="6"/><path d="M9 6c0 2 1 4 3 4"/>',
+  material:  '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><path d="M9 3v6"/><path d="M15 9v6"/><path d="M9 15v6"/>',
+  other:     '<path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+  whole_set: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+
+  // action icons
+  moodboard: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/>',
+  shuffle:   '<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
+  bookmark:  '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  save:      '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+  trash:     '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  collapse:  '<path d="M5 9h14"/><path d="M5 15h14"/>',
+  expand:    '<path d="M5 9h14"/><path d="M5 15h14"/><path d="M9 12h6"/>',
+  upload:    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  plus:      '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  search:    '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  scissors:  '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+  reset:     '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  close:     '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+};
+function ICN(name, extra='') {
+  const body = _ICONS[name];
+  if (!body) return '';
+  return `<svg class="icn ${extra}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+}
+
 const CATEGORIES = [
-  {id:'chair',    label:'🪑 เก้าอี้',        color:'#D42B2B',bg:'rgba(212,43,43,.18)'},
-  {id:'table',    label:'🪵 โต๊ะ',            color:'#1B3FAF',bg:'rgba(27,63,175,.18)'},
-  {id:'sofa',     label:'🛋️ โซฟา',           color:'#F0B400',bg:'rgba(240,180,0,.15)'},
-  {id:'cabinet',  label:'🗄️ ตู้/ชั้น',        color:'#D42B2B',bg:'rgba(212,43,43,.12)'},
-  {id:'lamp',     label:'💡 โคมไฟ',           color:'#F0B400',bg:'rgba(240,180,0,.12)'},
-  {id:'plant',    label:'🌿 ต้นไม้/กระถาง',   color:'#1B7A4A',bg:'rgba(27,122,74,.18)'},
-  {id:'wall',     label:'🖼️ ของแต่งผนัง',     color:'#D45B1B',bg:'rgba(212,91,27,.15)'},
-  {id:'deco',     label:'🏺 ของตกแต่ง',       color:'#F0B400',bg:'rgba(240,180,0,.10)'},
-  {id:'screen',   label:'📺 จอ/อุปกรณ์',      color:'#1B3FAF',bg:'rgba(27,63,175,.12)'},
-  {id:'mirror',   label:'🪞 กระจก',           color:'#A8A090',bg:'rgba(168,160,144,.15)'},
-  {id:'material', label:'🧱 พื้น/ผนัง',       color:'#A07020',bg:'rgba(160,112,32,.18)'},
-  {id:'other',    label:'📦 อื่นๆ',           color:'#686460',bg:'rgba(104,100,96,.15)'},
-  {id:'whole_set',label:'🏠 Whole Set',        color:'#6B8FFF',bg:'rgba(107,143,255,.18)'},
+  {id:'chair',     ic:'chair',     name:'เก้าอี้',           color:'#D42B2B',bg:'rgba(212,43,43,.18)'},
+  {id:'table',     ic:'table',     name:'โต๊ะ',              color:'#1B3FAF',bg:'rgba(27,63,175,.18)'},
+  {id:'sofa',      ic:'sofa',      name:'โซฟา',              color:'#F0B400',bg:'rgba(240,180,0,.15)'},
+  {id:'cabinet',   ic:'cabinet',   name:'ตู้/ชั้น',          color:'#D42B2B',bg:'rgba(212,43,43,.12)'},
+  {id:'lamp',      ic:'lamp',      name:'โคมไฟ',             color:'#F0B400',bg:'rgba(240,180,0,.12)'},
+  {id:'plant',     ic:'plant',     name:'ต้นไม้/กระถาง',     color:'#1B7A4A',bg:'rgba(27,122,74,.18)'},
+  {id:'wall',      ic:'wall',      name:'ของแต่งผนัง',       color:'#D45B1B',bg:'rgba(212,91,27,.15)'},
+  {id:'deco',      ic:'deco',      name:'ของตกแต่ง',         color:'#F0B400',bg:'rgba(240,180,0,.10)'},
+  {id:'screen',    ic:'screen',    name:'จอ/อุปกรณ์',        color:'#1B3FAF',bg:'rgba(27,63,175,.12)'},
+  {id:'mirror',    ic:'mirror',    name:'กระจก',             color:'#A8A090',bg:'rgba(168,160,144,.15)'},
+  {id:'material',  ic:'material',  name:'พื้น/ผนัง',         color:'#A07020',bg:'rgba(160,112,32,.18)'},
+  {id:'other',     ic:'other',     name:'อื่นๆ',             color:'#686460',bg:'rgba(104,100,96,.15)'},
+  {id:'whole_set', ic:'whole_set', name:'Whole Set',          color:'#6B8FFF',bg:'rgba(107,143,255,.18)'},
 ];
+// Build label HTML once at module load (used by render code that reads c.label as innerHTML)
+CATEGORIES.forEach(c => { c.label = ICN(c.ic) + c.name; });
 const STYLES = ['minimal','industrial','luxury','vintage','modern','scandinavian','thai','dark'];
 
 let ALL_ITEMS = [];
@@ -566,8 +624,6 @@ let _curCat = 'all';
 let _curStyles = [];
 let _editId = null;
 let _aiScoreMap = null;          // {id: similarity 0..1} when AI search active
-let _allCardsCollapsed = false;  // toggle state
-const COLLAPSED_KEY = 'furn_card_collapsed_ids'; // localStorage key (per-card)
 
 function isAdmin() { return (localStorage.getItem('vp_user_role')||'') === 'admin'; }
 function catInfo(id) { return CATEGORIES.find(c=>c.id===id) || CATEGORIES.at(-1); }
@@ -1057,29 +1113,30 @@ function renderGrid() {
     return;
   }
   const admin = isAdmin();
-  const collapsedSet = _getCollapsedSet();
-  wrap.innerHTML = items.map(item => {
-    const cat = catInfo(item.category);
-    const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
-    const isSel = _mbSelected.has(item.id);
-    const isCol = collapsedSet.has(item.id);
-    return `<div class="grid-card${isSel ? ' selected' : ''}${isCol ? ' collapsed' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
-      <div class="sel-check">✓</div>
-      <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
-      <button class="card-toggle-btn" onclick="toggleCardCollapse('${item.id}',event)" title="ขยาย/ย่อรายละเอียด">${isCol ? '⊞' : '⊟'}</button>
-      <div class="card-hover-btns">
-        <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
-        ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
-      </div>
-      <div class="card-body">
-        <span class="card-cat" style="color:${cat.color};background:${cat.bg}">${cat.label}</span>
-        ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
-        ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
-        ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px">${s}</span>`).join('')}</div>` : ''}
-        ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
+  wrap.innerHTML = items.map(item => _cardHTML(item, admin)).join('');
+}
+
+// Build the markup for a single grid card (used by renderGrid + AI search render)
+function _cardHTML(item, admin, simPct) {
+  const cat  = catInfo(item.category);
+  const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
+  const isSel = _mbSelected.has(item.id);
+  const showBody = !!(item.notes || host || (item.style_tags||[]).length || (item.color_palette||[]).length);
+  return `<div class="grid-card${isSel ? ' selected' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
+    ${simPct !== undefined ? `<div class="card-sim-badge">${simPct}%</div>` : ''}
+    <div class="sel-check">✓</div>
+    <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+    <div class="card-cat-overlay" style="color:${cat.color}" title="${cat.name}">${ICN(cat.ic)}</div>
+    <div class="card-hover-btns">
+      ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">${ICN('trash','icn-sm')}</button>` : ''}
+    </div>
+    ${showBody ? `<div class="card-body">
+      ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
+      ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
+      ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px">${s}</span>`).join('')}</div>` : ''}
+      ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
+    </div>` : ''}
+  </div>`;
 }
 
 // ── MODAL ─────────────────────────────────────────────────────
@@ -1158,44 +1215,38 @@ async function doDelete(id) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// EXPAND / COLLAPSE CARDS
+// ZOOM (card size) — replaces the previous expand/collapse model
+// User can shrink cards (see more at once) or enlarge (focus on detail)
 // ══════════════════════════════════════════════════════════════
-function _getCollapsedSet() {
+const ZOOM_LEVELS = ['xs','s','m','l','xl'];
+const ZOOM_LABELS = {xs:'XS', s:'S', m:'M', l:'L', xl:'XL'};
+const ZOOM_KEY    = 'furn_zoom_level';
+let _zoomIdx = 2; // default 'm'
+
+function _applyZoom() {
+  const grid = document.getElementById('gridWrap');
+  if (!grid) return;
+  ZOOM_LEVELS.forEach(z => grid.classList.remove('zoom-' + z));
+  grid.classList.add('zoom-' + ZOOM_LEVELS[_zoomIdx]);
+  const lbl = document.getElementById('zoomLabel');
+  if (lbl) lbl.textContent = ZOOM_LABELS[ZOOM_LEVELS[_zoomIdx]];
+  const out = document.getElementById('zoomOutBtn');
+  const inn = document.getElementById('zoomInBtn');
+  if (out) out.disabled = _zoomIdx <= 0;
+  if (inn) inn.disabled = _zoomIdx >= ZOOM_LEVELS.length - 1;
+  try { localStorage.setItem(ZOOM_KEY, ZOOM_LEVELS[_zoomIdx]); } catch(_) {}
+}
+function adjustZoom(delta) {
+  _zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, _zoomIdx + delta));
+  _applyZoom();
+}
+(function _initZoom() {
   try {
-    const arr = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]');
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch(_) { return new Set(); }
-}
-function _saveCollapsedSet(set) {
-  try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); } catch(_) {}
-}
-function toggleCardCollapse(id, ev) {
-  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
-  const set = _getCollapsedSet();
-  if (set.has(id)) set.delete(id); else set.add(id);
-  _saveCollapsedSet(set);
-  const card = document.querySelector(`.grid-card[data-id="${id}"]`);
-  if (card) card.classList.toggle('collapsed', set.has(id));
-}
-function toggleAllCards() {
-  _allCardsCollapsed = !_allCardsCollapsed;
-  const btn = document.getElementById('toggleAllBtn');
-  if (btn) btn.textContent = _allCardsCollapsed ? '⊞ ขยายทั้งหมด' : '⊟ ย่อทั้งหมด';
-  const set = _getCollapsedSet();
-  if (_allCardsCollapsed) {
-    // collapse all currently-visible items
-    document.querySelectorAll('.grid-card').forEach(c => {
-      c.classList.add('collapsed');
-      set.add(c.dataset.id);
-    });
-  } else {
-    document.querySelectorAll('.grid-card').forEach(c => {
-      c.classList.remove('collapsed');
-      set.delete(c.dataset.id);
-    });
-  }
-  _saveCollapsedSet(set);
-}
+    const saved = localStorage.getItem(ZOOM_KEY);
+    const i = ZOOM_LEVELS.indexOf(saved);
+    if (i >= 0) _zoomIdx = i;
+  } catch(_) {}
+})();
 
 // ══════════════════════════════════════════════════════════════
 // AI SEMANTIC SEARCH (CLIP) — same approach as GrabREF
@@ -1385,32 +1436,10 @@ async function doAiSearch() {
 function _renderAiResults(items, scoreMap) {
   const wrap  = document.getElementById('gridWrap');
   const admin = isAdmin();
-  const collapsedSet = _getCollapsedSet();
   document.getElementById('countLabel').textContent = `แสดง ${items.length} จาก ${ALL_ITEMS.length} รายการ (AI ranked)`;
   wrap.innerHTML = items.map(item => {
-    const cat = catInfo(item.category);
-    const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
-    const isSel = _mbSelected.has(item.id);
     const sim = scoreMap[item.id] || 0;
-    const simPct = Math.round(sim * 100);
-    const isCol = collapsedSet.has(item.id);
-    return `<div class="grid-card${isSel ? ' selected' : ''}${isCol ? ' collapsed' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
-      <div class="card-sim-badge">${simPct}%</div>
-      <div class="sel-check">✓</div>
-      <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
-      <button class="card-toggle-btn" onclick="toggleCardCollapse('${item.id}',event)" title="ขยาย/ย่อ">${isCol ? '⊞' : '⊟'}</button>
-      <div class="card-hover-btns">
-        <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
-        ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
-      </div>
-      <div class="card-body">
-        <span class="card-cat" style="color:${cat.color};background:${cat.bg}">${cat.label}</span>
-        ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
-        ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
-        ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px">${s}</span>`).join('')}</div>` : ''}
-        ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
-      </div>
-    </div>`;
+    return _cardHTML(item, admin, Math.round(sim * 100));
   }).join('');
 }
 
@@ -1723,8 +1752,56 @@ async function applyCrop() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
+// Render category filter tabs (after the "ทั้งหมด" button)
+(function _renderCatTabs() {
+  const bar = document.getElementById('filterBar');
+  if (!bar) return;
+  const html = CATEGORIES.map(c =>
+    `<button class="cat-tab" data-cat="${c.id}" onclick="setCat('${c.id}')">${ICN(c.ic)} ${c.name} <span class="cnt" id="cnt-${c.id}">0</span></button>`
+  ).join('');
+  const sep = bar.querySelector('.filter-sep');
+  if (sep) sep.insertAdjacentHTML('beforebegin', html);
+  else bar.insertAdjacentHTML('beforeend', html);
+})();
+
+// Inject SVG icons into static action buttons
+(function _injectIcons() {
+  const set = (id, name, label, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = ICN(name, cls || '') + (label ? ' ' + label : '');
+  };
+  set('navBmBtn',     'bookmark', 'Bookmarklet');
+  set('addBtn',       'plus',     'เพิ่ม');
+  set('uploadPickBtn','upload',   'เลือกรูป');
+  set('dzIcon',       'upload',   '', 'icn-md');
+  set('mbModeBtn',    'moodboard','Moodboard');
+  set('shuffleBtn',   'shuffle',  'Shuffle');
+  set('zoomOutBtn',   'collapse', '');
+  set('zoomInBtn',    'expand',   '');
+  set('aiSearchClear','close',    'Clear', 'icn-sm');
+  set('fabMbBtn',     'moodboard','สร้าง Moodboard');
+  set('mbBoxTitle',   'moodboard','Moodboard Preview <button class="mb-close" onclick="closeMoodboard()">✕</button>');
+  set('mbExportBtn',  'save',     'Export PNG');
+  set('mbRegenBtn',   'reset',    'Re-layout');
+  set('bmSetupTitle', 'bookmark', 'ติดตั้ง Bookmarklet');
+  set('bmBookmarkletLink','save', 'Save to Furniture REF');
+  set('bmTitleLabel', 'save',     'บันทึกลง Furniture REF');
+  set('bmSaveBtn',    'save',     'บันทึก (Step 3)');
+  set('cropTitle',    'scissors', 'Crop Image <button class="crop-close" onclick="closeCrop()">✕</button>');
+  set('cropApplyBtn', 'save',     'บันทึก Crop');
+  set('cropResetBtn', 'reset',    'Reset');
+  set('modalCropBtn', 'scissors', 'CROP', 'icn-sm');
+  set('modalSaveBtn', 'save',     'บันทึก');
+  set('modalDelBtn',  'trash',    'ลบ');
+  // Empty-state for bookmarklet drop area
+  const emptyIcon = document.querySelector('.bm-empty-icon');
+  if (emptyIcon) emptyIcon.innerHTML = ICN('upload','icn-md');
+})();
+
 initBookmarkletMode();
 if (!new URLSearchParams(location.search).get('bm')) loadItems();
+_applyZoom();
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); closeCrop(); } });
 </script>
 </body>
