@@ -3,8 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Furniture Ref — THE STANDARD VP Library</title>
+<title>Furniture REF — THE STANDARD VP Library</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CLIP image+text encoder + Thai→EN NMT — for FurnitureREF AI Search (same models/pattern as GrabREF) -->
+<script type="module">
+  import { CLIPTextModelWithProjection, AutoTokenizer, pipeline, env }
+    from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  env.allowLocalModels = false;
+
+  window._refClipTextReady   = false;
+  window._refClipImgReady    = false;
+  window._refTranslatorReady = false;
+  window._refClipTextLoading   = true;
+  window._refClipImgLoading    = true;
+  window._refTranslatorLoading = true;
+
+  function _checkAllRefModels() {
+    if (!window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading) {
+      console.log(`[FurnREF] Models ready — CLIP text:${window._refClipTextReady} img:${window._refClipImgReady} NMT:${window._refTranslatorReady}`);
+      if (typeof _updateRefAiStatus === 'function') _updateRefAiStatus();
+    }
+  }
+
+  Promise.all([
+    AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch32'),
+    CLIPTextModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32', { quantized: true })
+  ]).then(([tok, mdl]) => {
+    window._refClipTokenizer = tok;
+    window._refClipTextModel = mdl;
+    window._refClipTextReady = true;
+    window._refClipTextLoading = false;
+    _checkAllRefModels();
+  }).catch(e => {
+    window._refClipTextLoading = false;
+    console.warn('[CLIP text]', e.message);
+    _checkAllRefModels();
+  });
+
+  pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32', { quantized: true })
+    .then(p => { window._refClipImg = p; window._refClipImgReady = true; window._refClipImgLoading = false; _checkAllRefModels(); })
+    .catch(e => { window._refClipImgLoading = false; console.warn('[CLIP img]', e.message); _checkAllRefModels(); });
+
+  pipeline('translation', 'Xenova/opus-mt-th-en', { quantized: true })
+    .then(p => { window._refThEnTranslator = p; window._refTranslatorReady = true; window._refTranslatorLoading = false; _checkAllRefModels(); })
+    .catch(e => { window._refTranslatorLoading = false; console.warn('[NMT]', e.message); _checkAllRefModels(); });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -192,6 +235,80 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 
 @media(max-width:768px){.grid-wrap{columns:3 180px}.modal{grid-template-columns:1fr}.modal-img-side{min-height:220px;max-height:40vh}.nav-bm-btn{display:none}}
 @media(max-width:480px){.nav{padding:0 12px;height:46px}.nav-logo{font-size:13px}.quick-add{flex-direction:column;padding:10px 12px;gap:8px}.url-row{width:100%}.cat-tab{padding:4px 9px;font-size:10px}.search-input{width:130px;font-size:11px}.grid-wrap{columns:2 140px;padding:12px;gap:8px}.modal-img-side{min-height:160px;max-height:35vh}.modal-info-side{padding:14px}}
+
+/* ─── AI SEMANTIC SEARCH (CLIP) ─── */
+.ai-search-wrap{background:var(--surface);border-bottom:2px solid var(--line-hi);padding:10px 20px;display:flex;flex-direction:column;gap:6px}
+.ai-search-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ai-search-input{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line-hi);border-bottom:1px solid var(--gold-dim);padding:8px 12px;font-size:12px;color:var(--bone);font-family:inherit;outline:none;transition:border-color .12s}
+.ai-search-input:focus{border-color:var(--yellow)}
+.ai-search-input::placeholder{color:var(--bone-faint)}
+.ai-search-btn{padding:8px 16px;background:var(--gold);color:#0A0A0C;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase;transition:opacity .12s;white-space:nowrap}
+.ai-search-btn:hover:not(:disabled){opacity:.85}
+.ai-search-btn:disabled{opacity:.4;cursor:wait}
+.ai-search-clear{padding:7px 12px;background:transparent;border:1px solid var(--line-hi);font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;letter-spacing:.04em}
+.ai-search-clear:hover{color:var(--bone);border-color:var(--bone-faint)}
+.ai-status{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);letter-spacing:.04em}
+.ai-status-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.ai-status-dot.ready{background:#4A7C59}
+.ai-status-dot.loading{background:var(--gold);animation:aiPulse 1.4s infinite}
+.ai-status-dot.error{background:var(--danger)}
+@keyframes aiPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-search-meta{font-size:10px;color:var(--bone-dim);letter-spacing:.04em}
+.btn-batch-embed{padding:6px 11px;background:transparent;border:1px solid var(--line-hi);font-size:10px;color:var(--bone-dim);cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap}
+.btn-batch-embed:hover{color:var(--gold);border-color:var(--gold-dim)}
+
+/* sim badge on grid card */
+.card-sim-badge{position:absolute;top:6px;left:6px;font-family:monospace;font-size:9px;letter-spacing:.04em;background:rgba(240,180,0,.92);color:#0A0A0C;padding:2px 6px;pointer-events:none;font-weight:700;z-index:4}
+
+/* ─── EXPAND/COLLAPSE CARD ─── */
+.card-toggle-btn{position:absolute;bottom:6px;right:6px;width:24px;height:24px;border:none;background:rgba(10,10,12,.85);color:var(--bone-dim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:0;z-index:5;transition:all .12s;line-height:1}
+.card-toggle-btn:hover{background:var(--surface);color:var(--gold)}
+.grid-card.collapsed .card-body{display:none}
+.grid-card.collapsed .card-toggle-btn{background:rgba(10,10,12,.65)}
+.card-toggle-all-btn{padding:5px 10px;border:1px solid var(--line-hi);font-size:10px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;letter-spacing:.04em;white-space:nowrap}
+.card-toggle-all-btn:hover{color:var(--bone-dim);border-color:var(--bone-faint)}
+
+/* ─── CROP OVERLAY ─── */
+.crop-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:850;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+.crop-overlay.open{display:flex}
+.crop-box{background:var(--surface);border:1px solid var(--line-hi);width:100%;max-width:760px;max-height:94vh;display:flex;flex-direction:column;gap:12px;padding:16px}
+.crop-title{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--bone);display:flex;align-items:center;justify-content:space-between}
+.crop-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+.crop-stage{position:relative;background:#000;overflow:hidden;flex:1;min-height:280px;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none}
+.crop-stage img{max-width:100%;max-height:65vh;display:block;pointer-events:none;user-select:none}
+.crop-rect{position:absolute;border:2px solid var(--gold);box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move;box-sizing:border-box}
+.crop-handle{position:absolute;width:14px;height:14px;background:var(--gold);border:2px solid #0A0A0C;box-sizing:border-box}
+.crop-handle.tl{left:-8px;top:-8px;cursor:nwse-resize}
+.crop-handle.tr{right:-8px;top:-8px;cursor:nesw-resize}
+.crop-handle.bl{left:-8px;bottom:-8px;cursor:nesw-resize}
+.crop-handle.br{right:-8px;bottom:-8px;cursor:nwse-resize}
+.crop-actions{display:flex;gap:8px;flex-wrap:wrap}
+.crop-btn{padding:9px 14px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase}
+.crop-btn-primary{background:var(--gold);color:#0A0A0C}
+.crop-btn-ghost{background:transparent;border:1px solid var(--line-hi);color:var(--muted)}
+.crop-btn-ghost:hover{color:var(--bone);border-color:var(--bone-faint)}
+.crop-btn-primary:hover{opacity:.85}
+.crop-btn:disabled{opacity:.4;cursor:wait}
+.crop-edit-btn{padding:6px 10px;background:transparent;border:1px solid var(--line-hi);color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase}
+.crop-edit-btn:hover{color:var(--gold);border-color:var(--gold-dim)}
+
+/* ─── BATCH EMBED MODAL ─── */
+.batch-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.batch-overlay.open{display:flex}
+.batch-box{background:var(--surface);border:1px solid var(--line-hi);width:100%;max-width:480px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.batch-title{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--bone)}
+.batch-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.batch-stats{display:flex;gap:14px;font-family:monospace;font-size:11px;color:var(--bone-dim)}
+.batch-stats span strong{color:var(--gold);font-weight:700}
+.batch-progress-wrap{height:5px;background:var(--line);overflow:hidden}
+.batch-progress-bar{height:100%;background:var(--gold);width:0%;transition:width .25s}
+.batch-log{font-family:monospace;font-size:10px;color:var(--bone-faint);min-height:14px;letter-spacing:.04em}
+.batch-actions{display:flex;gap:8px}
+.batch-actions button{flex:1;padding:9px 12px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase}
+.batch-start{background:var(--gold);color:#0A0A0C}
+.batch-cancel{background:transparent;border:1px solid var(--line-hi);color:var(--muted)}
+.batch-cancel:hover{color:var(--bone);border-color:var(--bone-faint)}
+.batch-start:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -200,7 +317,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <nav class="nav">
   <a class="nav-logo" href="vp-search.html">THE STANDARD VP</a>
   <span class="nav-sep">/</span>
-  <span class="nav-cur">🪑 Furniture Ref</span>
+  <span class="nav-cur">🪑 Furniture REF</span>
   <div class="nav-links">
     <a class="nav-link" href="vp-grab-ref.html">Grab REF</a>
     <button class="nav-bm-btn" onclick="openBmSetup()">🔖 Bookmarklet</button>
@@ -256,12 +373,30 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   <button class="style-pill" data-style="dark"         onclick="toggleStyle('dark')">Dark/Moody</button>
 </div>
 
+<!-- AI SEMANTIC SEARCH (CLIP, same as GrabREF) -->
+<div class="ai-search-wrap">
+  <div class="ai-search-row">
+    <input class="ai-search-input" id="aiSearchInput" type="text"
+      placeholder="🔍 AI Search — ลอง 'minimal wood chair', 'โซฟาสีเทา', 'industrial lamp'…"
+      onkeydown="if(event.key==='Enter')doAiSearch()">
+    <button class="ai-search-btn" id="aiSearchBtn" onclick="doAiSearch()">Search</button>
+    <button class="ai-search-clear" id="aiSearchClear" onclick="clearAiSearch()" style="display:none">✕ Clear</button>
+    <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed CLIP vectors for items missing mclip_vector">⚡ Batch Embed</button>
+  </div>
+  <div class="ai-status" id="aiStatus">
+    <span class="ai-status-dot loading" id="aiStatusDot"></span>
+    <span id="aiStatusText">Loading AI models (CLIP ~25MB + NMT ~50MB) — first load only…</span>
+  </div>
+  <div class="ai-search-meta" id="aiSearchMeta"></div>
+</div>
+
 <!-- TOOLBAR -->
 <div class="toolbar">
   <span class="count-label" id="countLabel">กำลังโหลด…</span>
   <button class="mb-btn" id="mbModeBtn" onclick="toggleMbMode()">🖼 Moodboard</button>
   <button class="mb-btn" id="shuffleBtn" onclick="shuffleGrid()" title="สุ่มลำดับใหม่">🔀 Shuffle</button>
-  <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา…" oninput="renderGrid()">
+  <button class="card-toggle-all-btn" id="toggleAllBtn" onclick="toggleAllCards()" title="ขยาย/ย่อทุก card">⊟ ย่อทั้งหมด</button>
+  <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา (keyword)…" oninput="renderGrid()">
   <select class="sort-sel" id="sortSel" onchange="onSortChange()">
     <option value="newest">ล่าสุดก่อน</option>
     <option value="oldest">เก่าสุดก่อน</option>
@@ -297,7 +432,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   <div class="bm-setup-box">
     <div class="bm-setup-title">🔖 ติดตั้ง Bookmarklet</div>
     <div class="bm-setup-sub">ลากปุ่มด้านล่างไปวางบน bookmark bar แล้วคลิกได้เลยทุกครั้งที่เจอภาพน่าสนใจ</div>
-    <a class="bm-setup-link" id="bmBookmarkletLink" href="#">📁 Save to Furniture Ref</a>
+    <a class="bm-setup-link" id="bmBookmarkletLink" href="#">📁 Save to Furniture REF</a>
     <div class="bm-setup-steps">
       1. แสดง bookmark bar (Ctrl+Shift+B / Cmd+Shift+B)<br>
       2. ลากปุ่มสีทองขึ้นไปวางบน bookmark bar<br>
@@ -311,7 +446,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 <!-- BOOKMARKLET QUICK-SAVE OVERLAY -->
 <div class="bm-overlay" id="bmOverlay">
   <div class="bm-header">
-    <div class="bm-title">📁 บันทึกลง Furniture Ref</div>
+    <div class="bm-title">📁 บันทึกลง Furniture REF</div>
     <button style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px" onclick="window.close()" title="ปิด">✕</button>
   </div>
   <div class="bm-step-label">
@@ -331,6 +466,45 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   </div>
 </div>
 
+<!-- CROP OVERLAY -->
+<div class="crop-overlay" id="cropOverlay" onclick="if(event.target===this)closeCrop()">
+  <div class="crop-box">
+    <div class="crop-title">✂ Crop Image <button class="crop-close" onclick="closeCrop()">✕</button></div>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" src="" alt="" crossorigin="anonymous">
+      <div class="crop-rect" id="cropRect">
+        <div class="crop-handle tl" data-h="tl"></div>
+        <div class="crop-handle tr" data-h="tr"></div>
+        <div class="crop-handle bl" data-h="bl"></div>
+        <div class="crop-handle br" data-h="br"></div>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button class="crop-btn crop-btn-primary" id="cropApplyBtn" onclick="applyCrop()">💾 บันทึก Crop</button>
+      <button class="crop-btn crop-btn-ghost" onclick="resetCropRect()">↺ Reset</button>
+      <button class="crop-btn crop-btn-ghost" onclick="closeCrop()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH EMBED MODAL -->
+<div class="batch-overlay" id="batchOverlay" onclick="if(event.target===this)cancelBatchEmbed()">
+  <div class="batch-box">
+    <div class="batch-title">⚡ Batch CLIP Embed</div>
+    <div class="batch-desc" id="batchDesc">กำลังนับรูปที่ยังไม่มี vector…</div>
+    <div class="batch-stats">
+      <span><strong id="batchDone">0</strong> / <span id="batchTotal">—</span> done</span>
+      <span id="batchErrors">0 errors</span>
+    </div>
+    <div class="batch-progress-wrap"><div class="batch-progress-bar" id="batchProgressBar"></div></div>
+    <div class="batch-log" id="batchLog">—</div>
+    <div class="batch-actions">
+      <button class="batch-start" id="batchStartBtn" onclick="startBatchEmbed()" disabled>Start</button>
+      <button class="batch-cancel" id="batchCancelBtn" onclick="cancelBatchEmbed()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -346,6 +520,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
     <div class="modal-img-side">
       <button class="modal-close" onclick="closeModal()" title="ปิด">✕</button>
       <img id="modalImg" src="" alt="">
+      <button class="crop-edit-btn" id="modalCropBtn" onclick="openCropFromModal()" style="position:absolute;bottom:10px;right:10px;display:none">✂ CROP</button>
     </div>
     <div class="modal-info-side">
       <div class="modal-field"><label>หมวด</label><div class="modal-cat-grid" id="modalCatGrid"></div></div>
@@ -390,6 +565,9 @@ let ALL_ITEMS = [];
 let _curCat = 'all';
 let _curStyles = [];
 let _editId = null;
+let _aiScoreMap = null;          // {id: similarity 0..1} when AI search active
+let _allCardsCollapsed = false;  // toggle state
+const COLLAPSED_KEY = 'furn_card_collapsed_ids'; // localStorage key (per-card)
 
 function isAdmin() { return (localStorage.getItem('vp_user_role')||'') === 'admin'; }
 function catInfo(id) { return CATEGORIES.find(c=>c.id===id) || CATEGORIES.at(-1); }
@@ -466,6 +644,8 @@ async function uploadFile(file) {
   setProgress(100);
   ALL_ITEMS.unshift(data);
   updateCounts(); renderGrid();
+  // Fire-and-forget CLIP embed (so AI search picks up new uploads)
+  if (window._refClipImgReady) _autoEmbedFurn(data.id, image_url);
   return data;
 }
 
@@ -486,6 +666,8 @@ async function addFromUrl() {
     input.value = '';
     toast('เพิ่มแล้ว ✓');
     setTimeout(() => openModal(data.id), 300);
+    // Embed for AI search (works only if image_url is direct & CORS-friendly)
+    if (isImg && window._refClipImgReady) _autoEmbedFurn(data.id, raw);
   } catch(e) { toast('Error: '+e.message, 'err'); }
   btn.disabled = false; btn.textContent = '+ เพิ่ม';
 }
@@ -875,13 +1057,16 @@ function renderGrid() {
     return;
   }
   const admin = isAdmin();
+  const collapsedSet = _getCollapsedSet();
   wrap.innerHTML = items.map(item => {
     const cat = catInfo(item.category);
     const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
     const isSel = _mbSelected.has(item.id);
-    return `<div class="grid-card${isSel ? ' selected' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
+    const isCol = collapsedSet.has(item.id);
+    return `<div class="grid-card${isSel ? ' selected' : ''}${isCol ? ' collapsed' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
       <div class="sel-check">✓</div>
       <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <button class="card-toggle-btn" onclick="toggleCardCollapse('${item.id}',event)" title="ขยาย/ย่อรายละเอียด">${isCol ? '⊞' : '⊟'}</button>
       <div class="card-hover-btns">
         <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
         ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
@@ -920,6 +1105,8 @@ function openModal(id) {
   } else { srcField.style.display = 'none'; }
   document.getElementById('modalSaveBtn').style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('modalDelBtn').style.display = isAdmin() ? 'block' : 'none';
+  const cropBtn = document.getElementById('modalCropBtn');
+  if (cropBtn) cropBtn.style.display = isAdmin() ? 'inline-block' : 'none';
   document.getElementById('modalOverlay').classList.add('open');
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); _editId = null; }
@@ -970,10 +1157,575 @@ async function doDelete(id) {
   toast('ลบแล้ว');
 }
 
+// ══════════════════════════════════════════════════════════════
+// EXPAND / COLLAPSE CARDS
+// ══════════════════════════════════════════════════════════════
+function _getCollapsedSet() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]');
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch(_) { return new Set(); }
+}
+function _saveCollapsedSet(set) {
+  try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); } catch(_) {}
+}
+function toggleCardCollapse(id, ev) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  const set = _getCollapsedSet();
+  if (set.has(id)) set.delete(id); else set.add(id);
+  _saveCollapsedSet(set);
+  const card = document.querySelector(`.grid-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('collapsed', set.has(id));
+}
+function toggleAllCards() {
+  _allCardsCollapsed = !_allCardsCollapsed;
+  const btn = document.getElementById('toggleAllBtn');
+  if (btn) btn.textContent = _allCardsCollapsed ? '⊞ ขยายทั้งหมด' : '⊟ ย่อทั้งหมด';
+  const set = _getCollapsedSet();
+  if (_allCardsCollapsed) {
+    // collapse all currently-visible items
+    document.querySelectorAll('.grid-card').forEach(c => {
+      c.classList.add('collapsed');
+      set.add(c.dataset.id);
+    });
+  } else {
+    document.querySelectorAll('.grid-card').forEach(c => {
+      c.classList.remove('collapsed');
+      set.delete(c.dataset.id);
+    });
+  }
+  _saveCollapsedSet(set);
+}
+
+// ══════════════════════════════════════════════════════════════
+// AI SEMANTIC SEARCH (CLIP) — same approach as GrabREF
+// ══════════════════════════════════════════════════════════════
+function _updateRefAiStatus() {
+  const dot  = document.getElementById('aiStatusDot');
+  const txt  = document.getElementById('aiStatusText');
+  const btn  = document.getElementById('aiSearchBtn');
+  const bbtn = document.getElementById('batchEmbedBtn');
+  if (!dot || !txt) return;
+  const allLoading = window._refClipTextLoading || window._refClipImgLoading || window._refTranslatorLoading;
+  const clipOK     = window._refClipTextReady && window._refClipImgReady;
+  const transOK    = window._refTranslatorReady;
+  if (allLoading) {
+    dot.className = 'ai-status-dot loading';
+    const parts = [];
+    if (window._refClipTextLoading || window._refClipImgLoading) parts.push('CLIP (~25MB)');
+    if (window._refTranslatorLoading) parts.push('NMT (~50MB)');
+    txt.textContent = `Loading ${parts.join(' + ')}…`;
+    if (btn) btn.disabled = true;
+  } else if (clipOK) {
+    dot.className = 'ai-status-dot ready';
+    txt.textContent = transOK ? 'CLIP + NMT Thai→EN ready' : 'CLIP ready (keyword translation fallback)';
+    if (btn) btn.disabled = false;
+    if (bbtn && isAdmin()) bbtn.style.display = 'inline-block';
+  } else {
+    dot.className = 'ai-status-dot error';
+    txt.textContent = 'AI unavailable — check console';
+    if (btn) btn.disabled = true;
+  }
+}
+
+(function _pollFurnAi() {
+  const done = !window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading;
+  if (done) { _updateRefAiStatus(); return; }
+  const t = setInterval(() => {
+    const allDone = !window._refClipTextLoading && !window._refClipImgLoading && !window._refTranslatorLoading;
+    _updateRefAiStatus();
+    if (allDone) clearInterval(t);
+  }, 800);
+})();
+
+function _refHasThaiChars(text) { return /[฀-๿]/.test(text); }
+const _FURN_KW_FALLBACK = {
+  'เก้าอี้':'chair seat','โต๊ะ':'table desk','โซฟา':'sofa couch','ตู้':'cabinet shelf cupboard',
+  'ชั้น':'shelf rack','โคมไฟ':'lamp light','ไฟ':'light lamp','ต้นไม้':'plant tree',
+  'กระถาง':'pot planter','กระจก':'mirror glass','ผนัง':'wall','พื้น':'floor',
+  'ของตกแต่ง':'decoration ornament','รูป':'picture art frame','จอ':'screen monitor tv',
+  'มินิมอล':'minimal','โมเดิร์น':'modern','วินเทจ':'vintage retro','หรู':'luxury',
+  'ไม้':'wood wooden','โลหะ':'metal','หิน':'stone','ผ้า':'fabric textile','หนัง':'leather',
+  'ขาว':'white','ดำ':'black','เทา':'gray grey','น้ำตาล':'brown','แดง':'red','เขียว':'green',
+  'น้ำเงิน':'blue','เหลือง':'yellow','ทอง':'gold','เงิน':'silver','สี':'color',
+  'อุตสาหกรรม':'industrial','สแกนดิเนเวีย':'scandinavian nordic','ไทย':'thai asian',
+  'มืด':'dark moody','สว่าง':'bright light','ห้อง':'room interior',
+};
+async function _refTranslateToEnglish(text) {
+  const t = text.trim();
+  if (!_refHasThaiChars(t)) return t;
+  if (window._refTranslatorReady && window._refThEnTranslator) {
+    try {
+      const r = await window._refThEnTranslator(t, { max_new_tokens: 128 });
+      const tr = (r[0]?.translation_text || '').trim();
+      if (tr && tr !== t) { console.log(`[FurnNMT] "${t}" → "${tr}"`); return tr; }
+    } catch(e) { console.warn('[NMT fallback]', e.message); }
+  }
+  let out = t;
+  const sorted = Object.entries(_FURN_KW_FALLBACK).sort((a,b) => b[0].length - a[0].length);
+  for (const [th, en] of sorted) out = out.replace(new RegExp(th,'g'), en);
+  return out.replace(/\s+/g,' ').trim() || t;
+}
+
+async function _refEncodeText(text) {
+  if (!window._refClipTextReady) throw new Error('CLIP text encoder ยังไม่พร้อม');
+  let waited = 0;
+  while (window._refClipTextLoading && waited < 30000) {
+    await new Promise(r => setTimeout(r, 500)); waited += 500;
+  }
+  const inputs = window._refClipTokenizer(text, { padding: true, truncation: true });
+  const { text_embeds } = await window._refClipTextModel(inputs);
+  const arr  = Array.from(text_embeds.data);
+  const norm = Math.sqrt(arr.reduce((s, v) => s + v * v, 0));
+  return norm > 0 ? arr.map(v => v / norm) : arr;
+}
+
+async function _refEncodeImage(imageUrl) {
+  if (!window._refClipImgReady) throw new Error('CLIP image encoder ยังไม่พร้อม');
+  let waited = 0;
+  while (window._refClipImgLoading && waited < 45000) {
+    await new Promise(r => setTimeout(r, 500)); waited += 500;
+  }
+  const output = await window._refClipImg(imageUrl, { pooling: 'mean', normalize: true });
+  const arr = Array.from(output.data);
+  const norm = Math.sqrt(arr.reduce((s, v) => s + v*v, 0));
+  return norm > 0 ? arr.map(v => v / norm) : arr;
+}
+
+// auto-embed after upload (fire-and-forget)
+async function _autoEmbedFurn(itemId, imageUrl) {
+  if (!itemId || !imageUrl) return;
+  try {
+    const vector = await _refEncodeImage(imageUrl);
+    const now    = new Date().toISOString();
+    const { error } = await _SB.from(FURN_TABLE)
+      .update({ mclip_vector: vector, mclip_indexed_at: now })
+      .eq('id', itemId);
+    if (error) {
+      // schema may not have these columns yet — log clearly
+      console.warn('[FurnREF embed] DB update failed (run migration?):', error.message);
+      return;
+    }
+    const idx = ALL_ITEMS.findIndex(i => i.id === itemId);
+    if (idx !== -1) { ALL_ITEMS[idx].mclip_vector = vector; ALL_ITEMS[idx].mclip_indexed_at = now; }
+    console.log(`[FurnREF embed] ✅ ${itemId} — dim=${vector.length}`);
+  } catch(e) { console.warn(`[FurnREF embed] ⚠️ ${itemId}:`, e.message); }
+}
+
+// Cosine sim (used as fallback when RPC isn't installed)
+function _cosine(a, b) {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+async function doAiSearch() {
+  const input = document.getElementById('aiSearchInput');
+  const btn   = document.getElementById('aiSearchBtn');
+  const meta  = document.getElementById('aiSearchMeta');
+  const query = input?.value.trim();
+  if (!query) return;
+  if (!window._refClipTextReady) { toast('AI model ยังโหลดไม่เสร็จ — รอสักครู่', 'err'); return; }
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const q = await _refTranslateToEnglish(query);
+    if (q !== query) console.log(`[FurnREF search] translated: "${query}" → "${q}"`);
+    const vector = await _refEncodeText(q);
+
+    let scoreMap = {};
+    let usedRpc = false;
+    // Try RPC first
+    try {
+      const { data, error } = await _SB.rpc('match_furniture_mclip', {
+        query_vector:    vector,
+        match_count:     100,
+        match_threshold: 0.05,
+      });
+      if (!error && Array.isArray(data)) {
+        data.forEach(r => { scoreMap[r.id] = r.similarity; });
+        usedRpc = true;
+      }
+    } catch(_) {}
+
+    // Fallback: client-side cosine over loaded vectors
+    if (!usedRpc) {
+      ALL_ITEMS.forEach(it => {
+        if (Array.isArray(it.mclip_vector) && it.mclip_vector.length === vector.length) {
+          scoreMap[it.id] = _cosine(it.mclip_vector, vector);
+        }
+      });
+      console.log('[FurnREF search] using client-side cosine fallback');
+    }
+
+    _aiScoreMap = scoreMap;
+    const ranked = ALL_ITEMS
+      .filter(it => scoreMap[it.id] !== undefined)
+      .sort((a, b) => scoreMap[b.id] - scoreMap[a.id]);
+
+    if (!ranked.length) {
+      const wrap = document.getElementById('gridWrap');
+      wrap.innerHTML = `<div class="grid-empty">ไม่พบผลที่ตรง<br><span style="font-size:11px;color:var(--bone-faint)">รูปที่อัปโหลดเก่าๆ อาจยังไม่มี vector — admin กด ⚡ Batch Embed</span></div>`;
+      document.getElementById('countLabel').textContent = `แสดง 0 จาก ${ALL_ITEMS.length} รายการ`;
+    } else {
+      // Render only AI-ranked items
+      _renderAiResults(ranked, scoreMap);
+    }
+
+    const label = q !== query ? ` [searched: "${q}"]` : '';
+    if (meta) meta.textContent = `AI: ${ranked.length} matches${label}${usedRpc ? '' : ' · (client-side)'}`;
+    document.getElementById('aiSearchClear').style.display = 'inline-block';
+  } catch(e) {
+    console.error('[FurnREF AI search]', e);
+    toast('Search error: ' + e.message.slice(0, 80), 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+
+function _renderAiResults(items, scoreMap) {
+  const wrap  = document.getElementById('gridWrap');
+  const admin = isAdmin();
+  const collapsedSet = _getCollapsedSet();
+  document.getElementById('countLabel').textContent = `แสดง ${items.length} จาก ${ALL_ITEMS.length} รายการ (AI ranked)`;
+  wrap.innerHTML = items.map(item => {
+    const cat = catInfo(item.category);
+    const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
+    const isSel = _mbSelected.has(item.id);
+    const sim = scoreMap[item.id] || 0;
+    const simPct = Math.round(sim * 100);
+    const isCol = collapsedSet.has(item.id);
+    return `<div class="grid-card${isSel ? ' selected' : ''}${isCol ? ' collapsed' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
+      <div class="card-sim-badge">${simPct}%</div>
+      <div class="sel-check">✓</div>
+      <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <button class="card-toggle-btn" onclick="toggleCardCollapse('${item.id}',event)" title="ขยาย/ย่อ">${isCol ? '⊞' : '⊟'}</button>
+      <div class="card-hover-btns">
+        <button class="card-hover-btn" onclick="event.stopPropagation();openModal('${item.id}')" title="ดู">🔍</button>
+        ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">🗑</button>` : ''}
+      </div>
+      <div class="card-body">
+        <span class="card-cat" style="color:${cat.color};background:${cat.bg}">${cat.label}</span>
+        ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
+        ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
+        ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px">${s}</span>`).join('')}</div>` : ''}
+        ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearAiSearch() {
+  _aiScoreMap = null;
+  document.getElementById('aiSearchInput').value = '';
+  document.getElementById('aiSearchClear').style.display = 'none';
+  document.getElementById('aiSearchMeta').textContent = '';
+  renderGrid();
+}
+
+// ══════════════════════════════════════════════════════════════
+// BATCH EMBED — admin-only, back-fill mclip_vector
+// ══════════════════════════════════════════════════════════════
+let _batchRunning = false;
+let _batchCancel  = false;
+
+async function openBatchEmbed() {
+  if (!isAdmin()) { toast('Admin only', 'err'); return; }
+  const descEl   = document.getElementById('batchDesc');
+  const startBtn = document.getElementById('batchStartBtn');
+  const cancelBtn= document.getElementById('batchCancelBtn');
+  document.getElementById('batchDone').textContent    = '0';
+  document.getElementById('batchTotal').textContent   = '—';
+  document.getElementById('batchErrors').textContent  = '0 errors';
+  document.getElementById('batchProgressBar').style.width = '0%';
+  document.getElementById('batchLog').textContent     = '—';
+  startBtn.disabled = true;
+  cancelBtn.textContent = 'Close';
+  descEl.textContent = 'กำลังนับรูปที่ยังไม่มี vector…';
+  document.getElementById('batchOverlay').classList.add('open');
+
+  const { count, error } = await _SB.from(FURN_TABLE)
+    .select('id', { count: 'exact', head: true })
+    .is('mclip_vector', null);
+  if (error) {
+    descEl.textContent = 'Error: ' + error.message + ' — (column mclip_vector อาจยังไม่มี ใน schema; ดู _database/furniture_refs_clip_migration.sql)';
+    return;
+  }
+  const n = count || 0;
+  document.getElementById('batchTotal').textContent = n;
+  if (n === 0) {
+    descEl.textContent = '✅ ทุกรูปมี vector แล้ว';
+  } else {
+    descEl.textContent = `พบ ${n} รูปที่ยังไม่มี vector — กด Start เพื่อเริ่ม`;
+    startBtn.disabled = false;
+  }
+}
+
+async function startBatchEmbed() {
+  if (!window._refClipImgReady) { alert('CLIP image model ยังโหลดไม่เสร็จ'); return; }
+  if (_batchRunning) return;
+  _batchRunning = true; _batchCancel = false;
+
+  const startBtn  = document.getElementById('batchStartBtn');
+  const cancelBtn = document.getElementById('batchCancelBtn');
+  const descEl    = document.getElementById('batchDesc');
+  const logEl     = document.getElementById('batchLog');
+  const doneEl    = document.getElementById('batchDone');
+  const errEl     = document.getElementById('batchErrors');
+  const barEl     = document.getElementById('batchProgressBar');
+  startBtn.disabled = true; cancelBtn.textContent = 'Stop';
+
+  const { data, error } = await _SB.from(FURN_TABLE)
+    .select('id, image_url')
+    .is('mclip_vector', null)
+    .limit(500);
+  if (error || !data?.length) {
+    descEl.textContent = error ? ('Error: ' + error.message) : '✅ ไม่มีรูปที่ต้อง embed';
+    _batchRunning = false; cancelBtn.textContent = 'Close'; return;
+  }
+
+  const total = data.length;
+  document.getElementById('batchTotal').textContent = total;
+  let done = 0, errors = 0;
+  for (const ref of data) {
+    if (_batchCancel) { descEl.textContent = `หยุดกลางคัน (${done}/${total})`; break; }
+    const shortId = String(ref.id).slice(0, 10);
+    logEl.textContent = `⏳ ${shortId}…`;
+    try {
+      if (!ref.image_url) throw new Error('no image_url');
+      const vector = await _refEncodeImage(ref.image_url);
+      const { error: updateErr } = await _SB.from(FURN_TABLE)
+        .update({ mclip_vector: vector, mclip_indexed_at: new Date().toISOString() })
+        .eq('id', ref.id);
+      if (updateErr) throw new Error(updateErr.message);
+      done++;
+      logEl.textContent = `✅ ${shortId}`;
+      const idx = ALL_ITEMS.findIndex(i => i.id === ref.id);
+      if (idx !== -1) ALL_ITEMS[idx].mclip_vector = vector;
+    } catch(e) {
+      errors++;
+      logEl.textContent = `⚠️ ${shortId}: ${e.message.slice(0, 55)}`;
+      console.warn('[Batch Embed]', ref.id, e.message);
+    }
+    doneEl.textContent = done;
+    errEl.textContent  = `${errors} error${errors !== 1 ? 's' : ''}`;
+    barEl.style.width  = `${Math.round((done + errors) / total * 100)}%`;
+  }
+  _batchRunning = false;
+  cancelBtn.textContent = 'Close';
+  if (!_batchCancel) {
+    descEl.textContent = `✅ เสร็จแล้ว! ${done} รูป${errors ? ` (${errors} errors)` : ''}`;
+    barEl.style.width = '100%';
+    if (total === 500) { startBtn.disabled = false; descEl.textContent += ' — อาจมีเพิ่ม กด Start อีกครั้ง'; }
+  }
+}
+
+function cancelBatchEmbed() {
+  if (_batchRunning) {
+    _batchCancel = true;
+    document.getElementById('batchCancelBtn').textContent = 'Stopping…';
+    document.getElementById('batchCancelBtn').disabled = true;
+    const wait = () => {
+      if (!_batchRunning) {
+        document.getElementById('batchOverlay').classList.remove('open');
+        document.getElementById('batchCancelBtn').disabled = false;
+      } else setTimeout(wait, 300);
+    };
+    setTimeout(wait, 300);
+  } else {
+    document.getElementById('batchOverlay').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// IMAGE CROP — open from detail modal, edit, save back
+// ══════════════════════════════════════════════════════════════
+let _cropState = null; // {imgEl, rectEl, natW, natH, dispW, dispH, offX, offY, x,y,w,h, dragging, mode, startX, startY, startRect}
+
+function openCropFromModal() {
+  if (!_editId) return;
+  const item = ALL_ITEMS.find(i => i.id === _editId);
+  if (!item || !item.image_url) return;
+  openCrop(item.image_url);
+}
+
+function openCrop(imageUrl) {
+  const overlay = document.getElementById('cropOverlay');
+  const img = document.getElementById('cropImg');
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    const stage = document.getElementById('cropStage');
+    const rectEl = document.getElementById('cropRect');
+    const sb = stage.getBoundingClientRect();
+    const ib = img.getBoundingClientRect();
+    _cropState = {
+      img, rectEl, natW: img.naturalWidth, natH: img.naturalHeight,
+      dispW: ib.width, dispH: ib.height,
+      offX: ib.left - sb.left, offY: ib.top - sb.top,
+    };
+    resetCropRect();
+    _attachCropHandlers();
+  };
+  img.src = imageUrl;
+  overlay.classList.add('open');
+}
+
+function closeCrop() {
+  document.getElementById('cropOverlay').classList.remove('open');
+  _cropState = null;
+}
+
+function resetCropRect() {
+  if (!_cropState) return;
+  const margin = 0.1;
+  const w = Math.round(_cropState.dispW * (1 - margin * 2));
+  const h = Math.round(_cropState.dispH * (1 - margin * 2));
+  const x = Math.round(_cropState.dispW * margin);
+  const y = Math.round(_cropState.dispH * margin);
+  _setCropRect(x, y, w, h);
+}
+
+function _setCropRect(x, y, w, h) {
+  if (!_cropState) return;
+  const s = _cropState;
+  // clamp
+  x = Math.max(0, Math.min(x, s.dispW - 20));
+  y = Math.max(0, Math.min(y, s.dispH - 20));
+  w = Math.max(20, Math.min(w, s.dispW - x));
+  h = Math.max(20, Math.min(h, s.dispH - y));
+  s.x = x; s.y = y; s.w = w; s.h = h;
+  s.rectEl.style.left   = (s.offX + x) + 'px';
+  s.rectEl.style.top    = (s.offY + y) + 'px';
+  s.rectEl.style.width  = w + 'px';
+  s.rectEl.style.height = h + 'px';
+}
+
+function _attachCropHandlers() {
+  const stage = document.getElementById('cropStage');
+  const rect  = document.getElementById('cropRect');
+  // Avoid double attach
+  if (stage._cropBound) return;
+  stage._cropBound = true;
+
+  const getPt = (e) => {
+    const t = e.touches ? e.touches[0] : e;
+    const sb = stage.getBoundingClientRect();
+    return { x: t.clientX - sb.left - _cropState.offX, y: t.clientY - sb.top - _cropState.offY };
+  };
+
+  function onDown(e) {
+    if (!_cropState) return;
+    const target = e.target;
+    const handle = target.classList?.contains('crop-handle') ? target.dataset.h : null;
+    const pt = getPt(e);
+    _cropState.dragging = true;
+    _cropState.mode = handle || (target === rect || rect.contains(target) ? 'move' : 'new');
+    _cropState.startPt = pt;
+    _cropState.startRect = { x: _cropState.x, y: _cropState.y, w: _cropState.w, h: _cropState.h };
+    if (_cropState.mode === 'new') {
+      _setCropRect(pt.x, pt.y, 30, 30);
+      _cropState.mode = 'br';
+      _cropState.startPt = pt;
+      _cropState.startRect = { x: pt.x, y: pt.y, w: 30, h: 30 };
+    }
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (!_cropState || !_cropState.dragging) return;
+    const pt = getPt(e);
+    const dx = pt.x - _cropState.startPt.x;
+    const dy = pt.y - _cropState.startPt.y;
+    const r = _cropState.startRect;
+    let { x, y, w, h } = r;
+    switch (_cropState.mode) {
+      case 'move': x = r.x + dx; y = r.y + dy; break;
+      case 'tl':   x = r.x + dx; y = r.y + dy; w = r.w - dx; h = r.h - dy; break;
+      case 'tr':   y = r.y + dy; w = r.w + dx; h = r.h - dy; break;
+      case 'bl':   x = r.x + dx; w = r.w - dx; h = r.h + dy; break;
+      case 'br':   w = r.w + dx; h = r.h + dy; break;
+    }
+    _setCropRect(x, y, w, h);
+    e.preventDefault();
+  }
+  function onUp() { if (_cropState) _cropState.dragging = false; }
+
+  stage.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  stage.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onUp);
+}
+
+async function applyCrop() {
+  if (!_cropState || !_editId) return;
+  const btn = document.getElementById('cropApplyBtn');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const s = _cropState;
+    const sx = Math.round(s.x / s.dispW * s.natW);
+    const sy = Math.round(s.y / s.dispH * s.natH);
+    const sw = Math.round(s.w / s.dispW * s.natW);
+    const sh = Math.round(s.h / s.dispH * s.natH);
+    if (sw < 16 || sh < 16) throw new Error('Crop area too small');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = sw; canvas.height = sh;
+    const ctx = canvas.getContext('2d');
+    // use a fresh image (CORS) — fallback if it fails
+    const tmp = new Image();
+    tmp.crossOrigin = 'anonymous';
+    await new Promise((res, rej) => {
+      tmp.onload = res;
+      tmp.onerror = () => rej(new Error('Could not load image with CORS — make sure storage allows cross-origin'));
+      tmp.src = s.img.src;
+    });
+    ctx.drawImage(tmp, sx, sy, sw, sh, 0, 0, sw, sh);
+    const palette = extractColorPalette(ctx, sw, sh);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.86));
+    if (!blob) throw new Error('toBlob failed');
+
+    // upload as new file
+    const ts = Date.now();
+    const path = `uploads/${ts}_${Math.random().toString(36).slice(2,7)}_crop.webp`;
+    const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, blob, { contentType:'image/webp', upsert:false });
+    if (se) throw new Error('Storage: ' + se.message);
+    const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
+    const newUrl = pd.publicUrl;
+
+    // update DB row in place — replace image_url + thumb + storage_path; clear mclip so it'll re-embed
+    const { error: ue } = await _SB.from(FURN_TABLE)
+      .update({ image_url: newUrl, thumb_url: newUrl, storage_path: path, color_palette: palette, mclip_vector: null, mclip_indexed_at: null })
+      .eq('id', _editId);
+    if (ue) throw new Error('DB: ' + ue.message);
+
+    // remove old storage file (best effort)
+    const item = ALL_ITEMS.find(i => i.id === _editId);
+    if (item?.storage_path) _SB.storage.from(FURN_BUCKET).remove([item.storage_path]).catch(() => {});
+
+    // update local cache
+    if (item) {
+      item.image_url = newUrl; item.thumb_url = newUrl; item.storage_path = path;
+      item.color_palette = palette; item.mclip_vector = null;
+    }
+    document.getElementById('modalImg').src = newUrl;
+    renderGrid();
+    closeCrop();
+    toast('✓ Crop saved');
+
+    // re-embed in background
+    _autoEmbedFurn(_editId, newUrl);
+  } catch(e) {
+    console.error('[crop]', e);
+    toast('Crop failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 บันทึก Crop';
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 initBookmarkletMode();
 if (!new URLSearchParams(location.search).get('bm')) loadItems();
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); closeCrop(); } });
 </script>
 </body>
 </html>
