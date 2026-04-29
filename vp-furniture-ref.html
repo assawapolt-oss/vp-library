@@ -233,6 +233,9 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .modal-del-btn{padding:9px 14px;background:transparent;color:var(--red);border:1px solid var(--red);font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;font-weight:700;transition:all .12s}
 .modal-del-btn:hover{background:var(--red);color:#fff}
 .modal-src-link{font-size:11px;color:var(--yellow);text-decoration:underline;word-break:break-all}
+.modal-palette{display:flex;gap:8px;flex-wrap:wrap}
+.modal-palette .pal-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;background:var(--card);border:1px solid var(--line-hi);font-family:monospace;font-size:10px;color:var(--bone-dim);letter-spacing:.04em;cursor:default}
+.modal-palette .pal-swatch{width:18px;height:18px;flex-shrink:0;border:1px solid rgba(255,255,255,.08)}
 
 /* BOOKMARKLET OVERLAY */
 .bm-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;flex-direction:column}
@@ -540,6 +543,7 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-sel
       <span class="mb-cta-text">Moodboard</span>
     </button>
     <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed CLIP vectors for items missing mclip_vector">⚡ Batch Embed</button>
+    <button class="btn-batch-embed" id="batchConvBtn" onclick="openConvertCutouts()" style="display:none" title="Convert old PNG cutouts to WebP (smaller files)">↻ Convert PNG</button>
   </div>
   <div class="ai-status" id="aiStatus">
     <span class="ai-status-dot loading" id="aiStatusDot"></span>
@@ -723,6 +727,7 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-sel
       <div class="modal-field"><label>หมวด</label><div class="modal-cat-grid" id="modalCatGrid"></div></div>
       <div class="modal-field"><label>สไตล์</label><div class="modal-style-grid" id="modalStyleGrid"></div></div>
       <div class="modal-field"><label>Note</label><textarea class="modal-textarea" id="modalNotes" placeholder="โน้ต..."></textarea></div>
+      <div class="modal-field" id="modalPaletteField" style="display:none"><label>Palette</label><div class="modal-palette" id="modalPalette"></div></div>
       <div class="modal-field" id="modalSrcField" style="display:none"><label>Source</label><a class="modal-src-link" id="modalSrcLink" href="#" target="_blank" rel="noopener"></a></div>
       <div class="modal-action-row">
         <button class="modal-save-btn" id="modalSaveBtn" onclick="saveModal()" style="display:none">บันทึก</button>
@@ -1411,7 +1416,7 @@ function _cardHTML(item, admin, simPct) {
   const cat  = catInfo(item.category);
   const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
   const isSel = _mbSelected.has(item.id);
-  const showBody = !!(item.notes || host || (item.style_tags||[]).length || (item.color_palette||[]).length);
+  const showBody = !!(item.notes || host || (item.style_tags||[]).length);
   const hasCut = !!item.cutout_url;
   // In moodboard mode, if card has cutout AND it's selected, show ORIG/CUT toggle
   const verChosen = _mbVersionChoice.get(item.id) || 'orig';
@@ -1439,7 +1444,6 @@ function _cardHTML(item, admin, simPct) {
       ${item.notes ? `<div class="card-notes">${item.notes}</div>` : ''}
       ${host ? `<div class="card-source"><span>${host}</span></div>` : ''}
       ${(item.style_tags || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.style_tags.map(s => `<span style="font-size:9px;background:var(--line);color:var(--muted);padding:1px 5px">${s}</span>`).join('')}</div>` : ''}
-      ${(item.color_palette || []).length ? `<div class="color-dots">${item.color_palette.map(hex => `<div class="color-dot" style="background:${hex}" title="${hex}"></div>`).join('')}</div>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -1466,6 +1470,20 @@ function openModal(id) {
     srcLink.textContent = item.source_url;
     srcField.style.display = 'block';
   } else { srcField.style.display = 'none'; }
+  // Color palette (now lives only in detail modal — saved space on cards)
+  const palField = document.getElementById('modalPaletteField');
+  const pal      = document.getElementById('modalPalette');
+  const colors   = item.color_palette || [];
+  if (palField && pal) {
+    if (colors.length) {
+      pal.innerHTML = colors.map(hex =>
+        `<span class="pal-chip" title="${hex}"><span class="pal-swatch" style="background:${hex}"></span>${hex}</span>`
+      ).join('');
+      palField.style.display = 'block';
+    } else {
+      palField.style.display = 'none';
+    }
+  }
   document.getElementById('modalSaveBtn').style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('modalDelBtn').style.display = isAdmin() ? 'block' : 'none';
   const cropBtn = document.getElementById('modalCropBtn');
@@ -1597,6 +1615,8 @@ function _updateRefAiStatus() {
   const txt  = document.getElementById('aiStatusText');
   const btn  = document.getElementById('aiSearchBtn');
   const bbtn = document.getElementById('batchEmbedBtn');
+  const cbtn = document.getElementById('batchConvBtn');
+  if (cbtn) cbtn.style.display = isAdmin() ? 'inline-block' : 'none';
   if (!dot || !txt) return;
   const allLoading = window._refClipTextLoading || window._refClipImgLoading || window._refTranslatorLoading;
   const clipOK     = window._refClipTextReady && window._refClipImgReady;
@@ -1890,12 +1910,12 @@ async function startBatchEmbed() {
 }
 
 function cancelBatchEmbed() {
-  if (_batchRunning) {
+  if (_batchRunning || _convertRunning) {
     _batchCancel = true;
     document.getElementById('batchCancelBtn').textContent = 'Stopping…';
     document.getElementById('batchCancelBtn').disabled = true;
     const wait = () => {
-      if (!_batchRunning) {
+      if (!_batchRunning && !_convertRunning) {
         document.getElementById('batchOverlay').classList.remove('open');
         document.getElementById('batchCancelBtn').disabled = false;
       } else setTimeout(wait, 300);
@@ -1904,6 +1924,127 @@ function cancelBatchEmbed() {
   } else {
     document.getElementById('batchOverlay').classList.remove('open');
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONVERT old PNG cutouts → WebP (admin tool, reuses batch overlay)
+// ══════════════════════════════════════════════════════════════
+let _convertRunning = false;
+let _convertCancel  = false;
+let _convertMode    = false; // true while batch overlay is hosting convert flow
+
+async function openConvertCutouts() {
+  if (!isAdmin()) { toast('Admin only', 'err'); return; }
+  _convertMode = true;
+  const descEl   = document.getElementById('batchDesc');
+  const startBtn = document.getElementById('batchStartBtn');
+  const cancelBtn= document.getElementById('batchCancelBtn');
+  const titleEl  = document.querySelector('#batchOverlay .batch-title');
+  if (titleEl) titleEl.textContent = '↻ Convert old PNG cutouts → WebP';
+  document.getElementById('batchDone').textContent    = '0';
+  document.getElementById('batchTotal').textContent   = '—';
+  document.getElementById('batchErrors').textContent  = '0 errors';
+  document.getElementById('batchProgressBar').style.width = '0%';
+  document.getElementById('batchLog').textContent     = '—';
+  startBtn.disabled = true;
+  startBtn.onclick = () => startConvertCutouts();  // re-route Start
+  cancelBtn.textContent = 'Close';
+  descEl.textContent = 'กำลังนับ PNG cutouts ที่ต้องแปลง…';
+  document.getElementById('batchOverlay').classList.add('open');
+
+  // Find rows whose cutout_url ends in .png
+  const { data, error } = await _SB.from(FURN_TABLE)
+    .select('id, cutout_url, cutout_path')
+    .not('cutout_url', 'is', null)
+    .neq('cutout_url', '');
+  if (error) { descEl.textContent = 'Error: ' + error.message; return; }
+  const rows = (data || []).filter(r => /\.png(\?|$)/i.test(r.cutout_url || ''));
+  document.getElementById('batchTotal').textContent = rows.length;
+  if (!rows.length) {
+    descEl.textContent = '✅ ทุก cutout เป็น WebP อยู่แล้ว';
+  } else {
+    descEl.textContent = `พบ ${rows.length} PNG cutouts — กด Start เพื่อแปลงเป็น WebP`;
+    startBtn.disabled = false;
+    // Keep the rows in a closure for startConvertCutouts
+    window._convertRows = rows;
+  }
+}
+
+async function startConvertCutouts() {
+  if (_convertRunning) return;
+  const rows = window._convertRows || [];
+  if (!rows.length) return;
+  _convertRunning = true; _convertCancel = false; _batchCancel = false;
+
+  const startBtn  = document.getElementById('batchStartBtn');
+  const cancelBtn = document.getElementById('batchCancelBtn');
+  const descEl    = document.getElementById('batchDesc');
+  const logEl     = document.getElementById('batchLog');
+  const doneEl    = document.getElementById('batchDone');
+  const errEl     = document.getElementById('batchErrors');
+  const barEl     = document.getElementById('batchProgressBar');
+  startBtn.disabled = true; cancelBtn.textContent = 'Stop';
+
+  let done = 0, errors = 0, savedKB = 0;
+  for (const r of rows) {
+    if (_convertCancel || _batchCancel) { descEl.textContent = `หยุด (${done}/${rows.length})`; break; }
+    const shortId = String(r.id).slice(0, 10);
+    logEl.textContent = `⏳ ${shortId}… download`;
+    try {
+      // 1) fetch the PNG bytes
+      const resp = await fetch(r.cutout_url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('fetch ' + resp.status);
+      const pngBlob = await resp.blob();
+      const oldKB = pngBlob.size / 1024;
+      logEl.textContent = `⏳ ${shortId}… encode`;
+
+      // 2) re-encode to WebP w/ alpha (downscale to 1600x1200)
+      const webp = await _compressCutout(pngBlob, 1600, 1200, 0.85);
+      if (!webp || webp.size < 1000) throw new Error('webp encode failed');
+      const newKB = webp.size / 1024;
+
+      // 3) upload as new path, update DB, then delete the old PNG
+      logEl.textContent = `⏳ ${shortId}… upload`;
+      const ts = Date.now();
+      const newPath = `cutouts/${ts}_${Math.random().toString(36).slice(2,7)}.webp`;
+      const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(newPath, webp, { contentType: 'image/webp', upsert: false });
+      if (se) throw new Error('upload: ' + se.message);
+      const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(newPath);
+      const { error: ue } = await _SB.from(FURN_TABLE)
+        .update({ cutout_url: pd.publicUrl, cutout_path: newPath, cutout_indexed_at: new Date().toISOString() })
+        .eq('id', r.id);
+      if (ue) throw new Error('db: ' + ue.message);
+
+      // 4) best-effort delete the old PNG
+      if (r.cutout_path) _SB.storage.from(FURN_BUCKET).remove([r.cutout_path]).catch(() => {});
+
+      // local cache update
+      const idx = ALL_ITEMS.findIndex(i => i.id === r.id);
+      if (idx !== -1) {
+        ALL_ITEMS[idx].cutout_url  = pd.publicUrl;
+        ALL_ITEMS[idx].cutout_path = newPath;
+      }
+      savedKB += (oldKB - newKB);
+      done++;
+      logEl.textContent = `✅ ${shortId} — ${oldKB.toFixed(0)}KB → ${newKB.toFixed(0)}KB`;
+    } catch (e) {
+      errors++;
+      logEl.textContent = `⚠️ ${shortId}: ${e.message.slice(0, 50)}`;
+      console.warn('[convert]', r.id, e);
+    }
+    doneEl.textContent = done;
+    errEl.textContent  = `${errors} error${errors !== 1 ? 's' : ''}`;
+    barEl.style.width  = `${Math.round((done + errors) / rows.length * 100)}%`;
+  }
+
+  _convertRunning = false;
+  cancelBtn.textContent = 'Close';
+  if (!_convertCancel && !_batchCancel) {
+    descEl.textContent = `✅ เสร็จแล้ว — ${done} ไฟล์, ประหยัด ${(savedKB/1024).toFixed(1)} MB${errors ? ` (${errors} errors)` : ''}`;
+    barEl.style.width = '100%';
+  }
+  // Reset Start button to its normal Batch Embed handler when overlay reopens fresh
+  startBtn.onclick = () => startBatchEmbed();
 }
 
 // ══════════════════════════════════════════════════════════════
