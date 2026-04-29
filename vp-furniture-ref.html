@@ -929,4 +929,51 @@ async function modalSetCat(cid) {
   if (!_editId) return;
   const styles = [...document.querySelectorAll('.modal-style-opt.active')].map(b => b.dataset.s);
   const notes = document.getElementById('modalNotes').value.trim();
-  const { error } = await _SB.from(FURN_TABLE).update({ category: cid, styl
+  const { error } = await _SB.from(FURN_TABLE).update({ category: cid, style_tags: styles, notes }).eq('id', _editId);
+  if (error) { toast('บันทึกไม่ได้: ' + error.message, 'err'); return; }
+  const idx = ALL_ITEMS.findIndex(i => i.id === _editId);
+  if (idx >= 0) Object.assign(ALL_ITEMS[idx], { category: cid, style_tags: styles, notes });
+  updateCounts(); renderGrid();
+  toast('✓ บันทึกหมวดแล้ว');
+}
+function modalToggleStyle(s) { document.querySelector(`.modal-style-opt[data-s="${s}"]`)?.classList.toggle('active'); }
+async function saveModal() {
+  if (!_editId) return;
+  const cat = document.querySelector('.modal-cat-opt.active')?.dataset.cid || 'other';
+  const styles = [...document.querySelectorAll('.modal-style-opt.active')].map(b => b.dataset.s);
+  const notes = document.getElementById('modalNotes').value.trim();
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = '…';
+  const { error } = await _SB.from(FURN_TABLE).update({ category: cat, style_tags: styles, notes }).eq('id', _editId);
+  if (error) { toast('บันทึกไม่ได้: ' + error.message, 'err'); btn.disabled = false; btn.textContent = '💾 บันทึก'; return; }
+  const idx = ALL_ITEMS.findIndex(i => i.id === _editId);
+  if (idx >= 0) Object.assign(ALL_ITEMS[idx], { category: cat, style_tags: styles, notes });
+  updateCounts(); renderGrid();
+  btn.disabled = false; btn.textContent = '💾 บันทึก';
+  toast('บันทึกแล้ว ✓'); closeModal();
+}
+async function deleteCurrentItem() {
+  if (!_editId || !confirm('ลบรูปนี้?')) return;
+  const id = _editId; closeModal(); await doDelete(id);
+}
+async function confirmDelete(id) {
+  if (!confirm('ลบรูปนี้?')) return;
+  await doDelete(id);
+}
+async function doDelete(id) {
+  const item = ALL_ITEMS.find(i => i.id === id);
+  const { error } = await _SB.from(FURN_TABLE).delete().eq('id', id);
+  if (error) { toast('ลบไม่ได้: ' + error.message, 'err'); return; }
+  if (item?.storage_path) _SB.storage.from(FURN_BUCKET).remove([item.storage_path]).catch(() => {});
+  ALL_ITEMS = ALL_ITEMS.filter(i => i.id !== id);
+  updateCounts(); renderGrid();
+  toast('ลบแล้ว');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+initBookmarkletMode();
+if (!new URLSearchParams(location.search).get('bm')) loadItems();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); } });
+</script>
+</body>
+</html>
