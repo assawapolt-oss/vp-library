@@ -329,15 +329,100 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .ai-search-input::placeholder{color:var(--bone-faint)}
 .ai-search-btn{padding:8px 18px;background:var(--blue);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;transition:background .12s;white-space:nowrap}
 .ai-search-btn:hover:not(:disabled){background:#2851F0}
-/* divider between AI search and Moodboard CTA */
-.hero-sep{width:1px;height:24px;background:var(--line-hi);margin:0 6px;flex-shrink:0}
-/* Moodboard hero CTA — promoted to top action area */
-.mb-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 12px;background:var(--yellow);color:#0E0E0E;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;transition:all .15s;position:relative;box-shadow:3px 3px 0 var(--red)}
-.mb-cta-btn:hover{background:#FFD43B;transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--red)}
-.mb-cta-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--red)}
-.mb-cta-btn.active{background:var(--blue);color:#fff;box-shadow:3px 3px 0 var(--yellow)}
-.mb-cta-icon{display:inline-flex;align-items:center;justify-content:center}
-.mb-cta-icon .icn{width:15px;height:15px;stroke-width:2}
+/* ─── MOODBOARD HERO BAND ─── */
+.mb-hero-band{
+  position:relative;background:var(--bg);
+  padding:22px 20px 26px;display:flex;justify-content:center;align-items:center;
+  border-bottom:2px solid var(--line-hi);overflow:hidden;
+}
+/* Subtle ambient glow behind the CTA so it reads as the page's centerpiece */
+.mb-hero-band::before{
+  content:'';position:absolute;left:50%;top:50%;
+  width:560px;height:280px;transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse at center,rgba(255,198,25,.18) 0%,rgba(255,198,25,.08) 35%,transparent 70%);
+  filter:blur(8px);pointer-events:none;z-index:0;
+}
+/* Geometric Bauhaus side-marks — pure decoration, hidden on small screens */
+.mb-hero-band::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,var(--red) 0,var(--red) 4px,transparent 4px,transparent calc(100% - 4px),var(--blue) calc(100% - 4px),var(--blue) 100%);
+  opacity:.85;
+}
+.mb-hero-btn{
+  position:relative;z-index:2;
+  display:inline-flex;align-items:center;gap:14px;
+  padding:16px 32px 16px 24px;
+  background:linear-gradient(180deg,#FFD43B 0%,var(--yellow) 100%);
+  color:#0E0E0E;border:none;cursor:pointer;font-family:inherit;
+  font-size:18px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  white-space:nowrap;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.35) inset,
+    6px 6px 0 var(--red),
+    0 18px 40px -8px rgba(255,198,25,.55),
+    0 0 60px rgba(255,198,25,.18);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease,background .2s ease;
+}
+.mb-hero-btn:hover{
+  transform:translate(-2px,-3px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.45) inset,
+    8px 8px 0 var(--red),
+    0 24px 48px -6px rgba(255,198,25,.7),
+    0 0 80px rgba(255,198,25,.28);
+}
+.mb-hero-btn:active{
+  transform:translate(2px,2px);
+  box-shadow:0 0 0 1px rgba(255,255,255,.35) inset,2px 2px 0 var(--red),0 8px 18px rgba(255,198,25,.45);
+}
+.mb-hero-btn.active{
+  background:linear-gradient(180deg,#2851F0 0%,var(--blue) 100%);
+  color:#fff;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.35) inset,
+    6px 6px 0 var(--yellow),
+    0 18px 40px -8px rgba(26,60,208,.55),
+    0 0 60px rgba(26,60,208,.18);
+}
+.mb-hero-btn.active:hover{
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.45) inset,
+    8px 8px 0 var(--yellow),
+    0 24px 48px -6px rgba(26,60,208,.7),
+    0 0 80px rgba(26,60,208,.32);
+}
+.mb-hero-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px}
+.mb-hero-icon .icn{width:24px;height:24px;stroke-width:2.2}
+.mb-hero-text{position:relative;z-index:1}
+.mb-hero-sub{
+  display:none;font-size:11px;font-weight:500;letter-spacing:.04em;
+  opacity:.7;text-transform:none;margin-left:6px;padding-left:14px;
+  border-left:1px solid rgba(0,0,0,.25);
+}
+@media(min-width:640px){.mb-hero-sub{display:inline-block}}
+/* Glow halo that gently breathes — modern but not gimmicky */
+.mb-hero-glow{
+  position:absolute;inset:-3px;z-index:0;pointer-events:none;
+  background:linear-gradient(135deg,var(--red),var(--yellow),var(--blue),var(--yellow),var(--red));
+  background-size:300% 300%;
+  filter:blur(14px);opacity:.55;
+  animation:mbHeroBreathe 6s ease-in-out infinite;
+}
+.mb-hero-btn.active .mb-hero-glow{opacity:.7}
+@keyframes mbHeroBreathe{
+  0%,100%{background-position:0% 50%;opacity:.45}
+  50%{background-position:100% 50%;opacity:.7}
+}
+@media(prefers-reduced-motion:reduce){
+  .mb-hero-glow{animation:none}
+}
+@media(max-width:640px){
+  .mb-hero-band{padding:16px 14px 20px}
+  .mb-hero-btn{padding:13px 22px 13px 18px;font-size:15px;gap:10px}
+  .mb-hero-icon{width:22px;height:22px}
+  .mb-hero-icon .icn{width:18px;height:18px}
+}
 .ai-search-btn:disabled{opacity:.4;cursor:wait}
 .ai-search-clear{padding:7px 12px;background:transparent;border:1px solid var(--line-hi);font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;letter-spacing:.04em}
 .ai-search-clear:hover{color:var(--bone);border-color:var(--bone-faint)}
@@ -537,11 +622,6 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-sel
       onkeydown="if(event.key==='Enter')doAiSearch()">
     <button class="ai-search-btn" id="aiSearchBtn" onclick="doAiSearch()">Search</button>
     <button class="ai-search-clear" id="aiSearchClear" onclick="clearAiSearch()" style="display:none">Clear</button>
-    <span class="hero-sep"></span>
-    <button class="mb-cta-btn" id="mbModeBtn" onclick="toggleMbMode()" title="เลือกรูปหลายๆ ภาพแล้วประกอบเป็น Moodboard">
-      <span class="mb-cta-icon" id="mbCtaIcon"></span>
-      <span class="mb-cta-text">Moodboard</span>
-    </button>
     <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed CLIP vectors for items missing mclip_vector">⚡ Batch Embed</button>
     <button class="btn-batch-embed" id="batchConvBtn" onclick="openConvertCutouts()" style="display:none" title="Convert old PNG cutouts to WebP (smaller files)">↻ Convert PNG</button>
   </div>
@@ -550,6 +630,16 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-sel
     <span id="aiStatusText">Loading AI models (CLIP ~25MB + NMT ~50MB) — first load only…</span>
   </div>
   <div class="ai-search-meta" id="aiSearchMeta"></div>
+</div>
+
+<!-- HERO BAND — Moodboard CTA -->
+<div class="mb-hero-band">
+  <button class="mb-hero-btn" id="mbModeBtn" onclick="toggleMbMode()" title="เลือกรูปหลายๆ ภาพแล้วประกอบเป็น Moodboard">
+    <span class="mb-hero-glow" aria-hidden="true"></span>
+    <span class="mb-hero-icon" id="mbCtaIcon"></span>
+    <span class="mb-hero-text">Moodboard</span>
+    <span class="mb-hero-sub" id="mbHeroSub">เลือกรูปหลายๆ ภาพ ประกอบเป็น board พร้อม export</span>
+  </button>
 </div>
 
 <!-- TOOLBAR — เครื่องมือรอง: count, sort, zoom, shuffle -->
@@ -1064,15 +1154,18 @@ function toggleMbMode() {
   document.body.classList.toggle('select-mode', _mbMode);
   const btn = document.getElementById('mbModeBtn');
   btn.classList.toggle('active', _mbMode);
-  // Update label text inside the CTA without nuking the icon span
-  const txtEl = btn.querySelector('.mb-cta-text');
-  const icoEl = btn.querySelector('.mb-cta-icon');
+  // Update label text inside the CTA without nuking the icon / glow spans
+  const txtEl = btn.querySelector('.mb-hero-text');
+  const icoEl = btn.querySelector('.mb-hero-icon');
+  const subEl = btn.querySelector('.mb-hero-sub');
   if (_mbMode) {
     if (txtEl) txtEl.textContent = 'เลิกเลือก';
     if (icoEl) icoEl.innerHTML = ICN('close');
+    if (subEl) subEl.textContent = 'คลิกการ์ดเพื่อเลือก / กดปุ่มอีกครั้งเพื่อยกเลิก';
   } else {
     if (txtEl) txtEl.textContent = 'Moodboard';
     if (icoEl) icoEl.innerHTML = ICN('moodboard');
+    if (subEl) subEl.textContent = 'เลือกรูปหลายๆ ภาพ ประกอบเป็น board พร้อม export';
   }
   if (!_mbMode) clearMbSelection();
 }
