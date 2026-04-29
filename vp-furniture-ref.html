@@ -865,6 +865,34 @@ function extractColorPalette(ctx, w, h, count=5) {
   });
 }
 
+// Re-encode a transparent PNG blob (from bg-removal) to WebP w/ alpha,
+// downscaled to fit within maxW×maxH. Returns a WebP blob, or null if the
+// browser silently refused to make WebP (so caller can fall back to original PNG).
+async function _compressCutout(pngBlob, maxW=1600, maxH=1200, quality=0.85) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(pngBlob);
+    const img = new Image();
+    img.onload = () => {
+      let { naturalWidth: w, naturalHeight: h } = img;
+      const ratio = Math.min(maxW / w, maxH / h, 1);
+      w = Math.round(w * ratio); h = Math.round(h * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h); // keep transparency
+      ctx.drawImage(img, 0, 0, w, h);
+      // Try WebP — Safari + iOS sometimes silently produce PNG. Validate result type.
+      canvas.toBlob(b => {
+        URL.revokeObjectURL(url);
+        if (b && b.type === 'image/webp' && b.size > 0) return resolve(b);
+        resolve(null);
+      }, 'image/webp', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
 async function compressImage(file, maxW=1600, maxH=1200, quality=0.82) {
   return new Promise(resolve => {
     const img = new Image();
@@ -1909,19 +1937,25 @@ async function openCutFromModal() {
     txt.textContent = 'CUTTING…';
     sub.textContent = 'AI กำลังดิคัตวัตถุออกจากพื้นหลัง';
 
-    // Run bg removal — returns a Blob (PNG with transparent bg)
-    const blob = await removeFn(item.image_url, {
-      output:  { format: 'image/png', quality: 0.95 },
-      // (default U²-Net small model is fine for furniture)
+    // Run bg removal — request PNG (lossless, preserves alpha) then re-encode below
+    const rawBlob = await removeFn(item.image_url, {
+      output: { format: 'image/png' },
     });
+    if (!rawBlob || rawBlob.size < 1000) throw new Error('ผลลัพธ์ว่าง');
 
-    if (!blob || blob.size < 1000) throw new Error('ผลลัพธ์ว่าง');
+    // Re-encode to WebP w/ alpha + downscale to bound storage
+    sub.textContent = 'บีบอัด…';
+    const reBlob = await _compressCutout(rawBlob, 1600, 1200, 0.85);
+    const useBlob = reBlob || rawBlob; // fall back to raw if re-encode failed
+    const useExt  = useBlob === rawBlob ? 'png' : 'webp';
+    const useType = useBlob === rawBlob ? 'image/png' : 'image/webp';
+    console.log(`[Cut] raw=${(rawBlob.size/1024).toFixed(0)}KB → ${useExt}=${(useBlob.size/1024).toFixed(0)}KB`);
 
-    // Upload PNG transparent to storage
+    // Upload to storage
     const ts = Date.now();
-    const path = `cutouts/${ts}_${Math.random().toString(36).slice(2,7)}.png`;
+    const path = `cutouts/${ts}_${Math.random().toString(36).slice(2,7)}.${useExt}`;
     sub.textContent = 'อัปโหลด…';
-    const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, blob, { contentType: 'image/png', upsert: false });
+    const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, useBlob, { contentType: useType, upsert: false });
     if (se) throw new Error('Storage: ' + se.message);
     const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
     const cutUrl = pd.publicUrl;
