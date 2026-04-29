@@ -61,18 +61,28 @@ window.loadBgRemoval = async function() {
     return window._bgRemovalFn;
   }
   window._bgRemovalLoading = true;
-  try {
-    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/dist/index.mjs');
-    window._bgRemovalFn = mod.removeBackground || mod.default;
-    window._bgRemovalLoaded = true;
-    console.log('[BgRemoval] model ready');
-    return window._bgRemovalFn;
-  } catch (e) {
-    console.error('[BgRemoval] load failed:', e);
-    throw e;
-  } finally {
-    window._bgRemovalLoading = false;
+  // esm.sh bundles bare-module deps (ndarray, onnxruntime-web, etc) into one ESM
+  // — jsdelivr ships raw source which fails in browser without an importmap.
+  const sources = [
+    'https://esm.sh/@imgly/background-removal@1.5.5?bundle',
+    'https://esm.sh/@imgly/background-removal@1.4.5?bundle',
+  ];
+  let lastErr = null;
+  for (const src of sources) {
+    try {
+      const mod = await import(src);
+      window._bgRemovalFn = mod.removeBackground || mod.default;
+      if (typeof window._bgRemovalFn !== 'function') throw new Error('removeBackground export missing');
+      window._bgRemovalLoaded = true;
+      console.log('[BgRemoval] loaded from', src);
+      return window._bgRemovalFn;
+    } catch (e) {
+      console.warn('[BgRemoval] load attempt failed:', src, e.message);
+      lastErr = e;
+    }
   }
+  window._bgRemovalLoading = false;
+  throw lastErr || new Error('Could not load background removal');
 };
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -406,6 +416,35 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 /* checkered transparency hint behind cutouts in moodboard preview */
 .mb-canvas-wrap{background-image:linear-gradient(45deg,#1a1a1a 25%,transparent 25%),linear-gradient(-45deg,#1a1a1a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1a1a1a 75%),linear-gradient(-45deg,transparent 75%,#1a1a1a 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,10px 0}
 
+/* ─── AUTH OVERLAY (shared with vp-search / grab-ref) ─── */
+.auth-overlay{display:none;position:fixed;inset:0;background:rgba(5,5,6,.95);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
+.auth-overlay.open{display:flex}
+body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-select:none}
+.auth-box{background:var(--surface);border:1px solid var(--line-hi);border-top:3px solid var(--yellow);padding:44px 40px 36px;width:100%;max-width:360px;box-shadow:0 40px 80px rgba(0,0,0,.6),6px 6px 0 var(--red)}
+.auth-logo-wrap{margin-bottom:28px}
+.auth-logo-icon{font-family:var(--font-disp);font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--yellow);text-transform:uppercase}
+.auth-title{font-family:var(--font-disp);font-size:22px;font-weight:700;color:var(--bone);margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase}
+.auth-sub{font-family:monospace;font-size:10px;color:var(--muted);letter-spacing:.08em;margin-bottom:28px;text-transform:uppercase}
+.auth-input{width:100%;padding:11px 14px;border:1px solid var(--line-hi);border-radius:0;font-size:13px;font-family:var(--font-sans);background:var(--card);color:var(--bone);margin-bottom:10px;outline:none;transition:border-color .15s}
+.auth-input::placeholder{color:var(--muted)}
+.auth-input:focus{border-color:var(--yellow)}
+.auth-btn{width:100%;padding:12px;background:var(--yellow);color:#0E0E0E;border:none;border-radius:0;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.auth-btn:hover{background:#FFD43B}
+.auth-google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 16px;margin-top:10px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:0;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-sans);transition:background .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.auth-google-btn:hover{background:#f8f9fa;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.auth-google-btn:disabled{opacity:.6;cursor:not-allowed}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0 6px;color:var(--muted);font-family:monospace;font-size:10px;letter-spacing:.08em}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line-hi)}
+.auth-hint{font-family:monospace;font-size:9px;color:var(--muted);letter-spacing:.06em;margin-top:12px;text-align:center}
+.auth-error{font-family:monospace;font-size:10px;color:#FF6B6B;letter-spacing:.06em;margin-top:10px;display:none}
+.auth-error.show{display:block}
+
+/* User badge in nav */
+.user-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--line-hi);font-size:11px;color:var(--bone-dim);font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:transparent;letter-spacing:.04em}
+.user-chip:hover{border-color:var(--bone-faint);color:var(--bone)}
+.user-chip-avatar{width:18px;height:18px;border-radius:50%;background:var(--yellow);color:#0E0E0E;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;overflow:hidden}
+.user-chip-avatar img{width:100%;height:100%;object-fit:cover}
+
 /* ─── BATCH EMBED MODAL ─── */
 .batch-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
 .batch-overlay.open{display:flex}
@@ -443,6 +482,10 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
       Grab REF
     </a>
     <button class="nav-bm-btn" onclick="openBmSetup()" id="navBmBtn">Bookmarklet</button>
+    <button class="user-chip" id="userChip" onclick="userChipClick()" title="">
+      <span class="user-chip-avatar" id="userChipAvatar">?</span>
+      <span id="userChipLabel">Sign in</span>
+    </button>
   </div>
 </nav>
 
@@ -624,6 +667,28 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   </div>
 </div>
 
+<!-- AUTH OVERLAY (shared with vp-search/grab-ref) -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">The Standard VP</div>
+    </div>
+    <div class="auth-title">Sign in</div>
+    <div class="auth-sub">Furniture REF · Restricted Access</div>
+    <button class="auth-google-btn" id="authGoogleBtn" onclick="doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-hint">บัญชี @thestandard.co เท่านั้น</div>
+    <div class="auth-divider">or</div>
+    <input class="auth-input" id="authUser" type="text" placeholder="Username" autocomplete="username">
+    <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="auth-btn" id="authSubmit" onclick="doLogin()">Continue</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -672,7 +737,16 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 
 const SUPABASE_URL  = 'https://pgaqdqbjyewwckpslyvx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXFkcWJqeWV3d2NrcHNseXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMTU4NjIsImV4cCI6MjA4OTc5MTg2Mn0.YKhpyvgXHW3vLYpifJyYHYndlddLzVooKuxoagECZtU';
-const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// Persist session in localStorage + auto-refresh token, so user stays signed in across visits.
+// Use the default storageKey ('sb-<projectref>-auth-token') so the session is automatically
+// shared with vp-search.html and vp-grab-ref.html on the same domain.
+const _SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession:    true,
+    autoRefreshToken:  true,
+    detectSessionInUrl: true,
+  }
+});
 const FURN_TABLE  = 'furniture_refs';
 const FURN_BUCKET = 'furniture-refs';
 
@@ -2039,6 +2113,252 @@ async function applyCrop() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// AUTH — shared session with vp-search.html / vp-grab-ref.html
+// Google OAuth (primary) + Username/Password (fallback)
+// เฉพาะ @thestandard.co เท่านั้น
+// ══════════════════════════════════════════════════════════════
+const AUTH_USER_KEY  = 'vp_user_id';
+const AUTH_ROLE_KEY  = 'vp_user_role';
+const AUTH_TYPE_KEY  = 'vp_auth_type';   // 'password' | 'google'
+const AUTH_NAME_KEY  = 'vp_display_name';
+const AUTH_AVATAR    = 'vp_user_avatar';
+const ALLOWED_DOMAIN = 'thestandard.co';
+const ADMIN_EMAILS   = ['assawapol.t@thestandard.co'];
+const FALLBACK_USERS = {
+  "admin":  { role: "admin",  hash: "ac9689e2272427085e35b9d3e3e8bed88cb3434828b43b86fc0596cad4c6e270", name: "Administrator" },
+  "viewer": { role: "viewer", hash: "65375049b9e4d7cad6c9ba286fdeb9394b28135a3e84136404cfccfdcc438894", name: "Viewer" }
+};
+let _USERS_DB = null;
+let _authBootstrapped = false;
+let _itemsLoaded = false;
+
+async function _sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function _loadUsers() {
+  try {
+    const { data, error } = await _SB.from('users').select('*');
+    if (!error && data?.length) {
+      _USERS_DB = {};
+      data.forEach(u => {
+        _USERS_DB[u.username] = { role: u.role || 'viewer', hash: u.password_hash || '', name: u.display_name || u.username };
+      });
+      return;
+    }
+  } catch {}
+  _USERS_DB = { ...FALLBACK_USERS };
+}
+async function _getRoleByEmail(email) {
+  if (ADMIN_EMAILS.includes(email)) return 'admin';
+  try {
+    const { data } = await _SB.from('users').select('role').eq('email', email).single();
+    if (data?.role) return data.role;
+  } catch {}
+  try {
+    const username = email.split('@')[0];
+    const { data } = await _SB.from('users').select('role').eq('username', username).single();
+    if (data?.role) return data.role;
+  } catch {}
+  return 'viewer';
+}
+
+function showAuthOverlay() { document.getElementById('authOverlay').classList.add('open'); }
+function hideAuthOverlay() { document.getElementById('authOverlay').classList.remove('open'); }
+
+function _authSuccess(uid, name, role) {
+  localStorage.setItem(AUTH_USER_KEY, uid);
+  localStorage.setItem(AUTH_ROLE_KEY, role || 'viewer');
+  if (name) localStorage.setItem(AUTH_NAME_KEY, name);
+  hideAuthOverlay();
+  _renderUserChip();
+  // Re-render any UI bits that depend on isAdmin()
+  _updateRefAiStatus();
+  if (!_itemsLoaded && !new URLSearchParams(location.search).get('bm')) {
+    _itemsLoaded = true;
+    loadItems();
+  } else {
+    renderGrid();
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('authUser').value.trim().toLowerCase();
+  const password = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authError');
+  const btnEl = document.getElementById('authSubmit');
+  errEl.classList.remove('show');
+  if (!username || !password) { errEl.textContent = 'กรุณากรอก Username และ Password'; errEl.classList.add('show'); return; }
+  btnEl.disabled = true; btnEl.textContent = 'กำลังตรวจสอบ...';
+  if (!_USERS_DB) await _loadUsers();
+  const stored = _USERS_DB?.[username];
+  let ok = false;
+  if (stored && await _sha256(password) === stored.hash) ok = true;
+  btnEl.disabled = false; btnEl.textContent = 'Continue';
+  if (!ok) { errEl.textContent = 'Username หรือ Password ไม่ถูกต้อง'; errEl.classList.add('show'); document.getElementById('authPass').value = ''; return; }
+  localStorage.setItem(AUTH_TYPE_KEY, 'password');
+  _authSuccess(username, stored.name || username, stored.role || 'viewer');
+}
+
+async function doGoogleLogin() {
+  const btn = document.getElementById('authGoogleBtn');
+  const err = document.getElementById('authError');
+  err.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'กำลังเชื่อมต่อ...';
+  try {
+    const { error } = await _SB.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+    if (error) throw error;
+  } catch (e) {
+    err.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+    err.classList.add('show');
+    btn.disabled = false;
+    // Re-render the original button content (icon was lost)
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Sign in with Google';
+  }
+}
+
+async function _handleAuthSession(session) {
+  if (!session) {
+    // No Supabase session — but maybe password session in localStorage
+    if (localStorage.getItem(AUTH_TYPE_KEY) === 'password' && localStorage.getItem(AUTH_USER_KEY)) {
+      _renderUserChip();
+      if (!_itemsLoaded) {
+        _itemsLoaded = true;
+        if (!new URLSearchParams(location.search).get('bm')) loadItems();
+      }
+      return;
+    }
+    // No session at all — show login
+    _clearAuthLocal();
+    _renderUserChip();
+    showAuthOverlay();
+    return;
+  }
+  const user  = session.user;
+  const email = user.email || '';
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    await _SB.auth.signOut();
+    _clearAuthLocal();
+    const err = document.getElementById('authError');
+    if (err) { err.textContent = 'เฉพาะบัญชี @' + ALLOWED_DOMAIN + ' เท่านั้น'; err.classList.add('show'); }
+    _renderUserChip();
+    showAuthOverlay();
+    return;
+  }
+  const role = await _getRoleByEmail(email);
+  const name = user.user_metadata?.full_name || email;
+  const avatar = user.user_metadata?.avatar_url || '';
+  localStorage.setItem(AUTH_TYPE_KEY, 'google');
+  if (avatar) localStorage.setItem(AUTH_AVATAR, avatar);
+  else        localStorage.removeItem(AUTH_AVATAR);
+  _authSuccess(email, name, role);
+}
+
+function _clearAuthLocal() {
+  localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_ROLE_KEY);
+  localStorage.removeItem(AUTH_TYPE_KEY);
+  localStorage.removeItem(AUTH_NAME_KEY);
+  localStorage.removeItem(AUTH_AVATAR);
+}
+async function doLogout() {
+  try { await _SB.auth.signOut(); } catch {}
+  _clearAuthLocal();
+  _renderUserChip();
+  showAuthOverlay();
+}
+function userChipClick() {
+  const uid = localStorage.getItem(AUTH_USER_KEY);
+  if (!uid) { showAuthOverlay(); return; }
+  if (confirm('ออกจากระบบ?')) doLogout();
+}
+function _renderUserChip() {
+  const chip   = document.getElementById('userChip');
+  const label  = document.getElementById('userChipLabel');
+  const avatar = document.getElementById('userChipAvatar');
+  if (!chip) return;
+  const uid = localStorage.getItem(AUTH_USER_KEY);
+  const name = localStorage.getItem(AUTH_NAME_KEY) || uid;
+  const role = localStorage.getItem(AUTH_ROLE_KEY) || '';
+  const avatarUrl = localStorage.getItem(AUTH_AVATAR) || '';
+  if (uid) {
+    const display = name && name.includes('@') ? name.split('@')[0] : (name || uid);
+    label.textContent = display + (role === 'admin' ? ' · admin' : '');
+    chip.title = uid + ' (คลิกเพื่อออกจากระบบ)';
+    if (avatarUrl) {
+      avatar.innerHTML = `<img src="${avatarUrl}" alt="">`;
+    } else {
+      avatar.textContent = (display || '?').charAt(0).toUpperCase();
+    }
+  } else {
+    label.textContent = 'Sign in';
+    avatar.textContent = '?';
+    chip.title = 'Sign in';
+  }
+}
+
+// Listen for cross-page auth changes (also picks up OAuth redirect)
+_SB.auth.onAuthStateChange((event, session) => {
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    _handleAuthSession(session);
+  } else if (event === 'SIGNED_OUT') {
+    if (localStorage.getItem(AUTH_TYPE_KEY) !== 'password') {
+      _clearAuthLocal();
+      _renderUserChip();
+      showAuthOverlay();
+    }
+  }
+});
+
+async function _bootAuth() {
+  if (_authBootstrapped) return;
+  _authBootstrapped = true;
+
+  // Clean OAuth hash from URL immediately
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  // Render whatever's in localStorage right now (so the chip isn't empty)
+  _renderUserChip();
+
+  // 1) password session (synchronous-ish — straight from localStorage)
+  const uid = localStorage.getItem(AUTH_USER_KEY);
+  const authType = localStorage.getItem(AUTH_TYPE_KEY);
+  if (uid && authType === 'password') {
+    if (!_itemsLoaded) {
+      _itemsLoaded = true;
+      if (!new URLSearchParams(location.search).get('bm')) loadItems();
+    }
+    return;
+  }
+
+  // 2) ask Supabase — it will rehydrate the session from localStorage if any
+  try {
+    const { data: { session } } = await _SB.auth.getSession();
+    await _handleAuthSession(session);
+  } catch (e) {
+    console.warn('[auth] getSession failed:', e.message);
+    if (uid && authType === 'google') {
+      // best-effort fall-through using the cached identity
+      _renderUserChip();
+      if (!_itemsLoaded) {
+        _itemsLoaded = true;
+        if (!new URLSearchParams(location.search).get('bm')) loadItems();
+      }
+    } else {
+      showAuthOverlay();
+    }
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 // Render category filter tabs (after the "ทั้งหมด" button)
 (function _renderCatTabs() {
@@ -2089,7 +2409,9 @@ async function applyCrop() {
 })();
 
 initBookmarkletMode();
-if (!new URLSearchParams(location.search).get('bm')) loadItems();
+// Auth-driven loadItems — _bootAuth() will call loadItems() once the session is verified
+// (or show login overlay if no session). Bookmarklet popup mode skips loadItems regardless.
+_bootAuth();
 _applyZoom();
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeMoodboard(); closeCrop(); } });
 </script>
