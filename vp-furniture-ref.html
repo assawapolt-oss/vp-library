@@ -811,6 +811,25 @@ body:has(.auth-overlay.open) > *:not(.auth-overlay){pointer-events:none;user-sel
   </div>
 </div>
 
+<!-- CONVERT PNG → WEBP MODAL (separate from Batch Embed to avoid state confusion) -->
+<div class="batch-overlay" id="convOverlay" onclick="if(event.target===this)cancelConvertCutouts()">
+  <div class="batch-box">
+    <div class="batch-title">↻ Convert old PNG cutouts → WebP</div>
+    <div class="batch-desc" id="convDesc">กำลังนับ PNG cutouts ที่ต้องแปลง…</div>
+    <div class="batch-stats">
+      <span><strong id="convDone">0</strong> / <span id="convTotal">—</span> done</span>
+      <span id="convErrors">0 errors</span>
+      <span id="convSaved" style="margin-left:auto;color:var(--yellow)">— MB saved</span>
+    </div>
+    <div class="batch-progress-wrap"><div class="batch-progress-bar" id="convProgressBar"></div></div>
+    <div class="batch-log" id="convLog">—</div>
+    <div class="batch-actions">
+      <button class="batch-start" id="convStartBtn" onclick="startConvertCutouts()" disabled>Start</button>
+      <button class="batch-cancel" id="convCancelBtn" onclick="cancelConvertCutouts()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- AUTH OVERLAY (shared with vp-search/grab-ref) -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
@@ -2059,12 +2078,12 @@ async function startBatchEmbed() {
 }
 
 function cancelBatchEmbed() {
-  if (_batchRunning || _convertRunning) {
+  if (_batchRunning) {
     _batchCancel = true;
     document.getElementById('batchCancelBtn').textContent = 'Stopping…';
     document.getElementById('batchCancelBtn').disabled = true;
     const wait = () => {
-      if (!_batchRunning && !_convertRunning) {
+      if (!_batchRunning) {
         document.getElementById('batchOverlay').classList.remove('open');
         document.getElementById('batchCancelBtn').disabled = false;
       } else setTimeout(wait, 300);
@@ -2076,83 +2095,77 @@ function cancelBatchEmbed() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// CONVERT old PNG cutouts → WebP (admin tool, reuses batch overlay)
+// CONVERT old PNG cutouts → WebP (admin tool — own modal)
 // ══════════════════════════════════════════════════════════════
 let _convertRunning = false;
 let _convertCancel  = false;
-let _convertMode    = false; // true while batch overlay is hosting convert flow
+let _convertRows    = [];
 
 async function openConvertCutouts() {
   if (!isAdmin()) { toast('Admin only', 'err'); return; }
-  _convertMode = true;
-  const descEl   = document.getElementById('batchDesc');
-  const startBtn = document.getElementById('batchStartBtn');
-  const cancelBtn= document.getElementById('batchCancelBtn');
-  const titleEl  = document.querySelector('#batchOverlay .batch-title');
-  if (titleEl) titleEl.textContent = '↻ Convert old PNG cutouts → WebP';
-  document.getElementById('batchDone').textContent    = '0';
-  document.getElementById('batchTotal').textContent   = '—';
-  document.getElementById('batchErrors').textContent  = '0 errors';
-  document.getElementById('batchProgressBar').style.width = '0%';
-  document.getElementById('batchLog').textContent     = '—';
+  const descEl   = document.getElementById('convDesc');
+  const startBtn = document.getElementById('convStartBtn');
+  const cancelBtn= document.getElementById('convCancelBtn');
+  document.getElementById('convDone').textContent    = '0';
+  document.getElementById('convTotal').textContent   = '—';
+  document.getElementById('convErrors').textContent  = '0 errors';
+  document.getElementById('convSaved').textContent   = '— MB saved';
+  document.getElementById('convProgressBar').style.width = '0%';
+  document.getElementById('convLog').textContent     = '—';
   startBtn.disabled = true;
-  startBtn.onclick = () => startConvertCutouts();  // re-route Start
   cancelBtn.textContent = 'Close';
+  cancelBtn.disabled = false;
   descEl.textContent = 'กำลังนับ PNG cutouts ที่ต้องแปลง…';
-  document.getElementById('batchOverlay').classList.add('open');
+  document.getElementById('convOverlay').classList.add('open');
 
-  // Find rows whose cutout_url ends in .png
   const { data, error } = await _SB.from(FURN_TABLE)
     .select('id, cutout_url, cutout_path')
     .not('cutout_url', 'is', null)
     .neq('cutout_url', '');
   if (error) { descEl.textContent = 'Error: ' + error.message; return; }
   const rows = (data || []).filter(r => /\.png(\?|$)/i.test(r.cutout_url || ''));
-  document.getElementById('batchTotal').textContent = rows.length;
+  _convertRows = rows;
+  document.getElementById('convTotal').textContent = rows.length;
   if (!rows.length) {
     descEl.textContent = '✅ ทุก cutout เป็น WebP อยู่แล้ว';
   } else {
     descEl.textContent = `พบ ${rows.length} PNG cutouts — กด Start เพื่อแปลงเป็น WebP`;
     startBtn.disabled = false;
-    // Keep the rows in a closure for startConvertCutouts
-    window._convertRows = rows;
   }
 }
 
 async function startConvertCutouts() {
   if (_convertRunning) return;
-  const rows = window._convertRows || [];
-  if (!rows.length) return;
-  _convertRunning = true; _convertCancel = false; _batchCancel = false;
+  if (!_convertRows.length) return;
+  _convertRunning = true; _convertCancel = false;
 
-  const startBtn  = document.getElementById('batchStartBtn');
-  const cancelBtn = document.getElementById('batchCancelBtn');
-  const descEl    = document.getElementById('batchDesc');
-  const logEl     = document.getElementById('batchLog');
-  const doneEl    = document.getElementById('batchDone');
-  const errEl     = document.getElementById('batchErrors');
-  const barEl     = document.getElementById('batchProgressBar');
+  const startBtn  = document.getElementById('convStartBtn');
+  const cancelBtn = document.getElementById('convCancelBtn');
+  const descEl    = document.getElementById('convDesc');
+  const logEl     = document.getElementById('convLog');
+  const doneEl    = document.getElementById('convDone');
+  const errEl     = document.getElementById('convErrors');
+  const savedEl   = document.getElementById('convSaved');
+  const barEl     = document.getElementById('convProgressBar');
   startBtn.disabled = true; cancelBtn.textContent = 'Stop';
 
   let done = 0, errors = 0, savedKB = 0;
-  for (const r of rows) {
-    if (_convertCancel || _batchCancel) { descEl.textContent = `หยุด (${done}/${rows.length})`; break; }
+  const total = _convertRows.length;
+  for (const r of _convertRows) {
+    if (_convertCancel) { descEl.textContent = `หยุด (${done}/${total})`; break; }
     const shortId = String(r.id).slice(0, 10);
     logEl.textContent = `⏳ ${shortId}… download`;
     try {
-      // 1) fetch the PNG bytes
       const resp = await fetch(r.cutout_url, { cache: 'no-store' });
       if (!resp.ok) throw new Error('fetch ' + resp.status);
       const pngBlob = await resp.blob();
       const oldKB = pngBlob.size / 1024;
       logEl.textContent = `⏳ ${shortId}… encode`;
 
-      // 2) re-encode to WebP w/ alpha (downscale to 1600x1200)
       const webp = await _compressCutout(pngBlob, 1600, 1200, 0.85);
       if (!webp || webp.size < 1000) throw new Error('webp encode failed');
       const newKB = webp.size / 1024;
 
-      // 3) upload as new path, update DB, then delete the old PNG
       logEl.textContent = `⏳ ${shortId}… upload`;
       const ts = Date.now();
       const newPath = `cutouts/${ts}_${Math.random().toString(36).slice(2,7)}.webp`;
@@ -2164,10 +2177,8 @@ async function startConvertCutouts() {
         .eq('id', r.id);
       if (ue) throw new Error('db: ' + ue.message);
 
-      // 4) best-effort delete the old PNG
       if (r.cutout_path) _SB.storage.from(FURN_BUCKET).remove([r.cutout_path]).catch(() => {});
 
-      // local cache update
       const idx = ALL_ITEMS.findIndex(i => i.id === r.id);
       if (idx !== -1) {
         ALL_ITEMS[idx].cutout_url  = pd.publicUrl;
@@ -2181,19 +2192,35 @@ async function startConvertCutouts() {
       logEl.textContent = `⚠️ ${shortId}: ${e.message.slice(0, 50)}`;
       console.warn('[convert]', r.id, e);
     }
-    doneEl.textContent = done;
-    errEl.textContent  = `${errors} error${errors !== 1 ? 's' : ''}`;
-    barEl.style.width  = `${Math.round((done + errors) / rows.length * 100)}%`;
+    doneEl.textContent  = done;
+    errEl.textContent   = `${errors} error${errors !== 1 ? 's' : ''}`;
+    savedEl.textContent = `${(savedKB/1024).toFixed(1)} MB saved`;
+    barEl.style.width   = `${Math.round((done + errors) / total * 100)}%`;
   }
 
   _convertRunning = false;
   cancelBtn.textContent = 'Close';
-  if (!_convertCancel && !_batchCancel) {
-    descEl.textContent = `✅ เสร็จแล้ว — ${done} ไฟล์, ประหยัด ${(savedKB/1024).toFixed(1)} MB${errors ? ` (${errors} errors)` : ''}`;
+  if (!_convertCancel) {
+    descEl.textContent = `✅ เสร็จแล้ว — ${done} ไฟล์${errors ? ` (${errors} errors)` : ''}`;
     barEl.style.width = '100%';
   }
-  // Reset Start button to its normal Batch Embed handler when overlay reopens fresh
-  startBtn.onclick = () => startBatchEmbed();
+}
+
+function cancelConvertCutouts() {
+  if (_convertRunning) {
+    _convertCancel = true;
+    document.getElementById('convCancelBtn').textContent = 'Stopping…';
+    document.getElementById('convCancelBtn').disabled = true;
+    const wait = () => {
+      if (!_convertRunning) {
+        document.getElementById('convOverlay').classList.remove('open');
+        document.getElementById('convCancelBtn').disabled = false;
+      } else setTimeout(wait, 300);
+    };
+    setTimeout(wait, 300);
+  } else {
+    document.getElementById('convOverlay').classList.remove('open');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
