@@ -48,6 +48,33 @@
     .then(p => { window._refThEnTranslator = p; window._refTranslatorReady = true; window._refTranslatorLoading = false; _checkAllRefModels(); })
     .catch(e => { window._refTranslatorLoading = false; console.warn('[NMT]', e.message); _checkAllRefModels(); });
 </script>
+
+<!-- Background removal — lazy-loaded only when user clicks Cut Object (model ~30MB) -->
+<script>
+window._bgRemovalLoading = false;
+window._bgRemovalLoaded  = false;
+window._bgRemovalFn      = null;
+window.loadBgRemoval = async function() {
+  if (window._bgRemovalLoaded) return window._bgRemovalFn;
+  if (window._bgRemovalLoading) {
+    while (window._bgRemovalLoading) await new Promise(r => setTimeout(r, 200));
+    return window._bgRemovalFn;
+  }
+  window._bgRemovalLoading = true;
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/dist/index.mjs');
+    window._bgRemovalFn = mod.removeBackground || mod.default;
+    window._bgRemovalLoaded = true;
+    console.log('[BgRemoval] model ready');
+    return window._bgRemovalFn;
+  } catch (e) {
+    console.error('[BgRemoval] load failed:', e);
+    throw e;
+  } finally {
+    window._bgRemovalLoading = false;
+  }
+};
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -289,6 +316,15 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .ai-search-input::placeholder{color:var(--bone-faint)}
 .ai-search-btn{padding:8px 18px;background:var(--blue);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;transition:background .12s;white-space:nowrap}
 .ai-search-btn:hover:not(:disabled){background:#2851F0}
+/* divider between AI search and Moodboard CTA */
+.hero-sep{width:1px;height:24px;background:var(--line-hi);margin:0 6px;flex-shrink:0}
+/* Moodboard hero CTA — promoted to top action area */
+.mb-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 12px;background:var(--yellow);color:#0E0E0E;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;transition:all .15s;position:relative;box-shadow:3px 3px 0 var(--red)}
+.mb-cta-btn:hover{background:#FFD43B;transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--red)}
+.mb-cta-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--red)}
+.mb-cta-btn.active{background:var(--blue);color:#fff;box-shadow:3px 3px 0 var(--yellow)}
+.mb-cta-icon{display:inline-flex;align-items:center;justify-content:center}
+.mb-cta-icon .icn{width:15px;height:15px;stroke-width:2}
 .ai-search-btn:disabled{opacity:.4;cursor:wait}
 .ai-search-clear{padding:7px 12px;background:transparent;border:1px solid var(--line-hi);font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;letter-spacing:.04em}
 .ai-search-clear:hover{color:var(--bone);border-color:var(--bone-faint)}
@@ -342,8 +378,33 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
 .crop-btn-ghost:hover{color:var(--bone);border-color:var(--bone-faint)}
 .crop-btn-primary:hover{opacity:.85}
 .crop-btn:disabled{opacity:.4;cursor:wait}
-.crop-edit-btn{padding:6px 10px;background:transparent;border:1px solid var(--line-hi);color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase}
-.crop-edit-btn:hover{color:var(--gold);border-color:var(--gold-dim)}
+.crop-edit-btn{padding:6px 10px;background:rgba(10,10,12,.7);border:1px solid var(--line-hi);color:var(--bone-dim);font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;font-weight:700;display:inline-flex;align-items:center;gap:5px;transition:all .12s}
+.crop-edit-btn:hover{color:#0E0E0E;background:var(--gold);border-color:var(--gold)}
+
+/* Version toggle — original vs cutout */
+.ver-toggle{position:absolute;top:10px;left:10px;display:flex;background:rgba(10,10,12,.85);border:1px solid var(--line-hi);z-index:10}
+.ver-btn{padding:5px 10px;border:none;background:transparent;color:var(--bone-dim);font-size:10px;font-family:inherit;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .12s}
+.ver-btn:hover{color:var(--bone)}
+.ver-btn.active{background:var(--yellow);color:#0E0E0E}
+
+/* Card badge showing cutout is available */
+.card-cutout-badge{position:absolute;bottom:6px;right:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;z-index:3;pointer-events:none;box-shadow:1px 1px 0 rgba(0,0,0,.4)}
+.card-cutout-badge .icn{width:11px;height:11px;stroke-width:2}
+
+/* Cut progress overlay — shown over modal image while bg-removal runs */
+.cut-progress-overlay{position:absolute;inset:0;background:rgba(0,0,0,.78);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:20;backdrop-filter:blur(3px)}
+.cut-progress-overlay.show{display:flex}
+.cut-progress-text{color:var(--bone);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.cut-progress-sub{color:var(--bone-dim);font-size:11px;letter-spacing:.04em;text-align:center;padding:0 20px;line-height:1.6}
+.cut-progress-spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--yellow);border-radius:50%;animation:cutSpin 0.8s linear infinite}
+@keyframes cutSpin{to{transform:rotate(360deg)}}
+
+/* Moodboard card per-item version chip */
+.mb-vchip{position:absolute;top:6px;right:6px;display:flex;background:rgba(10,10,12,.85);border:1px solid var(--gold-dim);z-index:6;font-size:9px}
+.mb-vchip button{padding:2px 6px;background:transparent;border:none;color:var(--bone-dim);font-family:inherit;font-weight:700;cursor:pointer;letter-spacing:.04em}
+.mb-vchip button.active{background:var(--gold);color:#0E0E0E}
+/* checkered transparency hint behind cutouts in moodboard preview */
+.mb-canvas-wrap{background-image:linear-gradient(45deg,#1a1a1a 25%,transparent 25%),linear-gradient(-45deg,#1a1a1a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1a1a1a 75%),linear-gradient(-45deg,transparent 75%,#1a1a1a 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,10px 0}
 
 /* ─── BATCH EMBED MODAL ─── */
 .batch-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
@@ -422,7 +483,7 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   <button class="style-pill" data-style="dark"         onclick="toggleStyle('dark')">Dark/Moody</button>
 </div>
 
-<!-- AI SEMANTIC SEARCH (CLIP, same as GrabREF) -->
+<!-- AI SEMANTIC SEARCH + MOODBOARD CTA -->
 <div class="ai-search-wrap">
   <div class="ai-search-row">
     <input class="ai-search-input" id="aiSearchInput" type="text"
@@ -430,6 +491,11 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
       onkeydown="if(event.key==='Enter')doAiSearch()">
     <button class="ai-search-btn" id="aiSearchBtn" onclick="doAiSearch()">Search</button>
     <button class="ai-search-clear" id="aiSearchClear" onclick="clearAiSearch()" style="display:none">Clear</button>
+    <span class="hero-sep"></span>
+    <button class="mb-cta-btn" id="mbModeBtn" onclick="toggleMbMode()" title="เลือกรูปหลายๆ ภาพแล้วประกอบเป็น Moodboard">
+      <span class="mb-cta-icon" id="mbCtaIcon"></span>
+      <span class="mb-cta-text">Moodboard</span>
+    </button>
     <button class="btn-batch-embed" id="batchEmbedBtn" onclick="openBatchEmbed()" style="display:none" title="Embed CLIP vectors for items missing mclip_vector">⚡ Batch Embed</button>
   </div>
   <div class="ai-status" id="aiStatus">
@@ -439,23 +505,22 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
   <div class="ai-search-meta" id="aiSearchMeta"></div>
 </div>
 
-<!-- TOOLBAR -->
+<!-- TOOLBAR — เครื่องมือรอง: count, sort, zoom, shuffle -->
 <div class="toolbar">
   <span class="count-label" id="countLabel">กำลังโหลด…</span>
-  <button class="mb-btn" id="mbModeBtn" onclick="toggleMbMode()">Moodboard</button>
-  <button class="mb-btn" id="shuffleBtn" onclick="shuffleGrid()" title="สุ่มลำดับใหม่">Shuffle</button>
-  <!-- Zoom controls (replaces collapse-all) -->
-  <div class="zoom-ctrl" title="ปรับขนาด card">
-    <button class="zoom-btn" id="zoomOutBtn" onclick="adjustZoom(-1)" title="card เล็กลง (เห็นเยอะขึ้น)" aria-label="zoom out"></button>
-    <span class="zoom-label" id="zoomLabel">M</span>
-    <button class="zoom-btn" id="zoomInBtn" onclick="adjustZoom(+1)" title="card ใหญ่ขึ้น" aria-label="zoom in"></button>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <button class="mb-btn" id="shuffleBtn" onclick="shuffleGrid()" title="สุ่มลำดับใหม่">Shuffle</button>
+    <div class="zoom-ctrl" title="ปรับขนาด card">
+      <button class="zoom-btn" id="zoomOutBtn" onclick="adjustZoom(-1)" title="card เล็กลง (เห็นเยอะขึ้น)" aria-label="zoom out"></button>
+      <span class="zoom-label" id="zoomLabel">M</span>
+      <button class="zoom-btn" id="zoomInBtn" onclick="adjustZoom(+1)" title="card ใหญ่ขึ้น" aria-label="zoom in"></button>
+    </div>
+    <select class="sort-sel" id="sortSel" onchange="onSortChange()">
+      <option value="newest">ล่าสุดก่อน</option>
+      <option value="oldest">เก่าสุดก่อน</option>
+      <option value="shuffle">สุ่มลำดับ</option>
+    </select>
   </div>
-  <input class="search-input" id="searchInput" type="text" placeholder="ค้นหา (keyword)…" oninput="renderGrid()">
-  <select class="sort-sel" id="sortSel" onchange="onSortChange()">
-    <option value="newest">ล่าสุดก่อน</option>
-    <option value="oldest">เก่าสุดก่อน</option>
-    <option value="shuffle">สุ่มลำดับ</option>
-  </select>
 </div>
 
 <!-- GRID -->
@@ -574,7 +639,20 @@ body{background:var(--bg);color:var(--bone);font-family:var(--font-sans);min-hei
     <div class="modal-img-side">
       <button class="modal-close" onclick="closeModal()" title="ปิด">✕</button>
       <img id="modalImg" src="" alt="">
-      <button class="crop-edit-btn" id="modalCropBtn" onclick="openCropFromModal()" style="position:absolute;bottom:10px;right:10px;display:none">CROP</button>
+      <div class="cut-progress-overlay" id="cutProgressOverlay">
+        <div class="cut-progress-spinner"></div>
+        <div class="cut-progress-text" id="cutProgressText">Cutting…</div>
+        <div class="cut-progress-sub" id="cutProgressSub">โหลด AI model ครั้งแรก ~30MB · ครั้งถัดไปเร็วขึ้น</div>
+      </div>
+      <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:6px" id="modalImgTools">
+        <button class="crop-edit-btn" id="modalCropBtn" onclick="openCropFromModal()" style="display:none">CROP</button>
+        <button class="crop-edit-btn" id="modalCutBtn" onclick="openCutFromModal()" style="display:none">CUT</button>
+      </div>
+      <!-- Version toggle (visible when both original + cutout exist) -->
+      <div class="ver-toggle" id="modalVerToggle" style="display:none">
+        <button class="ver-btn active" id="verOrigBtn" onclick="modalSwitchVer('orig')" title="ภาพต้นฉบับ">ORIG</button>
+        <button class="ver-btn" id="verCutBtn" onclick="modalSwitchVer('cut')" title="ดิคัตแล้ว">CUT</button>
+      </div>
     </div>
     <div class="modal-info-side">
       <div class="modal-field"><label>หมวด</label><div class="modal-cat-grid" id="modalCatGrid"></div></div>
@@ -627,6 +705,7 @@ const _ICONS = {
   plus:      '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   search:    '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
   scissors:  '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+  wand:      '<path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/>',
   reset:     '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   close:     '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
 };
@@ -844,25 +923,66 @@ document.addEventListener('paste', e => {
 // ── MOODBOARD ─────────────────────────────────────────────────
 let _mbMode = false;
 let _mbSelected = new Set();
+let _mbVersionChoice = new Map(); // id -> 'orig' | 'cut'
+
+function setMbVer(id, ver) {
+  _mbVersionChoice.set(id, ver);
+  // Update the chip UI and the card image without full re-render
+  const card = document.querySelector(`.grid-card[data-id="${id}"]`);
+  if (!card) return;
+  card.querySelectorAll('.mb-vchip button').forEach(b => {
+    b.classList.toggle('active', (b.textContent.trim().toLowerCase() === ver));
+  });
+  // Re-render moodboard preview if it's already open
+  const mbOverlay = document.getElementById('mbOverlayModal');
+  if (mbOverlay && mbOverlay.classList.contains('open')) renderMoodboardCanvas();
+}
 
 function toggleMbMode() {
   _mbMode = !_mbMode;
   document.body.classList.toggle('select-mode', _mbMode);
   const btn = document.getElementById('mbModeBtn');
   btn.classList.toggle('active', _mbMode);
-  btn.textContent = _mbMode ? '✕ เลิกเลือก' : '🖼 Moodboard';
+  // Update label text inside the CTA without nuking the icon span
+  const txtEl = btn.querySelector('.mb-cta-text');
+  const icoEl = btn.querySelector('.mb-cta-icon');
+  if (_mbMode) {
+    if (txtEl) txtEl.textContent = 'เลิกเลือก';
+    if (icoEl) icoEl.innerHTML = ICN('close');
+  } else {
+    if (txtEl) txtEl.textContent = 'Moodboard';
+    if (icoEl) icoEl.innerHTML = ICN('moodboard');
+  }
   if (!_mbMode) clearMbSelection();
 }
 function toggleMbCard(id) {
-  if (_mbSelected.has(id)) _mbSelected.delete(id); else _mbSelected.add(id);
-  document.querySelectorAll('.grid-card').forEach(c => {
-    if (c.dataset.id === id) c.classList.toggle('selected', _mbSelected.has(id));
-  });
+  if (_mbSelected.has(id)) {
+    _mbSelected.delete(id);
+    _mbVersionChoice.delete(id);
+  } else {
+    _mbSelected.add(id);
+    // default version: prefer cutout if exists (it composes nicer in moodboards)
+    const item = ALL_ITEMS.find(i => i.id === id);
+    _mbVersionChoice.set(id, item && item.cutout_url ? 'cut' : 'orig');
+  }
+  // Re-render the card so the version chip / cutout badge update
+  if (_aiScoreMap) {
+    _renderAiResults(ALL_ITEMS.filter(i => _aiScoreMap[i.id] !== undefined)
+      .sort((a,b) => _aiScoreMap[b.id] - _aiScoreMap[a.id]), _aiScoreMap);
+  } else {
+    renderGrid();
+  }
   updateMbFAB();
 }
 function clearMbSelection() {
   _mbSelected.clear();
-  document.querySelectorAll('.grid-card.selected').forEach(c => c.classList.remove('selected'));
+  _mbVersionChoice.clear();
+  if (_aiScoreMap) {
+    _renderAiResults(ALL_ITEMS.filter(i => _aiScoreMap[i.id] !== undefined)
+      .sort((a,b) => _aiScoreMap[b.id] - _aiScoreMap[a.id]), _aiScoreMap);
+  } else {
+    renderGrid();
+  }
   updateMbFAB();
 }
 function updateMbFAB() {
@@ -903,14 +1023,25 @@ async function renderMoodboardCanvas() {
     img.onload = () => res(img); img.onerror = () => res(null);
     img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
   });
-  const imgs = await Promise.all(items.map(i => loadImg(i.image_url)));
+  // Pick the chosen version per item (orig vs cut)
+  const urls = items.map(i => {
+    const ver = _mbVersionChoice.get(i.id);
+    return (ver === 'cut' && i.cutout_url) ? i.cutout_url : i.image_url;
+  });
+  const isCutFlags = items.map(i => _mbVersionChoice.get(i.id) === 'cut' && i.cutout_url);
+  const imgs = await Promise.all(urls.map(loadImg));
   imgs.forEach((img, idx) => {
     const col = idx % COLS, row = Math.floor(idx / COLS);
     const x = PAD + col * (CW + GAP);
     const y = HEADER + PAD + row * (CH + GAP);
-    ctx.fillStyle = '#131316'; ctx.fillRect(x, y, CW, CH);
+    if (isCutFlags[idx]) {
+      // Cutout (transparent PNG): paint a soft tinted backdrop instead of solid card bg
+      // so the dicut subject reads cleanly on the moodboard
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(x, y, CW, CH);
+    } else {
+      ctx.fillStyle = '#131316'; ctx.fillRect(x, y, CW, CH);
+    }
     if (img) {
-      // Contain (no crop) — show full image with letterbox if needed
       const ir = img.width / img.height, cr = CW / CH;
       let dw, dh, dx, dy;
       if (ir > cr) { dw = CW; dh = CW / ir; dx = x; dy = y + (CH - dh) / 2; }
@@ -1133,16 +1264,10 @@ function onSortChange() {
   else renderGrid();
 }
 function renderGrid() {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const sort = document.getElementById('sortSel').value;
   let items = ALL_ITEMS.slice();
   if (_curCat !== 'all') items = items.filter(i => i.category === _curCat);
   if (_curStyles.length) items = items.filter(i => _curStyles.every(s => (i.style_tags || []).includes(s)));
-  if (q) items = items.filter(i =>
-    (i.notes || '').toLowerCase().includes(q) ||
-    (i.source_title || '').toLowerCase().includes(q) ||
-    (i.category || '').includes(q)
-  );
   if (sort === 'oldest') items.reverse();
   else if (sort === 'shuffle' && _shuffleOrder) {
     items.sort((a, b) => (_shuffleOrder.get(a.id) ?? 0) - (_shuffleOrder.get(b.id) ?? 0));
@@ -1171,11 +1296,20 @@ function _cardHTML(item, admin, simPct) {
   const host = item.source_url ? (() => { try { return new URL(item.source_url).hostname.replace('www.', ''); } catch(e) { return ''; } })() : '';
   const isSel = _mbSelected.has(item.id);
   const showBody = !!(item.notes || host || (item.style_tags||[]).length || (item.color_palette||[]).length);
+  const hasCut = !!item.cutout_url;
+  // In moodboard mode, if card has cutout AND it's selected, show ORIG/CUT toggle
+  const verChip = (_mbMode && hasCut && isSel)
+    ? `<div class="mb-vchip" onclick="event.stopPropagation()">
+         <button class="${(_mbVersionChoice.get(item.id)||'orig')==='orig'?'active':''}" onclick="setMbVer('${item.id}','orig')">ORIG</button>
+         <button class="${_mbVersionChoice.get(item.id)==='cut'?'active':''}" onclick="setMbVer('${item.id}','cut')">CUT</button>
+       </div>` : '';
   return `<div class="grid-card${isSel ? ' selected' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
     ${simPct !== undefined ? `<div class="card-sim-badge">${simPct}%</div>` : ''}
     <div class="sel-check">✓</div>
     <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
     <div class="card-cat-overlay" style="background:${cat.color};color:${_iconInk(cat.color)}" title="${cat.name}">${ICN(cat.ic)}</div>
+    ${hasCut && !isSel ? `<div class="card-cutout-badge" title="มี cutout version">${ICN('scissors','icn-sm')}</div>` : ''}
+    ${verChip}
     <div class="card-hover-btns">
       ${admin ? `<button class="card-hover-btn del" onclick="event.stopPropagation();confirmDelete('${item.id}')" title="ลบ">${ICN('trash','icn-sm')}</button>` : ''}
     </div>
@@ -1194,6 +1328,7 @@ function openModal(id) {
   if (!item) return;
   _editId = id;
   document.getElementById('modalImg').src = item.image_url;
+  document.getElementById('modalImg').style.background = '';
   document.getElementById('modalCatGrid').innerHTML = CATEGORIES.map(c =>
     `<button class="modal-cat-opt ${item.category === c.id ? 'active' : ''}" data-cid="${c.id}" onclick="modalSetCat('${c.id}')">${c.label}</button>`
   ).join('');
@@ -1212,8 +1347,40 @@ function openModal(id) {
   document.getElementById('modalSaveBtn').style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('modalDelBtn').style.display = isAdmin() ? 'block' : 'none';
   const cropBtn = document.getElementById('modalCropBtn');
-  if (cropBtn) cropBtn.style.display = isAdmin() ? 'inline-block' : 'none';
+  const cutBtn  = document.getElementById('modalCutBtn');
+  if (cropBtn) cropBtn.style.display = isAdmin() ? 'inline-flex' : 'none';
+  if (cutBtn)  cutBtn.style.display  = isAdmin() ? 'inline-flex' : 'none';
+  // Version toggle visibility — only when both versions exist
+  const verToggle = document.getElementById('modalVerToggle');
+  if (verToggle) {
+    if (item.cutout_url) {
+      verToggle.style.display = 'flex';
+      // Reset to original when modal opens
+      document.getElementById('verOrigBtn').classList.add('active');
+      document.getElementById('verCutBtn').classList.remove('active');
+    } else {
+      verToggle.style.display = 'none';
+    }
+  }
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function modalSwitchVer(which) {
+  const item = ALL_ITEMS.find(i => i.id === _editId);
+  if (!item) return;
+  const img = document.getElementById('modalImg');
+  if (which === 'cut' && item.cutout_url) {
+    img.src = item.cutout_url;
+    // checkered hint behind transparent png
+    img.style.background = 'linear-gradient(45deg,#1a1a1a 25%,transparent 25%) 0 0/20px 20px,linear-gradient(-45deg,#1a1a1a 25%,transparent 25%) 0 10px/20px 20px,linear-gradient(45deg,transparent 75%,#1a1a1a 75%) 10px -10px/20px 20px,linear-gradient(-45deg,transparent 75%,#1a1a1a 75%) 10px 0/20px 20px,#0E0E0E';
+    document.getElementById('verCutBtn').classList.add('active');
+    document.getElementById('verOrigBtn').classList.remove('active');
+  } else {
+    img.src = item.image_url;
+    img.style.background = '';
+    document.getElementById('verOrigBtn').classList.add('active');
+    document.getElementById('verCutBtn').classList.remove('active');
+  }
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); _editId = null; }
 async function modalSetCat(cid) {
@@ -1257,7 +1424,10 @@ async function doDelete(id) {
   const item = ALL_ITEMS.find(i => i.id === id);
   const { error } = await _SB.from(FURN_TABLE).delete().eq('id', id);
   if (error) { toast('ลบไม่ได้: ' + error.message, 'err'); return; }
-  if (item?.storage_path) _SB.storage.from(FURN_BUCKET).remove([item.storage_path]).catch(() => {});
+  const paths = [];
+  if (item?.storage_path) paths.push(item.storage_path);
+  if (item?.cutout_path)  paths.push(item.cutout_path);
+  if (paths.length) _SB.storage.from(FURN_BUCKET).remove(paths).catch(() => {});
   ALL_ITEMS = ALL_ITEMS.filter(i => i.id !== id);
   updateCounts(); renderGrid();
   toast('ลบแล้ว');
@@ -1619,6 +1789,75 @@ function cancelBatchEmbed() {
 // ══════════════════════════════════════════════════════════════
 let _cropState = null; // {imgEl, rectEl, natW, natH, dispW, dispH, offX, offY, x,y,w,h, dragging, mode, startX, startY, startRect}
 
+// ══════════════════════════════════════════════════════════════
+// CUT OBJECT — background removal (saves a transparent PNG version
+// next to the original image_url; user can toggle in modal/moodboard)
+// ══════════════════════════════════════════════════════════════
+async function openCutFromModal() {
+  if (!_editId) return;
+  const item = ALL_ITEMS.find(i => i.id === _editId);
+  if (!item || !item.image_url) return;
+  if (item.cutout_url && !confirm('รูปนี้มี cutout อยู่แล้ว — สร้างใหม่ทับเลย?')) return;
+
+  const overlay = document.getElementById('cutProgressOverlay');
+  const txt     = document.getElementById('cutProgressText');
+  const sub     = document.getElementById('cutProgressSub');
+  const cutBtn  = document.getElementById('modalCutBtn');
+  overlay.classList.add('show');
+  txt.textContent = window._bgRemovalLoaded ? 'CUTTING…' : 'LOADING MODEL…';
+  sub.textContent = window._bgRemovalLoaded
+    ? 'AI กำลังดิคัตวัตถุออกจากพื้นหลัง'
+    : 'โหลด AI model ครั้งแรก ~30MB · ครั้งถัดไปจะเร็ว';
+  cutBtn.disabled = true;
+
+  try {
+    const removeFn = await window.loadBgRemoval();
+    txt.textContent = 'CUTTING…';
+    sub.textContent = 'AI กำลังดิคัตวัตถุออกจากพื้นหลัง';
+
+    // Run bg removal — returns a Blob (PNG with transparent bg)
+    const blob = await removeFn(item.image_url, {
+      output:  { format: 'image/png', quality: 0.95 },
+      // (default U²-Net small model is fine for furniture)
+    });
+
+    if (!blob || blob.size < 1000) throw new Error('ผลลัพธ์ว่าง');
+
+    // Upload PNG transparent to storage
+    const ts = Date.now();
+    const path = `cutouts/${ts}_${Math.random().toString(36).slice(2,7)}.png`;
+    sub.textContent = 'อัปโหลด…';
+    const { error: se } = await _SB.storage.from(FURN_BUCKET).upload(path, blob, { contentType: 'image/png', upsert: false });
+    if (se) throw new Error('Storage: ' + se.message);
+    const { data: pd } = _SB.storage.from(FURN_BUCKET).getPublicUrl(path);
+    const cutUrl = pd.publicUrl;
+
+    // If row had a previous cutout, delete it from storage (best-effort)
+    const oldPath = item.cutout_path;
+    // Update DB
+    const { error: ue } = await _SB.from(FURN_TABLE)
+      .update({ cutout_url: cutUrl, cutout_path: path, cutout_indexed_at: new Date().toISOString() })
+      .eq('id', _editId);
+    if (ue) throw new Error('DB: ' + ue.message);
+    if (oldPath) _SB.storage.from(FURN_BUCKET).remove([oldPath]).catch(() => {});
+
+    // Local cache update + UI refresh
+    item.cutout_url = cutUrl;
+    item.cutout_path = path;
+    item.cutout_indexed_at = new Date().toISOString();
+    document.getElementById('modalVerToggle').style.display = 'flex';
+    modalSwitchVer('cut');
+    renderGrid();
+    toast('✓ Cutout saved');
+  } catch (e) {
+    console.error('[Cut]', e);
+    toast('Cut failed: ' + e.message, 'err', 5000);
+  } finally {
+    overlay.classList.remove('show');
+    cutBtn.disabled = false;
+  }
+}
+
 function openCropFromModal() {
   if (!_editId) return;
   const item = ALL_ITEMS.find(i => i.id === _editId);
@@ -1824,7 +2063,7 @@ async function applyCrop() {
   set('addBtn',       'plus',     'เพิ่ม');
   set('uploadPickBtn','upload',   'เลือกรูป');
   set('dzIcon',       'upload',   '', 'icn-md');
-  set('mbModeBtn',    'moodboard','Moodboard');
+  set('mbCtaIcon',    'moodboard', '');
   set('shuffleBtn',   'shuffle',  'Shuffle');
   set('zoomOutBtn',   'collapse', '');
   set('zoomInBtn',    'expand',   '');
@@ -1841,6 +2080,7 @@ async function applyCrop() {
   set('cropApplyBtn', 'save',     'บันทึก Crop');
   set('cropResetBtn', 'reset',    'Reset');
   set('modalCropBtn', 'scissors', 'CROP', 'icn-sm');
+  set('modalCutBtn',  'wand',     'CUT',  'icn-sm');
   set('modalSaveBtn', 'save',     'บันทึก');
   set('modalDelBtn',  'trash',    'ลบ');
   // Empty-state for bookmarklet drop area
