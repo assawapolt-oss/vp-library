@@ -1001,12 +1001,26 @@ let _mbVersionChoice = new Map(); // id -> 'orig' | 'cut'
 
 function setMbVer(id, ver) {
   _mbVersionChoice.set(id, ver);
-  // Update the chip UI and the card image without full re-render
+  const item = ALL_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  // Update the chip + the card image (no full re-render)
   const card = document.querySelector(`.grid-card[data-id="${id}"]`);
-  if (!card) return;
-  card.querySelectorAll('.mb-vchip button').forEach(b => {
-    b.classList.toggle('active', (b.textContent.trim().toLowerCase() === ver));
-  });
+  if (card) {
+    card.querySelectorAll('.mb-vchip button').forEach(b => {
+      b.classList.toggle('active', (b.textContent.trim().toLowerCase() === ver));
+    });
+    const img = card.querySelector('img');
+    if (img) {
+      if (ver === 'cut' && item.cutout_url) {
+        img.src = item.cutout_url;
+        // checkered transparency hint behind PNG
+        img.style.background = 'linear-gradient(45deg,#1a1a1a 25%,transparent 25%) 0 0/14px 14px,linear-gradient(-45deg,#1a1a1a 25%,transparent 25%) 0 7px/14px 14px,linear-gradient(45deg,transparent 75%,#1a1a1a 75%) 7px -7px/14px 14px,linear-gradient(-45deg,transparent 75%,#1a1a1a 75%) 7px 0/14px 14px,#0E0E0E';
+      } else {
+        img.src = item.image_url;
+        img.style.background = '';
+      }
+    }
+  }
   // Re-render moodboard preview if it's already open
   const mbOverlay = document.getElementById('mbOverlayModal');
   if (mbOverlay && mbOverlay.classList.contains('open')) renderMoodboardCanvas();
@@ -1372,15 +1386,21 @@ function _cardHTML(item, admin, simPct) {
   const showBody = !!(item.notes || host || (item.style_tags||[]).length || (item.color_palette||[]).length);
   const hasCut = !!item.cutout_url;
   // In moodboard mode, if card has cutout AND it's selected, show ORIG/CUT toggle
+  const verChosen = _mbVersionChoice.get(item.id) || 'orig';
+  const showCut   = _mbMode && hasCut && isSel && verChosen === 'cut';
+  const imgSrc    = showCut ? item.cutout_url : item.image_url;
+  const imgStyle  = showCut
+    ? 'background:linear-gradient(45deg,#1a1a1a 25%,transparent 25%) 0 0/14px 14px,linear-gradient(-45deg,#1a1a1a 25%,transparent 25%) 0 7px/14px 14px,linear-gradient(45deg,transparent 75%,#1a1a1a 75%) 7px -7px/14px 14px,linear-gradient(-45deg,transparent 75%,#1a1a1a 75%) 7px 0/14px 14px,#0E0E0E'
+    : '';
   const verChip = (_mbMode && hasCut && isSel)
     ? `<div class="mb-vchip" onclick="event.stopPropagation()">
-         <button class="${(_mbVersionChoice.get(item.id)||'orig')==='orig'?'active':''}" onclick="setMbVer('${item.id}','orig')">ORIG</button>
-         <button class="${_mbVersionChoice.get(item.id)==='cut'?'active':''}" onclick="setMbVer('${item.id}','cut')">CUT</button>
+         <button class="${verChosen==='orig'?'active':''}" onclick="setMbVer('${item.id}','orig')">ORIG</button>
+         <button class="${verChosen==='cut'?'active':''}" onclick="setMbVer('${item.id}','cut')">CUT</button>
        </div>` : '';
   return `<div class="grid-card${isSel ? ' selected' : ''}" data-id="${item.id}" onclick="_mbMode?toggleMbCard('${item.id}'):openModal('${item.id}')">
     ${simPct !== undefined ? `<div class="card-sim-badge">${simPct}%</div>` : ''}
     <div class="sel-check">✓</div>
-    <img src="${item.image_url}" alt="" loading="lazy" onerror="this.style.display='none'">
+    <img src="${imgSrc}" alt="" loading="lazy" style="${imgStyle}" onerror="this.style.display='none'">
     <div class="card-cat-overlay" style="background:${cat.color};color:${_iconInk(cat.color)}" title="${cat.name}">${ICN(cat.ic)}</div>
     ${hasCut && !isSel ? `<div class="card-cutout-badge" title="มี cutout version">${ICN('scissors','icn-sm')}</div>` : ''}
     ${verChip}
